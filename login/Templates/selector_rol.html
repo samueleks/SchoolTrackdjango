@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+            width: 100%;
+        }
+        .main-frame-white {
+            background-color: white;
+            border-radius: 1.5rem;
+            border: 2px solid #e5e7eb;
+            box-shadow:
+                0 1px 2px rgba(43, 99, 217, 0.06),
+                0 12px 40px -12px rgba(30, 64, 175, 0.12);
+        }
+        .card-user {
+            border: 2px solid #9eb9d9;
+            border-radius: 1rem;
+            transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-user::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, rgba(43, 99, 217, 0.04) 0%, transparent 55%);
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+        .card-user:hover::before {
+            opacity: 1;
+        }
+        .card-user:hover {
+            border-color: #2b63d9;
+            transform: translateY(-4px);
+            box-shadow:
+                0 12px 28px -8px rgba(43, 99, 217, 0.22),
+                0 4px 12px -4px rgba(30, 64, 175, 0.12);
+        }
+        .card-user:focus-visible {
+            outline: 3px solid #2b63d9;
+            outline-offset: 3px;
+        }
+        .role-icon-shell {
+            width: 4.5rem;
+            height: 4.5rem;
+            border-radius: 1.125rem;
+            background: linear-gradient(160deg, rgba(43, 99, 217, 0.12) 0%, rgba(43, 99, 217, 0.04) 100%);
+            border: 1px solid rgba(158, 185, 217, 0.65);
+            color: #2b63d9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s ease, border-color 0.2s ease, box-shadow 0.25s ease;
+        }
+        .card-user:hover .role-icon-shell {
+            transform: scale(1.06);
+            border-color: rgba(43, 99, 217, 0.45);
+            box-shadow: 0 8px 20px -6px rgba(43, 99, 217, 0.35);
+        }
+        .role-icon-shell i {
+            font-size: 1.75rem;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased">
+
+    <header class="header-pro shadow-lg sticky top-0 z-50" role="banner"></header>
+
+    <div class="flex min-h-[calc(100vh-90px)] justify-center items-center px-4 sm:px-6 py-10 sm:py-12">
+        <main class="w-full max-w-5xl flex justify-center">
+            <div class="w-full main-frame-white p-8 sm:p-10 md:p-12">
+
+                <div class="flex flex-col items-center text-center mb-10 sm:mb-12">
+                    <div class="relative mb-5">
+                        <div class="absolute inset-0 rounded-full bg-[#2b63d9]/15 blur-xl scale-110" aria-hidden="true"></div>
+                        <img src="{% static 'logo.jpg' %}" alt="Logo" class="relative w-[5.25rem] h-[5.25rem] rounded-full border-2 border-gray-200 p-1 shadow-md object-cover" width="84" height="84">
+                    </div>
+                    <h2 class="text-4xl sm:text-5xl font-black text-gray-800 tracking-tight">SchoolTrack</h2>
+                    <p class="text-gray-500 font-bold uppercase text-[11px] sm:text-xs mt-2.5 tracking-[0.28em]">Selecciona tu tipo de usuario</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+
+                    <a href="{% url 'login_alumno' %}" class="card-user px-6 py-9 sm:py-10 flex flex-col items-center justify-center text-center bg-white group no-underline" aria-label="Entrar como Alumno">
+                        <span class="role-icon-shell mb-5" aria-hidden="true"><i class="fa-solid fa-user-graduate"></i></span>
+                        <span class="text-xl sm:text-2xl font-bold text-gray-700">Alumno</span>
+                    </a>
+
+                    <a href="{% url 'login_maestro' %}" class="card-user px-6 py-9 sm:py-10 flex flex-col items-center justify-center text-center bg-white group no-underline" aria-label="Entrar como Maestro">
+                        <span class="role-icon-shell mb-5" aria-hidden="true"><i class="fa-solid fa-chalkboard-user"></i></span>
+                        <span class="text-xl sm:text-2xl font-bold text-gray-700">Maestro</span>
+                    </a>
+
+                    <a href="{% url 'login_administrativo' %}" class="card-user px-6 py-9 sm:py-10 flex flex-col items-center justify-center text-center bg-white group no-underline" aria-label="Entrar como Administrativo">
+                        <span class="role-icon-shell mb-5" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span>
+                        <span class="text-xl sm:text-2xl font-bold text-gray-700">Administrativo</span>
+                    </a>
+
+                    <a href="{% url 'login_administrador' %}" class="card-user px-6 py-9 sm:py-10 flex flex-col items-center justify-center text-center bg-white group no-underline" aria-label="Entrar como Administrador">
+                        <span class="role-icon-shell mb-5" aria-hidden="true"><i class="fa-solid fa-user-shield"></i></span>
+                        <span class="text-xl sm:text-2xl font-bold text-gray-700">Administrador</span>
+                    </a>
+                </div>
+
+                <div class="mt-12 sm:mt-14 pt-8 border-t border-gray-100 text-center text-gray-400 text-xs sm:text-sm font-bold tracking-wide">
+                    © 2026 Copyright: schooltrack.mx
+                </div>
+            </div>
+        </main>
+    </div>
+
+</body>
+</html>

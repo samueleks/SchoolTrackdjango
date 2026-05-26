@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Materias</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2b63d9;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2b63d9;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-size: 11px;
+            color: #777;
+        }
+        
+        .metadata-item {
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        thead {
+            background-color: #2b63d9;
+            color: white;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid #1e40af;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            font-size: 11px;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .status-active {
+            display: inline-block;
+            background-color: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .status-inactive {
+            display: inline-block;
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .total-row {
+            background-color: #e3f2fd;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SchoolTrack</h1>
+            <p>Reporte de Catálogo de Materias</p>
+        </div>
+        
+        <div class="metadata">
+            <div class="metadata-item">Total de Materias: <strong>{{ materias|length }}</strong></div>
+            <div class="metadata-item">Generado: <strong>{{ fecha_generacion }}</strong></div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre de la Materia</th>
+                    <th>Semestre</th>
+                    <th>Créditos</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for materia in materias %}
+                <tr>
+                    <td><strong>{{ materia.clave }}</strong></td>
+                    <td>{{ materia.nombre }}</td>
+                    <td style="text-align: center;">{{ materia.semestre }}</td>
+                    <td style="text-align: center;">{{ materia.creditos }}</td>
+                    <td style="text-align: center;">
+                        {% if materia.activo %}
+                            <span class="status-active">ACTIVA</span>
+                        {% else %}
+                            <span class="status-inactive">INACTIVA</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #999;">No hay materias registradas</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="footer">
+            <p>Este documento fue generado automáticamente por SchoolTrack</p>
+            <p style="margin-top: 5px;">Sistema de Gestión Académica © 2026</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,400 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Gestionar Seguridad</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+        }
+        .logo-custom {
+            font-size: 2.5rem !important;
+            font-weight: 800;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 56px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .nav-item:hover { background-color: #d1d5db; }
+        .nav-item-active { background-color: #d1d5db; color: #374151; }
+        .nav-item-active i { color: #374151 !important; }
+
+        .card-custom {
+            border: 2px solid #e5e7eb;
+            border-radius: 1rem;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="header-pro text-white flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
+                    <i class="fas fa-user-shield text-lg"></i>
+                </div>
+            </div>
+            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+        </div>
+    </header>
+
+    <!-- Modal de Éxito Genérico (Mensajes de Sistema) -->
+    <div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+                Acción realizada correctamente
+            </p>
+            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+                Toca en cualquier parte para continuar
+            </p>
+        </div>
+    </div>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'gestion_usuarios' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-users text-xl"></i> Gestionar Usuarios
+                </a>
+                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
+                </a>
+                <a href="{% url 'gestion_seguridad' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
+                    <i class="fas fa-shield-alt text-xl text-blue-600"></i> Gestionar Seguridad
+                </a>
+                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
+                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 bg-white admin-main">
+            <h2 class="text-4xl font-bold text-center mb-10 text-gray-700">Gestionar Seguridad</h2>
+
+            <div class="space-y-8 max-w-6xl mx-auto">
+                <!-- Estadísticas rápidas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100 text-sm font-medium">Total Usuarios</p>
+                                <p class="text-3xl font-bold mt-1">{{ total_usuarios|default:0 }}</p>
+                            </div>
+                            <i class="fas fa-users text-4xl text-blue-200 opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm font-medium">Usuarios Activos</p>
+                                <p class="text-3xl font-bold mt-1">{{ usuarios_activos|default:0 }}</p>
+                            </div>
+                            <i class="fas fa-user-check text-4xl text-green-200 opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-red-100 text-sm font-medium">Cuentas Bloqueadas</p>
+                                <p class="text-3xl font-bold mt-1">{{ cuentas_bloqueadas|length }}</p>
+                            </div>
+                            <i class="fas fa-user-lock text-4xl text-red-200 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secciones de seguridad -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Últimos Accesos -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-history text-white text-xl"></i>
+                                <h3 class="text-white font-bold text-lg">Últimos Accesos</h3>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <ul class="space-y-3 max-h-80 overflow-y-auto">
+                                {% if logs_acceso %}
+                                    {% for log in logs_acceso %}
+                                    <li class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-user text-blue-600"></i>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-800 text-sm">{{ log.nombre }} {{ log.apellido }}</p>
+                                                <p class="text-xs text-gray-500">{{ log.ultimo_acceso|date:"d/m/Y H:i:s" }}</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">{{ log.matricula }}</span>
+                                    </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="text-center py-8 text-gray-400 text-sm">Sin actividad reciente</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Cuentas Bloqueadas -->
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-shield-alt text-white text-xl"></i>
+                                <h3 class="text-white font-bold text-lg">Cuentas Bloqueadas</h3>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <ul class="space-y-3 max-h-80 overflow-y-auto">
+                                {% if cuentas_bloqueadas %}
+                                    {% for cuenta in cuentas_bloqueadas %}
+                                    <li class="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition">
+                                        <div class="flex items-center gap-3 flex-1">
+                                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-user-slash text-red-600"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <p class="font-semibold text-gray-800 text-sm">{{ cuenta.nombre }} {{ cuenta.apellido }}</p>
+                                                <p class="text-xs text-gray-500">{{ cuenta.matricula }}</p>
+                                                <p class="text-xs text-red-600 font-medium mt-1">Bloqueada: {{ cuenta.fecha_bloqueo|date:"d/m/Y H:i" }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs bg-red-200 text-red-800 px-3 py-1 rounded-full font-bold">{{ cuenta.intentos_fallidos_login }} intentos</span>
+                                            <button type="button" onclick="confirmarDesbloquear({{ cuenta.id_usuario }}, '{{ cuenta.nombre }} {{ cuenta.apellido }}')" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full font-bold transition">
+                                                <i class="fas fa-unlock"></i> Desbloquear
+                                            </button>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                {% else %}
+                                    <li class="text-center py-8 text-gray-400 text-sm">No hay cuentas bloqueadas</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auditoría de Calificaciones -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-clipboard-list text-gray-600 text-xl"></i>
+                            <h3 class="text-gray-800 font-bold text-lg">Auditoría de Calificaciones</h3>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <ul class="space-y-3 max-h-80 overflow-y-auto">
+                            {% if logs_calificaciones %}
+                                {% for log in logs_calificaciones %}
+                                <li class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-edit text-gray-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full font-bold uppercase">{{ log.accion }}</span>
+                                                <span class="text-xs text-gray-500">{{ log.fecha_modificacion|date:"d/m/Y H:i" }}</span>
+                                            </div>
+                                            <p class="text-sm text-gray-700 mt-1">Por: {{ log.id_usuario_modifico.nombre|default:"N/A" }} {{ log.id_usuario_modifico.apellido|default:"" }}</p>
+                                            {% if log.valor_anterior is not None %}
+                                            <p class="text-xs text-gray-600 mt-1">Anterior: <span class="font-semibold text-gray-800">{{ log.valor_anterior }}</span> → Nuevo: <span class="font-semibold text-gray-800">{{ log.valor_nuevo }}</span></p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="text-center py-8 text-gray-400 text-sm">Sin cambios de calificaciones recientes</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<!-- Modal Confirmar Desbloquear Cuenta -->
+<div id="modalDesbloquear" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalDesbloquear">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
+            <!-- Header con icono -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-t-2xl p-6 text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                    <i class="fas fa-unlock text-3xl text-white"></i>
+                </div>
+                <h3 id="tituloModalDesbloquear" class="text-white text-xl font-bold">Desbloquear Cuenta</h3>
+            </div>
+
+            <!-- Contenido -->
+            <div class="p-6">
+                <p class="text-gray-600 text-center mb-6 leading-relaxed">
+                    ¿Está seguro de que desea desbloquear la cuenta de <span id="nombreUsuarioDesbloquear" class="font-bold text-gray-800"></span>?
+                </p>
+
+                <!-- Información -->
+                <div class="bg-yellow-50 rounded-xl p-4 mb-6 border border-yellow-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Acción Reversible</p>
+                            <p class="text-xs text-gray-500">El usuario podrá volver a iniciar sesión</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3">
+                    <button onclick="cerrarModalDesbloquear()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button onclick="ejecutarDesbloquear()" class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg shadow-green-500/30 flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i>
+                        Desbloquear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario oculto para desbloquear -->
+<form id="formDesbloquear" method="POST" style="display: none;">
+    {% csrf_token %}
+</form>
+
+    <script>
+        function cerrarModalExitoSistema() {
+            document.getElementById('modalExitoSistema').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        const msg = "{{ message|safe }}";
+                        document.getElementById('textoExitoSistema').textContent = msg;
+                        document.getElementById('modalExitoSistema').classList.remove('hidden');
+                        setTimeout(cerrarModalExitoSistema, 3000);
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        });
+
+        let usuarioDesbloquearId = null;
+
+        function confirmarDesbloquear(usuarioId, nombreUsuario) {
+            usuarioDesbloquearId = usuarioId;
+            document.getElementById('nombreUsuarioDesbloquear').textContent = nombreUsuario;
+            document.getElementById('modalDesbloquear').classList.remove('hidden');
+        }
+
+        function cerrarModalDesbloquear() {
+            document.getElementById('modalDesbloquear').classList.add('hidden');
+            usuarioDesbloquearId = null;
+        }
+
+        function ejecutarDesbloquear() {
+            if (usuarioDesbloquearId) {
+                const form = document.getElementById('formDesbloquear');
+                form.action = "{% url 'desbloquear_cuenta' 0 %}".replace('0', usuarioDesbloquearId);
+
+                // Usar fetch para AJAX
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cerrar modal y recargar página para mostrar mensaje de Django
+                        cerrarModalDesbloquear();
+                        window.location.reload();
+                    } else {
+                        // Mostrar error
+                        alert(data.error || 'Error al desbloquear la cuenta');
+                        cerrarModalDesbloquear();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al desbloquear la cuenta');
+                    cerrarModalDesbloquear();
+                });
+            }
+        }
+
+        // Atajos de teclado
+        let gPressed = false;
+
+        document.addEventListener('keydown', function(e) {
+            // G + U → Gestionar Usuarios
+            if (e.key === 'g' || e.key === 'G') {
+                gPressed = true;
+                setTimeout(() => gPressed = false, 1000);
+            }
+
+            if (gPressed && (e.key === 'u' || e.key === 'U')) {
+                window.location.href = "{% url 'gestion_usuarios' %}";
+                gPressed = false;
+            }
+
+            // G + S → Gestionar Seguridad
+            if (gPressed && (e.key === 's' || e.key === 'S')) {
+                window.location.href = "{% url 'gestion_seguridad' %}";
+                gPressed = false;
+            }
+
+            // G + B → Respaldar Base de Datos
+            if (gPressed && (e.key === 'b' || e.key === 'B')) {
+                window.location.href = "{% url 'respaldo_bdd' %}";
+                gPressed = false;
+            }
+
+            // Esc → Volver al Panel principal
+            if (e.key === 'Escape') {
+                window.location.href = "{% url 'dashboard_administrador' %}";
+            }
+
+            // Delete → Cerrar sesión
+            if (e.key === 'Delete') {
+                window.location.href = "{% url 'logout' %}";
+            }
+        });
+    </script>
+
+</body>
+</html>

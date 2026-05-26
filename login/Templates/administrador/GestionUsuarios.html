@@ -1,0 +1,996 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Gestionar Usuarios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+        }
+        .logo-custom {
+            font-size: 2.5rem !important;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 56px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .nav-item:hover { background-color: #d1d5db; }
+        .nav-item-active { background-color: #d1d5db; color: #374151; }
+        .nav-item-active i { color: #374151 !important; }
+
+        .table-container {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            display: block;
+        }
+        .btn-hover {
+            transition: all 0.2s ease;
+        }
+        .btn-hover:hover {
+            transform: translateY(-1px);
+        }
+        .table-row-hover {
+            transition: background-color 0.2s ease;
+        }
+        .table-row-hover:hover {
+            background-color: #f3f4f6;
+        }
+        .sidebar-item {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar-item:hover {
+            transform: none;
+        }
+        .user-avatar {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .bell-icon {
+            animation: subtle-pulse 2s infinite;
+        }
+        @keyframes subtle-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .status-badge {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-weight: 900;
+        }
+        .action-btn {
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- Modal de Éxito Genérico (Mensajes de Sistema) -->
+    <div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+                Acción realizada correctamente
+            </p>
+            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+                Toca en cualquier parte para continuar
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal de Éxito Matrícula/Contraseña (Para nuevo usuario) -->
+    <div id="modalExitoNuevoUsuario" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoNuevoUsuario()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-md text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-blue-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-user-check text-4xl text-blue-500"></i>
+            </div>
+            <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-2">¡Usuario Creado!</h3>
+            <div id="contenidoNuevoUsuario" class="space-y-4 w-full">
+                <!-- Se llena por JS -->
+            </div>
+            <button onclick="cerrarModalExitoNuevoUsuario()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function cerrarModalExitoSistema() {
+            document.getElementById('modalExitoSistema').classList.add('hidden');
+        }
+
+        function cerrarModalExitoNuevoUsuario() {
+            document.getElementById('modalExitoNuevoUsuario').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        const msg = "{{ message|safe }}";
+                        
+                        // Si el mensaje contiene información de nuevo usuario (Matrícula y Contraseña)
+                        if (msg.includes('|')) {
+                            const partes = msg.split('|');
+                            const matricula = partes[0].replace('¡Usuario creado!', '').trim();
+                            const pass = partes[1].replace('Contraseña Temporal:', '').trim();
+                            
+                            const html = `
+                                <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-100 text-center mb-6">
+                                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
+                                        <i class="fas fa-check text-2xl text-white"></i>
+                                    </div>
+                                    <h4 class="text-green-800 font-black uppercase tracking-widest text-sm mb-1">Registro Exitoso</h4>
+                                    <p class="text-green-700 font-bold">El usuario ha sido añadido correctamente</p>
+                                </div>
+
+                                <div class="bg-gray-50 p-5 rounded-2xl border-2 border-gray-100 text-left">
+                                    <div class="mb-4">
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Matrícula Asignada</p>
+                                        <p class="text-2xl font-black text-gray-900 tracking-tight">${matricula}</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Contraseña Temporal</p>
+                                        <p class="text-2xl font-black text-gray-900 tracking-tight">${pass}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-6 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                                    <i class="fas fa-exclamation-circle text-amber-500"></i>
+                                    <p class="text-[11px] text-amber-700 font-bold leading-tight text-left">
+                                        IMPORTANTE: Copia estos datos ahora. Por seguridad, no podrán ser visualizados nuevamente.
+                                    </p>
+                                </div>
+                            `;
+                            document.getElementById('contenidoNuevoUsuario').innerHTML = html;
+                            document.getElementById('modalExitoNuevoUsuario').classList.remove('hidden');
+                        } 
+                        // Mensaje de éxito común (edición, restablecer, etc)
+                        else {
+                            document.getElementById('textoExitoSistema').textContent = msg;
+                            document.getElementById('modalExitoSistema').classList.remove('hidden');
+                            setTimeout(cerrarModalExitoSistema, 3000);
+                        }
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+
+    <header class="header-pro text-white flex justify-between items-center px-10 sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
+                    <i class="fas fa-user-shield text-lg"></i>
+                </div>
+            </div>
+            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+        </div>
+    </header>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner bg-gradient-to-b from-gray-200 to-gray-300">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'gestion_usuarios' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
+                    <i class="fas fa-users text-xl text-blue-600"></i> Gestionar Usuarios
+                </a>
+                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
+                </a>
+                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
+                </a>
+                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
+                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 bg-white admin-main">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-4xl font-bold text-gray-700">Gestionar Usuarios</h2>
+                <div class="flex gap-3">
+                    <a href="{% url 'exportar_usuarios' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                        <i class="fas fa-file-excel mr-2"></i> Exportar Excel
+                    </a>
+                    <a href="{% url 'exportar_usuarios_pdf' %}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                        <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
+                    </a>
+                    <a href="{% url 'agregar_usuario' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                        <i class="fas fa-user-plus mr-2"></i> Agregar Usuario
+                    </a>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-md border border-gray-200 mb-8">
+                    <!-- Barra de búsqueda y contador -->
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <div class="flex items-center gap-4">
+                            <span id="usuariosResumen" class="text-gray-600 text-sm font-bold uppercase tracking-wider">
+                                {{ usuarios_encontrados }} Usuarios encontrados
+                                {% if busqueda %}
+                                    <span class="text-gray-400 normal-case font-semibold">para "{{ busqueda }}"</span>
+                                {% else %}
+                                    <span class="text-gray-400 normal-case font-semibold">de {{ total_usuarios }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <form id="formBusquedaUsuarios" method="GET" action="{% url 'gestion_usuarios' %}" class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="buscadorUsuarios" name="q" value="{{ busqueda }}" placeholder="Buscar usuario..." onkeydown="manejarEnterBusquedaUsuarios(event)" class="pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none w-64" maxlength="100">
+                            </form>
+                            <select id="filtroRol" name="rol" onchange="aplicarFiltroRol()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                                <option value="">Todos los roles</option>
+                                <option value="alumno" {% if rol_filtro == 'alumno' %}selected{% endif %}>Alumnos</option>
+                                <option value="maestro" {% if rol_filtro == 'maestro' %}selected{% endif %}>Maestros</option>
+                                <option value="administrativo" {% if rol_filtro == 'administrativo' %}selected{% endif %}>Administrativos</option>
+                                <option value="admin" {% if rol_filtro == 'admin' %}selected{% endif %}>Administradores</option>
+                            </select>
+                            <button onclick="alternarVista()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none hover:bg-gray-100 transition">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje de búsqueda -->
+            </div>
+            <div id="resultadoUsuarios">
+                {% if usuarios and usuarios|length > 0 %}
+                <!-- Vista de Tabla -->
+                <div id="vistaTabla" class="table-container show bg-white mt-6 border border-gray-200 rounded-md overflow-hidden">
+                    <table id="tablaUsuarios" class="w-full text-left border-collapse">
+                        <thead class="bg-[#f8fafc] text-gray-700">
+                            <tr class="text-[11px] font-semibold uppercase tracking-wider">
+                                <th class="p-4 text-center border-b border-gray-200">ID</th>
+                                <th class="p-4 text-center border-b border-gray-200">Matrícula</th>
+                                <th class="p-4 text-center border-b border-gray-200">Nombre</th>
+                                <th class="p-4 text-center border-b border-gray-200">Perfil</th>
+                                <th class="p-4 text-center border-b border-gray-200">Estado</th>
+                                <th class="p-4 text-center border-b border-gray-200">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for usuario in usuarios %}
+                            <tr class="hover:bg-gray-50 transition text-sm table-row-hover">
+                                <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.id_usuario|default:'-' }}</td>
+                                <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.matricula|default:'-' }}</td>
+                                <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.nombre|default:'-' }} {{ usuario.apellido|default:'-' }}</td>
+                                <td class="p-4 text-black text-center uppercase border-b border-gray-100">{{ usuario.rol|default:'-' }}</td>
+                                <td class="p-4 text-center border-b border-gray-100">
+                                    {% if usuario.rol == 'alumno' %}
+                                        {% if usuario.estatus == 'Activo' %}
+                                            <span class="text-green-600 font-semibold text-xs px-2 py-1 bg-green-100 rounded-full">Activo</span>
+                                        {% else %}
+                                            <span class="text-red-600 font-semibold text-xs px-2 py-1 bg-red-100 rounded-full">{{ usuario.estatus|default:'-' }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-green-600 font-semibold text-xs px-2 py-1 bg-green-100 rounded-full">Activo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-4 flex justify-center gap-3 border-b border-gray-100">
+                                    <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-1" title="Ver Detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'restablecer_contrasena' usuario.id_usuario %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" onclick="return confirmarRestablecer('{{ usuario.nombre|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-1 action-btn" title="Restablecer Contraseña">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                    </form>
+                                    <button onclick="eliminarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Vista de Tarjetas -->
+                <div id="vistaTarjetas" class="hidden mt-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for usuario in usuarios %}
+                        <div class="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-600 text-xl"></i>
+                                </div>
+                                <span class="text-xs font-bold uppercase px-2 py-1 rounded-full
+                                    {% if usuario.rol == 'alumno' %}bg-purple-100 text-purple-700
+                                    {% elif usuario.rol == 'maestro' %}bg-green-100 text-green-700
+                                    {% elif usuario.rol == 'administrativo' %}bg-orange-100 text-orange-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ usuario.rol }}
+                                </span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800 mb-1">{{ usuario.nombre|default:'-' }} {{ usuario.apellido|default:'-' }}</h4>
+                            <p class="text-sm text-gray-500 mb-3">{{ usuario.matricula|default:'-' }}</p>
+                            {% if usuario.rol == 'alumno' %}
+                                <div class="space-y-1 text-sm">
+                                    <p class="text-gray-600"><span class="font-medium">Carrera:</span> {{ usuario.carrera|default:'-' }}</p>
+                                    <p class="text-gray-600"><span class="font-medium">Semestre:</span> {{ usuario.semestre|default:'-' }}</p>
+                                </div>
+                            {% elif usuario.rol == 'maestro' %}
+                                <div class="space-y-1 text-sm">
+                                    <p class="text-gray-600"><span class="font-medium">Departamento:</span> {{ usuario.departamento|default:'-' }}</p>
+                                    <p class="text-gray-600"><span class="font-medium">Grado:</span> {{ usuario.grado_academico|default:'-' }}</p>
+                                </div>
+                            {% elif usuario.rol == 'administrativo' %}
+                                <div class="space-y-1 text-sm">
+                                    <p class="text-gray-600"><span class="font-medium">Departamento:</span> {{ usuario.departamento|default:'-' }}</p>
+                                    <p class="text-gray-600"><span class="font-medium">Puesto:</span> {{ usuario.puesto|default:'-' }}</p>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+                                <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-2" title="Ver Detalles">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-2" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{% url 'restablecer_contrasena' usuario.id_usuario %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" onclick="return confirmarRestablecer('{{ usuario.nombre|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-2" title="Restablecer Contraseña">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </form>
+                                <button onclick="eliminarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-red-500 hover:text-red-700 p-2" title="Eliminar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if usuarios.has_other_pages %}
+                <div class="flex items-center justify-between mt-6 px-2 pagination-usuarios">
+                    <div class="text-sm text-gray-600 font-semibold">
+                        Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        {% if usuarios.has_previous %}
+                                    <a href="?page={{ usuarios.previous_page_number }}{% if busqueda %}&q={{ busqueda|urlencode }}{% endif %}{% if rol_filtro %}&rol={{ rol_filtro }}{% endif %}" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                Anterior
+                            </a>
+                        {% else %}
+                            <span class="px-4 py-2 rounded-lg border border-gray-200 bg-gray-100 text-gray-400 font-semibold cursor-not-allowed">
+                                Anterior
+                            </span>
+                        {% endif %}
+
+                        {% for num in usuarios.paginator.page_range %}
+                            {% if num == usuarios.number %}
+                                <span class="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold">
+                                    {{ num }}
+                                </span>
+                            {% else %}
+                                <a href="?page={{ num }}{% if busqueda %}&q={{ busqueda|urlencode }}{% endif %}{% if rol_filtro %}&rol={{ rol_filtro }}{% endif %}" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if usuarios.has_next %}
+                            <a href="?page={{ usuarios.next_page_number }}{% if busqueda %}&q={{ busqueda|urlencode }}{% endif %}{% if rol_filtro %}&rol={{ rol_filtro }}{% endif %}" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition">
+                                Siguiente
+                            </a>
+                        {% else %}
+                            <span class="px-4 py-2 rounded-lg border border-gray-200 bg-gray-100 text-gray-400 font-semibold cursor-not-allowed">
+                                Siguiente
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <!-- Mensaje de no usuarios o sin resultados -->
+                <div class="bg-gray-50 p-8 rounded-2xl border border-gray-200 mb-8 shadow-sm">
+                    <div class="flex flex-col items-center justify-center py-16 px-8">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            {% if busqueda %}
+                                <i class="fas fa-search text-4xl text-gray-400"></i>
+                            {% else %}
+                                <i class="fas fa-users-slash text-4xl text-gray-400"></i>
+                            {% endif %}
+                        </div>
+                        {% if busqueda %}
+                            <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">No hay resultados</h3>
+                            <p class="text-gray-500 text-center max-w-md">No se encontraron usuarios que coincidan con "<span class="font-bold text-gray-700">{{ busqueda }}</span>".</p>
+                        {% else %}
+                            <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">No hay usuarios</h3>
+                            <p class="text-gray-500 text-center max-w-md">No se encontraron usuarios registrados en la base de datos.</p>
+                        {% endif %}
+                        <div class="mt-6">
+                            <a href="{% url 'agregar_usuario' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                                <i class="fas fa-user-plus mr-2"></i> Agregar Primer Usuario
+                            </a>
+                        </div>
+                    </div>
+                </div>{% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // SISTEMA DE BÚSQUEDA Y PAGINACIÓN AJAX
+        // ==========================================
+        // Permite buscar usuarios y navegar entre páginas
+        // sin recargar la página completa, mejorando la UX.
+        // Usa AbortController para cancelar peticiones pendientes.
+        // ==========================================
+        
+        const buscadorUsuarios = document.getElementById('buscadorUsuarios');
+        const formBusquedaUsuarios = document.getElementById('formBusquedaUsuarios');
+        const contenedorResultadoUsuarios = document.getElementById('resultadoUsuarios');
+        const resumenUsuarios = document.getElementById('usuariosResumen');
+        let timeoutBusquedaUsuarios = null;
+        let controllerBusquedaUsuarios = null;
+        let ultimaPaginaSinFiltro = new URL(window.location.href).searchParams.get('page') || '1';
+
+        function construirUrlBusqueda(urlBase) {
+            const url = new URL(urlBase, window.location.href);
+            const texto = (buscadorUsuarios?.value || '').trim();
+            const rol = (document.getElementById('filtroRol')?.value || '').trim();
+
+            if (texto === '') {
+                url.searchParams.delete('q');
+            } else {
+                url.searchParams.set('q', texto);
+            }
+
+            if (rol === '') {
+                url.searchParams.delete('rol');
+            } else {
+                url.searchParams.set('rol', rol);
+            }
+
+            return url;
+        }
+
+        function aplicarFiltroRol() {
+            actualizarResultadosUsuarios("{% url 'gestion_usuarios' %}");
+        }
+
+        // Alternar entre vista de tabla y tarjetas
+        let vistaActual = localStorage.getItem('vistaUsuarios') || 'tabla';
+
+        function alternarVista() {
+            const vistaTabla = document.getElementById('vistaTabla');
+            const vistaTarjetas = document.getElementById('vistaTarjetas');
+
+            if (vistaActual === 'tabla') {
+                vistaTabla.classList.add('hidden');
+                vistaTarjetas.classList.remove('hidden');
+                vistaActual = 'tarjetas';
+            } else {
+                vistaTarjetas.classList.add('hidden');
+                vistaTabla.classList.remove('hidden');
+                vistaActual = 'tabla';
+            }
+
+            localStorage.setItem('vistaUsuarios', vistaActual);
+        }
+
+        // Restaurar vista al cargar la página
+        function restaurarVista() {
+            const vistaTabla = document.getElementById('vistaTabla');
+            const vistaTarjetas = document.getElementById('vistaTarjetas');
+
+            if (vistaActual === 'tarjetas') {
+                vistaTabla.classList.add('hidden');
+                vistaTarjetas.classList.remove('hidden');
+            } else {
+                vistaTarjetas.classList.add('hidden');
+                vistaTabla.classList.remove('hidden');
+            }
+        }
+
+        // Llamar a restaurarVista cuando la página carga
+        document.addEventListener('DOMContentLoaded', restaurarVista);
+
+        function actualizarResultadosUsuarios(urlBase) {
+            if (!contenedorResultadoUsuarios) return;
+
+            if (controllerBusquedaUsuarios) {
+                controllerBusquedaUsuarios.abort();
+            }
+
+            controllerBusquedaUsuarios = new AbortController();
+            const urlBaseSolicitada = new URL(urlBase, window.location.href);
+            const url = construirUrlBusqueda(urlBase);
+            const urlActual = new URL(window.location.href);
+            const texto = (buscadorUsuarios?.value || '').trim();
+            const tienePaginaEnUrlBase = urlBaseSolicitada.searchParams.has('page');
+
+            if (texto !== '' && !urlActual.searchParams.get('q')) {
+                ultimaPaginaSinFiltro = urlActual.searchParams.get('page') || ultimaPaginaSinFiltro || '1';
+            }
+
+            if (texto === '' && !tienePaginaEnUrlBase) {
+                const paginaParaRestaurar = ultimaPaginaSinFiltro || urlActual.searchParams.get('page') || '1';
+                if (paginaParaRestaurar) {
+                    url.searchParams.set('page', paginaParaRestaurar);
+                } else {
+                    url.searchParams.delete('page');
+                }
+            }
+
+            fetch(url.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controllerBusquedaUsuarios.signal,
+            })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const nuevoResultado = doc.getElementById('resultadoUsuarios');
+                    const nuevoResumen = doc.getElementById('usuariosResumen');
+
+                    if (nuevoResultado) {
+                        contenedorResultadoUsuarios.innerHTML = nuevoResultado.innerHTML;
+                    }
+                    if (nuevoResumen && resumenUsuarios) {
+                        resumenUsuarios.innerHTML = nuevoResumen.innerHTML;
+                    }
+
+                    // Restaurar vista después de actualizar
+                    restaurarVista();
+
+                    const nuevaUrl = new URL(window.location.href);
+                    if (texto === '' && !tienePaginaEnUrlBase) {
+                        nuevaUrl.searchParams.delete('q');
+                        const paginaParaRestaurar = ultimaPaginaSinFiltro || '1';
+                        if (paginaParaRestaurar) {
+                            nuevaUrl.searchParams.set('page', paginaParaRestaurar);
+                        } else {
+                            nuevaUrl.searchParams.delete('page');
+                        }
+                    } else {
+                        nuevaUrl.searchParams.set('q', texto);
+                        nuevaUrl.searchParams.delete('page');
+                    }
+                    window.history.replaceState({}, '', nuevaUrl.toString());
+                })
+                .catch(error => {
+                    if (error.name !== 'AbortError') {
+                        console.error('Error buscando usuarios:', error);
+                    }
+                });
+        }
+
+        function manejarEnterBusquedaUsuarios(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                actualizarResultadosUsuarios("{% url 'gestion_usuarios' %}");
+            }
+        }
+
+        if (buscadorUsuarios && formBusquedaUsuarios) {
+            buscadorUsuarios.addEventListener('input', function() {
+                clearTimeout(timeoutBusquedaUsuarios);
+                timeoutBusquedaUsuarios = setTimeout(function() {
+                    actualizarResultadosUsuarios("{% url 'gestion_usuarios' %}");
+                }, 250);
+            });
+
+            formBusquedaUsuarios.addEventListener('submit', function(e) {
+                e.preventDefault();
+                actualizarResultadosUsuarios("{% url 'gestion_usuarios' %}");
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            const linkPaginacion = e.target.closest('.pagination-usuarios a');
+            if (!linkPaginacion) return;
+            e.preventDefault();
+
+            const urlLink = new URL(linkPaginacion.getAttribute('href'), window.location.href);
+            if ((buscadorUsuarios?.value || '').trim() === '') {
+                ultimaPaginaSinFiltro = urlLink.searchParams.get('page') || ultimaPaginaSinFiltro || '1';
+            }
+
+            actualizarResultadosUsuarios(linkPaginacion.getAttribute('href'));
+        });
+
+        // Atajos de teclado
+        let gPressed = false;
+
+        function estaEscribiendoEnCampo(elemento) {
+            if (!elemento) return false;
+            const tag = elemento.tagName ? elemento.tagName.toLowerCase() : '';
+            return (
+                tag === 'input' ||
+                tag === 'textarea' ||
+                tag === 'select' ||
+                elemento.isContentEditable ||
+                elemento.closest('#buscadorUsuarios')
+            );
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (estaEscribiendoEnCampo(e.target)) {
+                return;
+            }
+
+            // G + U → Gestionar Usuarios
+            if (e.key === 'g' || e.key === 'G') {
+                gPressed = true;
+                setTimeout(() => gPressed = false, 1000);
+            }
+            
+            if (gPressed && (e.key === 'u' || e.key === 'U')) {
+                window.location.href = "{% url 'gestion_usuarios' %}";
+                gPressed = false;
+            }
+            
+            // G + S → Gestionar Seguridad
+            if (gPressed && (e.key === 's' || e.key === 'S')) {
+                window.location.href = "{% url 'gestion_seguridad' %}";
+                gPressed = false;
+            }
+            
+            // G + B → Respaldar Base de Datos
+            if (gPressed && (e.key === 'b' || e.key === 'B')) {
+                window.location.href = "{% url 'respaldo_bdd' %}";
+                gPressed = false;
+            }
+        });
+    </script>
+
+    <!-- CSRF Token oculto para JavaScript -->
+    <div style="display: none;">{% csrf_token %}</div>
+
+    <!-- Modal de Éxito -->
+    <div id="modalExito" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExito()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <p class="text-gray-700 text-xl font-bold leading-tight">
+                Se actualizó el usuario de manera correcta en la base de datos
+            </p>
+            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+                Toca en cualquier parte para continuar
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal Eliminación Exitosa -->
+    <div id="modalEliminacionExitosa" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalEliminacionExitosa()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <p class="text-gray-700 text-xl font-bold leading-tight">
+                Se eliminó el usuario de la manera correcta en la base de datos
+            </p>
+            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+                Toca en cualquier parte para continuar
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal Ver Detalles -->
+    <div id="modalDetalles" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalDetalles()">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 transform transition-all" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Detalles del Usuario</h3>
+                <button onclick="cerrarModalDetalles()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="contenidoDetalles" class="space-y-4">
+                <!-- Se llena por JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usuarioIdEliminar = null;
+        let usuarioIdRestablecer = null;
+
+        // Modal de ver detalles
+        function verDetalles(id, nombre, apellido, rol, matricula, carrera, semestre, estatus, departamento, puesto, grado_academico) {
+            const rolDisplay = {
+                'alumno': 'Alumno',
+                'maestro': 'Maestro',
+                'administrativo': 'Administrativo',
+                'admin': 'Administrador'
+            }[rol] || rol;
+
+            let html = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">ID</p>
+                        <p class="text-lg font-bold text-gray-800">${id}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Matrícula</p>
+                        <p class="text-lg font-bold text-gray-800">${matricula || '---'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Nombre</p>
+                        <p class="text-lg font-bold text-gray-800">${nombre}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Apellido</p>
+                        <p class="text-lg font-bold text-gray-800">${apellido}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Rol</p>
+                        <p class="text-lg font-bold text-gray-800">${rolDisplay}</p>
+                    </div>
+            `;
+
+            if (rol === 'alumno') {
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Carrera</p>
+                        <p class="text-lg font-bold text-gray-800">${carrera || '---'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Semestre</p>
+                        <p class="text-lg font-bold text-gray-800">${semestre || '---'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Estatus</p>
+                        <p class="text-lg font-bold text-gray-800">${estatus || '---'}</p>
+                    </div>
+                `;
+            } else if (rol === 'maestro') {
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Departamento</p>
+                        <p class="text-lg font-bold text-gray-800">${departamento || '---'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Grado Académico</p>
+                        <p class="text-lg font-bold text-gray-800">${grado_academico || '---'}</p>
+                    </div>
+                `;
+            } else if (rol === 'administrativo') {
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Departamento</p>
+                        <p class="text-lg font-bold text-gray-800">${departamento || '---'}</p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Puesto</p>
+                        <p class="text-lg font-bold text-gray-800">${puesto || '---'}</p>
+                    </div>
+                `;
+            } else if (rol === 'admin') {
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Puesto</p>
+                        <p class="text-lg font-bold text-gray-800">${puesto || '---'}</p>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            document.getElementById('contenidoDetalles').innerHTML = html;
+            document.getElementById('modalDetalles').classList.remove('hidden');
+        }
+
+        function cerrarModalDetalles() {
+            document.getElementById('modalDetalles').classList.add('hidden');
+        }
+
+        // Modal de confirmación para restablecer contraseña
+        function confirmarRestablecer(id, nombre) {
+            usuarioIdRestablecer = id;
+            document.getElementById('nombreUsuarioRestablecer').textContent = nombre;
+            document.getElementById('modalRestablecer').classList.remove('hidden');
+        }
+
+        function cerrarModalRestablecer() {
+            document.getElementById('modalRestablecer').classList.add('hidden');
+            usuarioIdRestablecer = null;
+        }
+
+        function ejecutarRestablecer() {
+            if (usuarioIdRestablecer) {
+                window.location.href = "{% url 'restablecer_contrasena' 0 %}".replace('0', usuarioIdRestablecer);
+            }
+        }
+
+        // Modal de confirmación para eliminar
+        function eliminarUsuario(id, nombre) {
+            console.log('Eliminar usuario ID:', id, 'Nombre:', nombre);
+            usuarioIdEliminar = id;
+            document.getElementById('nombreUsuarioEliminar').textContent = nombre;
+            const modal = document.getElementById('modalEliminar');
+            modal.classList.remove('hidden');
+        }
+        
+        function cerrarModalEliminar() {
+            const modal = document.getElementById('modalEliminar');
+            modal.classList.add('hidden');
+            usuarioIdEliminar = null;
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function confirmarBorrado() {
+            if (!usuarioIdEliminar) {
+                cerrarModalEliminar();
+                return;
+            }
+            
+            // Deshabilitar botón para evitar múltiples clics
+            const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
+            if (btnEliminar) {
+                btnEliminar.disabled = true;
+                btnEliminar.textContent = 'Procesando...';
+            }
+            
+            fetch("{% url 'eliminar_usuario' 0 %}".replace('0', usuarioIdEliminar), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                credentials: 'same-origin',
+            }).then(response => {
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error('No tienes permiso para eliminar este usuario');
+                    } else if (response.status === 404) {
+                        throw new Error('Usuario no encontrado');
+                    } else if (response.status === 500) {
+                        throw new Error('Error del servidor');
+                    } else {
+                        throw new Error('Error al eliminar usuario');
+                    }
+                }
+                cerrarModalEliminar();
+                window.location.href = '{% url "gestion_usuarios" %}';
+            }).catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'Error al eliminar usuario. Por favor, intenta nuevamente.');
+                cerrarModalEliminar();
+            }).finally(() => {
+                // Rehabilitar botón
+                if (btnEliminar) {
+                    btnEliminar.disabled = false;
+                    btnEliminar.textContent = 'Eliminar';
+                }
+            });
+        }
+        
+        function mostrarModalExito() {
+            const modal = document.getElementById('modalExito');
+            modal.classList.remove('hidden');
+            
+            // Cerrar automáticamente después de 3 segundos
+            setTimeout(() => {
+                cerrarModalExito();
+            }, 3000);
+        }
+        
+        function cerrarModalExito() {
+            const modal = document.getElementById('modalExito');
+            modal.classList.add('hidden');
+        }
+        
+        function cerrarModalEliminacionExitosa() {
+            const modal = document.getElementById('modalEliminacionExitosa');
+            modal.classList.add('hidden');
+        }
+        
+        // Modal de éxito para eliminación
+        function mostrarAvisoEliminado() {
+            const modal = document.getElementById('modalEliminacionExitosa');
+            modal.classList.remove('hidden');
+            
+            // Cerrar automáticamente después de 3 segundos
+            setTimeout(() => {
+                cerrarModalEliminacionExitosa();
+            }, 3000);
+        }
+        
+        // Mostrar modal de éxito si viene de edición exitosa
+        // NOTA: Los modales de éxito ahora se muestran desde Django messages, no desde parámetros URL
+        document.addEventListener('DOMContentLoaded', function() {
+            // Limpiar parámetros de URL para evitar manipulación
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('exito')) {
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+        });
+
+    </script>
+
+<!-- Modal Confirmar Restablecer Contraseña -->
+<div id="modalRestablecer" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true" aria-labelledby="tituloModalRestablecer">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+            <div class="w-20 h-20 border-4 border-amber-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-key text-4xl text-amber-500"></i>
+            </div>
+            <h3 id="tituloModalRestablecer" class="text-gray-700 text-2xl font-bold mb-2 uppercase tracking-tight">Nueva Contraseña</h3>
+            <p class="text-gray-500 text-lg mb-8 leading-tight">¿Desea generar una nueva contraseña temporal para <span id="nombreUsuarioRestablecer" class="font-bold text-gray-700"></span>?</p>
+            <div class="flex gap-4 w-full justify-center">
+                <button onclick="ejecutarRestablecer()" class="bg-amber-500 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-amber-600 transition">
+                    Generar
+                </button>
+                <button onclick="cerrarModalRestablecer()" class="bg-gray-800 text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                <span class="text-4xl text-gray-400 font-serif">?</span>
+            </div>
+            <h3 id="tituloModalEliminar" class="text-gray-700 text-2xl font-bold mb-2">Eliminar usuario</h3>
+            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar a <span id="nombreUsuarioEliminar" class="font-bold text-gray-700"></span>?</p>
+            <div class="flex gap-4 w-full justify-center">
+                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                    Eliminar
+                </button>
+                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,665 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Agregar Usuario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue/material_blue.css">
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+        }
+        .logo-custom {
+            font-size: 2.5rem !important;
+            font-weight: 800;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 56px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .nav-item:hover { background-color: #d1d5db; }
+        .nav-item-active { background-color: #d1d5db; color: #374151; }
+        .nav-item-active i { color: #374151 !important; }
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+        }
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="header-pro text-white flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
+                    <i class="fas fa-user-shield text-lg"></i>
+                </div>
+            </div>
+            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+        </div>
+    </header>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'gestion_usuarios' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
+                    <i class="fas fa-users text-xl text-blue-600"></i> Gestionar Usuarios
+                </a>
+                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
+                </a>
+                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
+                </a>
+                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
+                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 bg-white admin-main">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex items-center gap-4 mb-8">
+                    <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <h2 class="text-4xl font-bold text-gray-700">Agregar Nuevo Usuario</h2>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if message.tags == 'success' %}
+                            <div class="mb-6 p-4 rounded-lg bg-green-100 text-green-800">
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- 
+                ==========================================================
+                FORMULARIO DE CREACIÓN DE USUARIOS
+                ==========================================================
+                
+                CONEXIÓN A BASE DE DATOS:
+                - method="POST": Envía datos al servidor para crear registro
+                - action implícito: Envía a /administrador/usuarios/agregar/
+                - {% csrf_token %}: Token de seguridad Django
+                
+                FLUJO DE DATOS:
+                1. Usuario completa campos → HTML form
+                2. Submit → POST request a Django
+                3. views.py → agregar_usuario() procesa datos
+                4. request.POST.get() → Obtiene valores
+                5. Usuarios.objects.create() → Guarda en BDD
+                
+                TABLAS AFECTADAS:
+                - usuarios (registro principal)
+                - alumnos/maestros/administrativo/administrador (según rol)
+                - datos_personales (si se proporcionan)
+                -->
+                
+                <form method="POST" id="formAgregarUsuario" class="bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+                    {% csrf_token %}
+                    
+                    <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información Básica</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">ID Usuario</label>
+                            <div class="py-3 text-gray-800 font-bold text-lg">
+                                {{ proximo_id }}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Rol *</label>
+                            <select name="rol" id="rol_select" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]">
+                                <option value="" disabled selected>Seleccionar rol...</option>
+                                <option value="alumno" {% if form_data.rol == 'alumno' %}selected{% endif %}>Alumno</option>
+                                <option value="maestro" {% if form_data.rol == 'maestro' %}selected{% endif %}>Maestro</option>
+                                <option value="administrativo" {% if form_data.rol == 'administrativo' %}selected{% endif %}>Administrativo</option>
+                                <option value="admin" {% if form_data.rol == 'admin' %}selected{% endif %}>Administrador</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Nombre *</label>
+                            <input type="text" name="nombre" required
+                                   value="{{ form_data.nombre|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="" autocomplete="off">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Apellido *</label>
+                            <input type="text" name="apellido" required
+                                   value="{{ form_data.apellido|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <!-- Campos dinámicos según el rol -->
+                    <div id="dynamic_fields" class="mb-8 hidden">
+                        <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2 uppercase tracking-wide">Datos Complementarios del Rol</h3>
+                        <div id="fields_container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Los campos se insertarán aquí por JS -->
+                        </div>
+                    </div>
+
+                    <div id="carrerasOptions" class="hidden">
+                        {% for carrera in carreras %}
+                            <option value="{{ carrera.id }}">{{ carrera.clave }} - {{ carrera.nombre }}</option>
+                        {% endfor %}
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos Personales (Opcional)</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Correo Institucional</label>
+                            <input type="email" name="correo_inst"
+                                   value="{{ form_data.correo_inst|default:'' }}"
+                                   class="w-full p-3 border-2 {% if errores_campos.correo_inst %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                            {% if errores_campos.correo_inst %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.correo_inst }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Teléfono</label>
+                            <input type="text" name="telefono"
+                                   value="{{ form_data.telefono|default:'' }}"
+                                   class="w-full p-3 border-2 {% if errores_campos.telefono %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                            {% if errores_campos.telefono %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.telefono }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">CURP</label>
+                            <input type="text" name="curp" maxlength="18"
+                                   value="{{ form_data.curp|default:'' }}"
+                                   class="w-full p-3 border-2 {% if errores_campos.curp %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                            {% if errores_campos.curp %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.curp }}</p>
+                            {% endif %}
+                        </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Fecha de Nacimiento</label>
+                        <input type="text" name="fecha_nacimiento" data-datepicker="fecha_nacimiento" placeholder="YYYY-MM-DD"
+                               value="{{ form_data.fecha_nacimiento|default:'' }}"
+                               class="w-full p-3 border-2 {% if errores_campos.fecha_nacimiento %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                        {% if errores_campos.fecha_nacimiento %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.fecha_nacimiento }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Género</label>
+                        <select name="genero" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                            <option value="" {% if not form_data.genero %}selected{% endif %}>No especificar</option>
+                            <option value="M" {% if form_data.genero == 'M' %}selected{% endif %}>Masculino</option>
+                            <option value="F" {% if form_data.genero == 'F' %}selected{% endif %}>Femenino</option>
+                            <option value="otro" {% if form_data.genero == 'otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">Opcional</p>
+                    </div>
+                        <div class="md:col-span-2">
+                            <p class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Dirección</p>
+                            <p class="text-xs text-gray-500 mb-4">Estos campos se guardan juntos en un solo dato de dirección.</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Calle</label>
+                            <input type="text" name="calle"
+                                   value="{{ form_data.calle|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Número Exterior</label>
+                            <input type="text" name="numero_exterior"
+                                   value="{{ form_data.numero_exterior|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Número Interior</label>
+                            <input type="text" name="numero_interior"
+                                   value="{{ form_data.numero_interior|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Colonia</label>
+                            <input type="text" name="colonia"
+                                   value="{{ form_data.colonia|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Municipio / Ciudad</label>
+                            <input type="text" name="municipio"
+                                   value="{{ form_data.municipio|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Estado</label>
+                            <input type="text" name="estado"
+                                   value="{{ form_data.estado|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Código Postal</label>
+                            <input type="text" name="cp"
+                                   value="{{ form_data.cp|default:'' }}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-4">
+                        <a href="{% url 'gestion_usuarios' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-xl transition">
+                            <i class="fas fa-times mr-2"></i> Cancelar
+                        </a>
+                        <button type="button" onclick="confirmarAgregarUsuario()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl transition">
+                            <i class="fas fa-user-plus mr-2"></i> Agregar Usuario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fechaNacimiento = document.querySelector('[data-datepicker="fecha_nacimiento"]');
+            if (fechaNacimiento) {
+                const instance = flatpickr(fechaNacimiento, {
+                    locale: 'es',
+                    dateFormat: 'Y-m-d',
+                    altFormat: 'd/m/Y',
+                    altInput: true,
+                    showMonths: 1,
+                    enableTime: false,
+                    disableMobile: true,
+                    allowInput: true
+                });
+                
+                // Registrar eventos del altInput directamente después de inicializar flatpickr
+                const altInput = instance.altInput;
+            }
+
+            const form = document.querySelector('form');
+            const rolSelect = document.getElementById('rol_select');
+            const dynamicFields = document.getElementById('dynamic_fields');
+            const fieldsContainer = document.getElementById('fields_container');
+            const carrerasOptions = document.getElementById('carrerasOptions').innerHTML;
+
+            // Datos del formulario para mantener valores cuando hay error
+            const formData = {
+                {% if form_data %}
+                    periodo_ingreso: "{{ form_data.periodo_ingreso|default:'' }}",
+                    carrera_id: "{{ form_data.carrera_id|default:'' }}",
+                    semestre: "{{ form_data.semestre|default:'1' }}",
+                    estatus: "{{ form_data.estatus|default:'Activo' }}",
+                    departamento: "{{ form_data.departamento|default:'' }}",
+                    cubiculo: "{{ form_data.cubiculo|default:'' }}",
+                    grado_academico: "{{ form_data.grado_academico|default:'' }}",
+                    puesto: "{{ form_data.puesto|default:'' }}",
+                    nivel_prioridad: "{{ form_data.nivel_prioridad|default:'1' }}",
+                    id_ciclo_escolar: "{{ form_data.id_ciclo_escolar|default:'' }}"
+                {% else %}
+                    periodo_ingreso: "",
+                    carrera_id: "",
+                    semestre: "1",
+                    estatus: "Activo",
+                    departamento: "",
+                    cubiculo: "",
+                    grado_academico: "",
+                    puesto: "",
+                    nivel_prioridad: "1",
+                    id_ciclo_escolar: ""
+                {% endif %}
+            };
+
+            function renderCamposRol(rol) {
+                fieldsContainer.innerHTML = '';
+
+                if (!rol) {
+                    dynamicFields.classList.add('hidden');
+                    return;
+                }
+
+                dynamicFields.classList.remove('hidden');
+
+                if (rol === 'alumno') {
+                    fieldsContainer.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Periodo de Ingreso</label>
+                            <input type="text" name="periodo_ingreso" maxlength="7" placeholder="{{ periodo_actual }}"
+                                   value="${formData.periodo_ingreso}"
+                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] uppercase">
+                            <p class="mt-2 text-xs text-gray-500">Déjalo vacío para guardar automáticamente <span class="font-bold">{{ periodo_actual }}</span>.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Carrera *</label>
+                            <select name="carrera_id" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="" ${!formData.carrera_id ? 'selected' : ''} disabled>Seleccionar carrera...</option>
+                                ${carrerasOptions.replace(/value="([^"]+)"/g, (match, value) => {
+                                    return `value="${value}" ${formData.carrera_id === value ? 'selected' : ''}`;
+                                })}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Semestre *</label>
+                            <input type="number" name="semestre" min="1" max="12" value="${formData.semestre || 1}" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Estatus</label>
+                            <select name="estatus" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="Activo" ${formData.estatus === 'Activo' ? 'selected' : ''}>Activo</option>
+                                <option value="Baja" ${formData.estatus === 'Baja' ? 'selected' : ''}>Baja</option>
+                                <option value="Egresado" ${formData.estatus === 'Egresado' ? 'selected' : ''}>Egresado</option>
+                            </select>
+                        </div>
+                    `;
+                } else if (rol === 'maestro') {
+                    fieldsContainer.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Departamento *</label>
+                            <input type="text" name="departamento" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]" placeholder="" value="${formData.departamento}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Cubículo</label>
+                            <input type="text" name="cubiculo" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]" placeholder="" value="${formData.cubiculo}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Grado Académico *</label>
+                            <select name="grado_academico" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="" ${!formData.grado_academico ? 'selected' : ''} disabled>Seleccionar grado...</option>
+                                <option value="Licenciatura" ${formData.grado_academico === 'Licenciatura' ? 'selected' : ''}>Licenciatura</option>
+                                <option value="Maestria" ${formData.grado_academico === 'Maestria' ? 'selected' : ''}>Maestría</option>
+                                <option value="Doctorado" ${formData.grado_academico === 'Doctorado' ? 'selected' : ''}>Doctorado</option>
+                            </select>
+                        </div>
+                    `;
+                } else if (rol === 'administrativo') {
+                    fieldsContainer.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Departamento *</label>
+                            <input type="text" name="departamento" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]" placeholder="" value="${formData.departamento}">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Puesto *</label>
+                            <input type="text" name="puesto" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]" placeholder="" value="${formData.puesto}">
+                        </div>
+                    `;
+                } else if (rol === 'admin') {
+                    fieldsContainer.innerHTML = `
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Puesto *</label>
+                            <select name="puesto" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="" ${!formData.puesto ? 'selected' : ''} disabled>Seleccionar puesto...</option>
+                                <option value="Director" ${formData.puesto === 'Director' ? 'selected' : ''}>Director</option>
+                                <option value="Subdirector" ${formData.puesto === 'Subdirector' ? 'selected' : ''}>Subdirector</option>
+                                <option value="Auxiliar" ${formData.puesto === 'Auxiliar' ? 'selected' : ''}>Auxiliar</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Nivel de Prioridad *</label>
+                            <input type="number" name="nivel_prioridad" min="1" max="10" value="${formData.nivel_prioridad || 1}" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Ciclo Escolar</label>
+                            <select name="id_ciclo_escolar" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="">Opcional</option>
+                                {% for ciclo in ciclos_escolares %}
+                                    <option value="{{ ciclo.id_ciclo_escolar }}" {% if form_data.id_ciclo_escolar == ciclo.id_ciclo_escolar|stringformat:'s' %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    `;
+                }
+            }
+
+            rolSelect.addEventListener('change', function() {
+                renderCamposRol(this.value);
+            });
+
+            if (rolSelect.value) {
+                renderCamposRol(rolSelect.value);
+            }
+
+            // Validar fecha de nacimiento al submit
+            document.querySelector('form').addEventListener('submit', function(e) {
+                // Convertir fecha de DD/MM/YYYY o YYYY/MM/DD a YYYY-MM-DD antes de enviar
+                const fechaInput = document.querySelector('input[name="fecha_nacimiento"]');
+                if (fechaInput) {
+                    // Leer el valor del altInput si existe (visible), si no leer el input original
+                    let fechaValue = fechaInput.value.trim();
+                    const altInput = fechaInput.nextElementSibling;
+                    if (altInput && altInput.classList.contains('flatpickr-alt-input') && altInput.value.trim()) {
+                        fechaValue = altInput.value.trim();
+                    }
+                    
+                    // Si está en formato con /, detectar y convertir
+                    if (fechaValue.includes('/')) {
+                        const partes = fechaValue.split('/');
+                        if (partes.length === 3) {
+                            const currentYear = new Date().getFullYear();
+                            // Detectar formato: si primera parte es año (4 dígitos, 1900-currentYear)
+                            const primeraParte = parseInt(partes[0]);
+                            if (primeraParte >= 1900 && primeraParte <= currentYear + 1) {
+                                // Formato YYYY/MM/DD
+                                const anio = partes[0].padStart(4, '0');
+                                const mes = partes[1].padStart(2, '0');
+                                const dia = partes[2].padStart(2, '0');
+                                fechaInput.value = `${anio}-${mes}-${dia}`;
+                            } else {
+                                // Formato DD/MM/YYYY
+                                const dia = partes[0].padStart(2, '0');
+                                const mes = partes[1].padStart(2, '0');
+                                const anio = partes[2].padStart(4, '0');
+                                fechaInput.value = `${anio}-${mes}-${dia}`;
+                            }
+                        }
+                    }
+                }
+
+                let hasError = false;
+                const erroresMarcar = [];
+
+                // Validar campos obligatorios
+                const nombre = document.querySelector('input[name="nombre"]');
+                const apellido = document.querySelector('input[name="apellido"]');
+                const rol = document.getElementById('rol_select');
+
+                if (nombre && !nombre.value.trim()) {
+                    hasError = true;
+                    nombre.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                    nombre.classList.remove('border-gray-200', 'focus:border-blue-500');
+                    if (!erroresMarcar.includes(nombre)) erroresMarcar.push(nombre);
+                }
+
+                if (apellido && !apellido.value.trim()) {
+                    hasError = true;
+                    apellido.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                    apellido.classList.remove('border-gray-200', 'focus:border-blue-500');
+                    if (!erroresMarcar.includes(apellido)) erroresMarcar.push(apellido);
+                }
+
+                if (rol && !rol.value) {
+                    hasError = true;
+                    rol.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                    rol.classList.remove('border-gray-200', 'focus:border-blue-500');
+                    if (!erroresMarcar.includes(rol)) erroresMarcar.push(rol);
+                }
+
+                // Si hay errores, frenar envío y navegar al primer error
+                if (hasError) {
+                    e.preventDefault();
+                    if (erroresMarcar.length > 0) {
+                        erroresMarcar[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        erroresMarcar[0].focus();
+                    }
+                }
+            });
+
+        });
+    </script>
+
+<!-- Modal Confirmar Agregar Usuario -->
+<div id="modalAgregar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalAgregar">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
+            <!-- Header con icono -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-t-2xl p-6 text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                    <i class="fas fa-user-plus text-3xl text-white"></i>
+                </div>
+                <h3 id="tituloModalAgregar" class="text-white text-xl font-bold">Agregar Usuario</h3>
+            </div>
+
+            <!-- Contenido -->
+            <div class="p-6">
+                <p class="text-gray-600 text-center mb-6 leading-relaxed">
+                    ¿Está seguro de que desea agregar este nuevo usuario al sistema?
+                </p>
+
+                <!-- Información del usuario -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-green-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">Nuevo Usuario</p>
+                            <p class="text-xs text-gray-500">Se creará un nuevo registro</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3">
+                    <button onclick="cerrarModalAgregar()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button onclick="ejecutarAgregar()" class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg shadow-green-500/30 flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i>
+                        Agregar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmarAgregarUsuario() {
+        // Validar campos antes de mostrar el modal
+        const nombre = document.querySelector('input[name="nombre"]');
+        const apellido = document.querySelector('input[name="apellido"]');
+        const rol = document.getElementById('rol_select');
+        const matricula = document.querySelector('input[name="matricula"]');
+        const password = document.querySelector('input[name="password"]');
+
+        let hasError = false;
+
+        if (nombre && !nombre.value.trim()) {
+            hasError = true;
+            nombre.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            nombre.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        if (apellido && !apellido.value.trim()) {
+            hasError = true;
+            apellido.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            apellido.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        if (rol && !rol.value) {
+            hasError = true;
+            rol.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            rol.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        if (matricula && !matricula.value.trim()) {
+            hasError = true;
+            matricula.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            matricula.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        if (password && !password.value.trim()) {
+            hasError = true;
+            password.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+            password.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        if (hasError) {
+            return;
+        }
+
+        document.getElementById('modalAgregar').classList.remove('hidden');
+    }
+
+    function cerrarModalAgregar() {
+        document.getElementById('modalAgregar').classList.add('hidden');
+    }
+
+    function ejecutarAgregar() {
+        cerrarModalAgregar();
+        document.getElementById('formAgregarUsuario').submit();
+    }
+</script>
+
+</body>
+</html>

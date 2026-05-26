@@ -1,0 +1,265 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Respaldo de Base de Datos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+        }
+        .logo-custom {
+            font-size: 2.5rem !important;
+            font-weight: 800;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 56px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .nav-item:hover { background-color: #d1d5db; }
+        .nav-item-active { background-color: #d1d5db; color: #374151; }
+        .nav-item-active i { color: #374151 !important; }
+
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="header-pro text-white flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
+                    <i class="fas fa-user-shield text-lg"></i>
+                </div>
+            </div>
+            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+        </div>
+    </header>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'gestion_usuarios' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-users text-xl"></i> Gestionar Usuarios
+                </a>
+                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
+                </a>
+                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
+                </a>
+                <a href="{% url 'respaldo_bdd' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
+                    <i class="fas fa-database text-xl text-blue-600"></i> Respaldar Base de Datos
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
+                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-12 bg-white overflow-y-auto admin-main">
+            <div class="max-w-4xl mx-auto bg-white border-2 border-gray-200 rounded-3xl shadow-2xl p-10">
+                <h2 class="text-4xl font-black text-center text-gray-700 mb-10">
+                    Respaldo de Información
+                </h2>
+
+                <div class="space-y-8">
+                    <div class="flex items-center gap-6 justify-center">
+                        <label class="font-black text-gray-500 uppercase text-xs tracking-widest">Ruta del respaldo:</label>
+                        <input type="text" 
+                               value="{{ ruta_respaldo }}" 
+                               class="bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-2 font-mono text-sm w-96 outline-none focus:border-blue-500" 
+                               readonly>
+                    </div>
+
+                    <div class="flex justify-center">
+                        <form action="{% url 'ejecutar_respaldo' %}" method="POST" class="w-full max-w-lg" id="form-respaldo">
+                            {% csrf_token %}
+                            <button type="submit" id="btn-generar" class="w-full bg-[#2b63d9] hover:bg-[#1e40af] text-white py-4 rounded-xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-3 transition">
+                                <i class="fas fa-save"></i> Generar Respaldo
+                            </button>
+                            <div id="cargando" class="hidden w-full bg-gray-300 text-gray-600 py-4 rounded-xl font-black uppercase text-sm shadow-xl flex items-center justify-center gap-3">
+                                <i class="fas fa-spinner fa-spin"></i> Generando respaldo...
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="text-center space-y-4 pt-4">
+                        {% if mensaje_respaldo %}
+                            <p class="text-blue-600 font-bold animate-pulse text-sm">{{ mensaje_respaldo }}</p>
+                        {% endif %}
+
+                        {% if respaldo_exitoso %}
+                            <div class="flex flex-col items-center gap-2">
+                                <p class="text-green-600 font-black flex items-center gap-2 uppercase text-xs">
+                                    Respaldo completado con éxito <i class="fas fa-check-square"></i>
+                                </p>
+                                <p class="text-gray-500 font-bold text-xs uppercase tracking-widest">
+                                    Fecha del último respaldo: 
+                                    <span class="text-gray-800">{{ fecha_ultimo_respaldo|default:"Sin registros" }}</span>
+                                </p>
+                                <a href="{% url 'descargar_respaldo' %}" class="mt-4 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold uppercase text-xs flex items-center gap-2 transition">
+                                    <i class="fas fa-download"></i> Descargar Archivo
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Historial de Respaldos -->
+                    <div class="mt-12">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-bold text-gray-700">Historial de Respaldos</h3>
+                            <span class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-bold text-sm">
+                                {{ total_backups }} respaldo(s)
+                            </span>
+                        </div>
+                        
+                        {% if backup_files %}
+                            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Nombre</th>
+                                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
+                                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Tamaño</th>
+                                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            {% for backup in backup_files %}
+                                            <tr class="hover:bg-gray-50 transition">
+                                                <td class="px-6 py-4">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                            <i class="fas fa-database text-blue-600"></i>
+                                                        </div>
+                                                        <span class="font-mono text-sm text-gray-800">{{ backup.nombre }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 text-sm text-gray-600">{{ backup.fecha }}</td>
+                                                <td class="px-6 py-4">
+                                                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">{{ backup.tamaño }}</span>
+                                                </td>
+                                                <td class="px-6 py-4 text-center">
+                                                    <a href="{% url 'descargar_respaldo_especifico' backup.nombre %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 transition inline-flex">
+                                                        <i class="fas fa-download"></i> Descargar
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="bg-gray-50 rounded-2xl p-8 text-center">
+                                <i class="fas fa-folder-open text-4xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-500 font-medium">No hay respaldos disponibles</p>
+                                <p class="text-gray-400 text-sm mt-2">Genera tu primer respaldo para ver el historial</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-12 flex justify-end">
+                    <a href="{% url 'dashboard_administrador' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-10 py-2 rounded-lg font-black uppercase text-xs transition">
+                        Cerrar
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Mostrar indicador de carga al enviar formulario
+        document.getElementById('form-respaldo').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('btn-generar').classList.add('hidden');
+            document.getElementById('cargando').classList.remove('hidden');
+            
+            const formData = new FormData(this);
+            fetch('{% url "ejecutar_respaldo" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    // Recargar página para actualizar historial
+                    window.location.reload();
+                } else {
+                    alert('❌ ' + data.message);
+                    document.getElementById('btn-generar').classList.remove('hidden');
+                    document.getElementById('cargando').classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                alert('❌ Error al realizar respaldo: ' + error);
+                document.getElementById('btn-generar').classList.remove('hidden');
+                document.getElementById('cargando').classList.add('hidden');
+            });
+        });
+        
+        // Atajos de teclado
+        let gPressed = false;
+        
+        document.addEventListener('keydown', function(e) {
+            // G + U → Gestionar Usuarios
+            if (e.key === 'g' || e.key === 'G') {
+                gPressed = true;
+                setTimeout(() => gPressed = false, 1000);
+            }
+            
+            if (gPressed && (e.key === 'u' || e.key === 'U')) {
+                window.location.href = "{% url 'gestion_usuarios' %}";
+                gPressed = false;
+            }
+            
+            // G + S → Gestionar Seguridad
+            if (gPressed && (e.key === 's' || e.key === 'S')) {
+                window.location.href = "{% url 'gestion_seguridad' %}";
+                gPressed = false;
+            }
+            
+            // G + B → Respaldar Base de Datos
+            if (gPressed && (e.key === 'b' || e.key === 'B')) {
+                window.location.href = "{% url 'respaldo_bdd' %}";
+                gPressed = false;
+            }
+            
+            // Esc → Volver al Panel principal
+            if (e.key === 'Escape') {
+                window.location.href = "{% url 'dashboard_administrador' %}";
+            }
+            
+            // Delete → Cerrar sesión
+            if (e.key === 'Delete') {
+                window.location.href = "{% url 'logout' %}";
+            }
+        });
+    </script>
+
+</body>
+</html>

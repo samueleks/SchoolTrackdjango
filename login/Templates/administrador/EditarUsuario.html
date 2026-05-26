@@ -1,0 +1,585 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Editar Usuario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue/material_blue.css">
+    <style>
+        .header-pro {
+            background-color: #2b63d9 !important;
+            height: 90px;
+            border-bottom: 4px solid #1e40af;
+        }
+        .logo-custom {
+            font-size: 2.5rem !important;
+            font-weight: 800;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-height: 56px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+        }
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+        }
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .nav-item:hover { background-color: #d1d5db; }
+        .nav-item-active { background-color: #d1d5db; color: #374151; }
+        .nav-item-active i { color: #374151 !important; }
+        
+        .campo-no-editable {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+        
+        .campo-no-editable i {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="header-pro text-white flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3">
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
+                    <i class="fas fa-user-shield text-lg"></i>
+                </div>
+            </div>
+            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+        </div>
+    </header>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'gestion_usuarios' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
+                    <i class="fas fa-users text-xl text-blue-600"></i> Gestionar Usuarios
+                </a>
+                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
+                </a>
+                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
+                </a>
+                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
+                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
+                </a>
+                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
+                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-10 bg-white admin-main">
+            <div class="flex items-center gap-4 mb-8">
+                <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h2 class="text-4xl font-bold text-gray-700">Editar Usuario</h2>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="POST" action="{% url 'editar_usuario' usuario.id_usuario %}" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+                {% csrf_token %}
+                
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información de Sistema</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">ID Usuario</label>
+                        <div class="campo-no-editable">
+                            <i class="fas fa-lock"></i>
+                            <span>{{ usuario.id_usuario }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Matrícula</label>
+                        <div class="campo-no-editable">
+                            <i class="fas fa-lock"></i>
+                            <span>{{ usuario.matricula }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Rol</label>
+                        <div class="campo-no-editable">
+                            <i class="fas fa-lock"></i>
+                            <span>
+                                {% if usuario.rol == 'alumno' %}Alumno
+                                {% elif usuario.rol == 'maestro' %}Maestro
+                                {% elif usuario.rol == 'administrativo' %}Administrativo
+                                {% elif usuario.rol == 'admin' %}Administrador
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información Personal</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2" for="nombre">Nombre *</label>
+                        <input type="text" name="nombre" id="nombre" value="{{ usuario.nombre }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                        <span id="error-nombre" class="text-red-500 text-xs hidden">Campo obligatorio</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2" for="apellido">Apellido *</label>
+                        <input type="text" name="apellido" id="apellido" value="{{ usuario.apellido }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                        <span id="error-apellido" class="text-red-500 text-xs hidden">Campo obligatorio</span>
+                    </div>
+                </div>
+                
+                {% if usuario.rol == 'alumno' %}
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos del Alumno</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Carrera</label>
+                        <select name="carrera_id" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none bg-white">
+                            <option value="">Seleccionar carrera...</option>
+                            {% for carrera in carreras %}
+                                <option value="{{ carrera.id }}" {% if alumno_data.id_carrera_id == carrera.id %}selected{% endif %}>{{ carrera.clave }} - {{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Semestre</label>
+                        <input type="number" name="semestre" min="1" max="12" value="{{ alumno_data.semestre|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.semestre %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.semestre %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.semestre }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Periodo de Ingreso</label>
+                        <div class="campo-no-editable">
+                            <i class="fas fa-lock"></i>
+                            <span>{{ alumno_data.periodo_ingreso|default:'---' }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Estatus</label>
+                        <select name="estatus" class="w-full p-3 border-2 {% if errores_campos.estatus %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                            <option value="Activo" {% if alumno_data.estatus == 'Activo' %}selected{% endif %}>Activo</option>
+                            <option value="Baja" {% if alumno_data.estatus == 'Baja' %}selected{% endif %}>Baja</option>
+                            <option value="Egresado" {% if alumno_data.estatus == 'Egresado' %}selected{% endif %}>Egresado</option>
+                        </select>
+                        {% if errores_campos.estatus %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.estatus }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif usuario.rol == 'maestro' %}
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos del Maestro</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Departamento</label>
+                        <select name="departamento" class="w-full p-3 border-2 {% if errores_campos.departamento %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                            <option value="">Seleccionar departamento...</option>
+                            {% for carrera in carreras %}
+                                <option value="{{ carrera.nombre }}" {% if maestro_data.departamento == carrera.nombre %}selected{% endif %}>{{ carrera.clave }} - {{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if errores_campos.departamento %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.departamento }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Cubículo</label>
+                        <input type="text" name="cubiculo" value="{{ maestro_data.cubiculo|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Grado Académico</label>
+                        <select name="grado_academico" class="w-full p-3 border-2 {% if errores_campos.grado_academico %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                            <option value="">Seleccionar grado...</option>
+                            <option value="Licenciatura" {% if maestro_data.grado_academico == 'Licenciatura' %}selected{% endif %}>Licenciatura</option>
+                            <option value="Maestria" {% if maestro_data.grado_academico == 'Maestria' %}selected{% endif %}>Maestría</option>
+                            <option value="Doctorado" {% if maestro_data.grado_academico == 'Doctorado' %}selected{% endif %}>Doctorado</option>
+                        </select>
+                        {% if errores_campos.grado_academico %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.grado_academico }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif usuario.rol == 'administrativo' %}
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos del Administrativo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Departamento</label>
+                        <input type="text" name="departamento" value="{{ administrativo_data.departamento|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.departamento %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.departamento %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.departamento }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Puesto</label>
+                        <input type="text" name="puesto" value="{{ administrativo_data.puesto|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.puesto %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.puesto %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.puesto }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif usuario.rol == 'admin' %}
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos del Administrador</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Puesto</label>
+                        <select name="puesto" class="w-full p-3 border-2 {% if errores_campos.puesto %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                            <option value="">Seleccionar puesto...</option>
+                            <option value="Director" {% if admin_data.puesto == 'Director' %}selected{% endif %}>Director</option>
+                            <option value="Subdirector" {% if admin_data.puesto == 'Subdirector' %}selected{% endif %}>Subdirector</option>
+                            <option value="Auxiliar" {% if admin_data.puesto == 'Auxiliar' %}selected{% endif %}>Auxiliar</option>
+                        </select>
+                        {% if errores_campos.puesto %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.puesto }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nivel de Prioridad</label>
+                        <input type="number" name="nivel_prioridad" min="1" max="10" value="{{ admin_data.nivel_prioridad|default:1 }}" class="w-full p-3 border-2 {% if errores_campos.nivel_prioridad %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.nivel_prioridad %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.nivel_prioridad }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos Personales</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Correo Institucional</label>
+                        <input type="email" name="correo_inst" value="{{ datos_personales_data.correo_inst|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.correo_inst %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.correo_inst %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.correo_inst }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
+                        <input type="text" name="telefono" value="{{ datos_personales_data.telefono|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.telefono %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.telefono %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.telefono }}</p>
+                        {% endif %}
+                    </div>
+                    {% if usuario.rol == 'alumno' or usuario.rol == 'maestro' %}
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">CURP</label>
+                        <input type="text" name="curp" maxlength="18" value="{{ datos_personales_data.curp|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.curp %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.curp %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.curp }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                        <input type="text" name="fecha_nacimiento" data-datepicker="fecha_nacimiento" value="{{ datos_personales_data.fecha_nacimiento|default:'' }}" placeholder="DD/MM/YYYY" class="w-full p-3 border-2 {% if errores_campos.fecha_nacimiento %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                        {% if errores_campos.fecha_nacimiento %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.fecha_nacimiento }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Género</label>
+                        <select name="genero" class="w-full p-3 border-2 {% if errores_campos.genero %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none bg-white">
+                            <option value="">No especificar</option>
+                            <option value="M" {% if datos_personales_data.genero == 'M' %}selected{% endif %}>Masculino</option>
+                            <option value="F" {% if datos_personales_data.genero == 'F' %}selected{% endif %}>Femenino</option>
+                            <option value="otro" {% if datos_personales_data.genero == 'otro' %}selected{% endif %}>Otro</option>
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">Opcional</p>
+                        {% if errores_campos.genero %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.genero }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Calle</label>
+                        <input type="text" name="calle" value="{{ direccion_data.calle|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Número Exterior</label>
+                        <input type="text" name="numero_exterior" value="{{ direccion_data.numero_exterior|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Número Interior</label>
+                        <input type="text" name="numero_interior" value="{{ direccion_data.numero_interior|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Colonia</label>
+                        <input type="text" name="colonia" value="{{ direccion_data.colonia|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Municipio / Ciudad</label>
+                        <input type="text" name="municipio" value="{{ direccion_data.municipio|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Estado</label>
+                        <input type="text" name="estado" value="{{ direccion_data.estado|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Código Postal</label>
+                        <input type="text" name="cp" value="{{ direccion_data.cp|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-end gap-4">
+                    <a href="{% url 'gestion_usuarios' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-xl transition">
+                        Cancelar
+                    </a>
+                    <button type="button" onclick="confirmarGuardarCambios()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl transition">
+                        <i class="fas fa-save mr-2"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fechaNacimiento = document.querySelector('[data-datepicker="fecha_nacimiento"]');
+            if (fechaNacimiento) {
+                const instance = flatpickr(fechaNacimiento, {
+                    locale: 'es',
+                    dateFormat: 'Y-m-d',
+                    altFormat: 'd/m/Y',
+                    altInput: true,
+                    showMonths: 1,
+                    enableTime: false,
+                    disableMobile: true,
+                    allowInput: true
+                });
+                
+                // Registrar eventos del altInput directamente después de inicializar flatpickr
+                const altInput = instance.altInput;
+            }
+
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const nombre = document.getElementById('nombre');
+                const apellido = document.getElementById('apellido');
+                const fechaNacimientoInput = document.querySelector('[data-datepicker="fecha_nacimiento"]');
+                const errorNombre = document.getElementById('error-nombre');
+                const errorApellido = document.getElementById('error-apellido');
+                
+                // Convertir fecha de DD/MM/YYYY o YYYY/MM/DD a YYYY-MM-DD antes de enviar
+                if (fechaNacimientoInput) {
+                    // Leer el valor del altInput si existe (visible), si no leer el input original
+                    let fechaValue = fechaNacimientoInput.value.trim();
+                    const altInput = fechaNacimientoInput.nextElementSibling;
+                    if (altInput && altInput.classList.contains('flatpickr-alt-input') && altInput.value.trim()) {
+                        fechaValue = altInput.value.trim();
+                    }
+                    
+                    // Si está en formato con /, detectar y convertir
+                    if (fechaValue.includes('/')) {
+                        const partes = fechaValue.split('/');
+                        if (partes.length === 3) {
+                            const currentYear = new Date().getFullYear();
+                            // Detectar formato: si primera parte es año (4 dígitos, 1900-currentYear)
+                            const primeraParte = parseInt(partes[0]);
+                            if (primeraParte >= 1900 && primeraParte <= currentYear + 1) {
+                                // Formato YYYY/MM/DD
+                                const anio = partes[0].padStart(4, '0');
+                                const mes = partes[1].padStart(2, '0');
+                                const dia = partes[2].padStart(2, '0');
+                                fechaNacimientoInput.value = `${anio}-${mes}-${dia}`;
+                            } else {
+                                // Formato DD/MM/YYYY
+                                const dia = partes[0].padStart(2, '0');
+                                const mes = partes[1].padStart(2, '0');
+                                const anio = partes[2].padStart(4, '0');
+                                fechaNacimientoInput.value = `${anio}-${mes}-${dia}`;
+                            }
+                        }
+                    }
+                }
+                
+                // Resetear errores
+                errorNombre.classList.add('hidden');
+                errorApellido.classList.add('hidden');
+                
+                let tieneErrores = false;
+
+                if (!nombre.value.trim()) {
+                    errorNombre.classList.remove('hidden');
+                    tieneErrores = true;
+                }
+                
+                if (!apellido.value.trim()) {
+                    errorApellido.classList.remove('hidden');
+                    tieneErrores = true;
+                }
+
+                if (tieneErrores) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Validar CURP si está presente
+                const curpInput = document.querySelector('input[name="curp"]');
+                if (curpInput && curpInput.value.trim()) {
+                    const curp = curpInput.value.trim().toUpperCase();
+                    // Validar formato básico: 4 letras, 6 números, 6 caracteres alfanuméricos, 2 caracteres
+                    if (!curp.match(/^[A-Z]{4}\d{6}[A-Z0-9]{6}[A-Z0-9]{2}$/)) {
+                        alert('La CURP no tiene un formato válido. Debe tener 18 caracteres.');
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+
+                // Validar fecha de nacimiento
+                let fechaInvalida = false;
+                let fechaMensaje = '';
+                
+                // Revisar el altInput (campo visible donde el usuario escribe manualmente)
+                const allInputs = document.querySelectorAll('input[name="fecha_nacimiento"]');
+                allInputs.forEach((input) => {
+                    if (input.value && input.value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                        const parts = input.value.split('/');
+                        const day = parseInt(parts[0], 10);
+                        const month = parseInt(parts[1], 10) - 1;
+                        const year = parseInt(parts[2], 10);
+                        const date = new Date(year, month, day);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (!isNaN(date.getTime()) && date > today) {
+                            fechaInvalida = true;
+                            fechaMensaje = 'La fecha de nacimiento no puede ser futura';
+                        }
+                    }
+                });
+                
+                // Revisar el input original
+                if (fechaNacimientoInput && fechaNacimientoInput.value) {
+                    const selectedDate = new Date(fechaNacimientoInput.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    if (!isNaN(selectedDate.getTime()) && selectedDate > today) {
+                        fechaInvalida = true;
+                        fechaMensaje = 'La fecha de nacimiento no puede ser futura';
+                    }
+                }
+
+                if (fechaInvalida) {
+                    e.preventDefault();
+                    alert(fechaMensaje);
+                    return false;
+                }
+            });
+        });
+    </script>
+
+<!-- Modal Confirmar Guardar Cambios -->
+<div id="modalGuardar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalGuardar">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
+            <!-- Header con icono -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl p-6 text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                    <i class="fas fa-user-edit text-3xl text-white"></i>
+                </div>
+                <h3 id="tituloModalGuardar" class="text-white text-xl font-bold">Guardar Cambios</h3>
+            </div>
+
+            <!-- Contenido -->
+            <div class="p-6">
+                <p class="text-gray-600 text-center mb-6 leading-relaxed">
+                    ¿Está seguro de que desea guardar los cambios en la información del usuario?
+                </p>
+
+                <!-- Información del usuario -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">{{ usuario.nombre }} {{ usuario.apellido }}</p>
+                            <p class="text-xs text-gray-500">{{ usuario.matricula }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3">
+                    <button onclick="cerrarModalGuardar()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button onclick="ejecutarGuardar()" class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i>
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmarGuardarCambios() {
+        document.getElementById('modalGuardar').classList.remove('hidden');
+    }
+
+    function cerrarModalGuardar() {
+        document.getElementById('modalGuardar').classList.add('hidden');
+    }
+
+    function ejecutarGuardar() {
+        document.querySelector('form').submit();
+    }
+</script>
+
+</body>
+</html>

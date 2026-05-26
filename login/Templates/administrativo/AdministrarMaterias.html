@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Gestión de Materias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
+        .logo-custom { font-size: 2.5rem !important; font-weight: 800; }
+        .sidebar-item-active { background-color: #d1d5db; border-radius: 0.75rem; border: 1px solid #9ca3af; }
+        .table-container { border: 2px solid #9ca3af; border-radius: 12px; overflow: hidden; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="header-pro text-white flex justify-between items-center px-10 shadow-lg sticky top-0 z-50">
+        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
+                    <i class="fas fa-user-tie text-xl"></i>
+                </div>
+                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
+                <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal de Éxito Genérico (Mensajes de Sistema) -->
+    <div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+                Acción realizada correctamente
+            </p>
+            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+                Toca en cualquier parte para continuar
+            </p>
+        </div>
+    </div>
+
+    <div class="flex min-h-[calc(100vh-90px)]">
+        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300">
+            <nav class="space-y-4">
+                <a href="{% url 'dashboard_administrativo' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
+                    <i class="fas fa-home text-xl"></i> Panel
+                </a>
+                <a href="{% url 'admin_reportes' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
+                    <i class="fas fa-chart-bar text-xl"></i> Consultar Reportes
+                </a>
+                <a href="{% url 'admin_horarios' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
+                    <i class="fas fa-clock text-xl"></i> Gestionar Horarios
+                </a>
+                <a href="{% url 'admin_materias' %}" class="flex items-center gap-4 p-4 sidebar-item-active font-bold text-gray-800 shadow-sm">
+                    <i class="fas fa-book text-xl text-blue-600"></i> Administrar Materias
+                </a>
+                <div class="mt-20">
+                    <a href="{% url 'logout' %}" class="flex items-center gap-4 p-4 hover:bg-red-100 text-red-600 rounded-xl transition font-bold uppercase">
+                        <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8 bg-white overflow-y-auto">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Gestión de Materias</h2>
+                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Administrar catálogo de materias</p>
+                </div>
+
+                <!-- Modal de Confirmación Éxito -->
+                <div id="modalConfirmacion" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" onclick="cerrarModal()">
+                    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+                        <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-check text-4xl text-green-500"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-2">¡Materia actualizada!</h3>
+                        <p class="text-gray-700 text-xl font-bold leading-tight">
+                            Se actualizó la materia de manera correcta en la base de datos
+                        </p>
+                        <button type="button" onclick="cerrarModal()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal de Error -->
+                <div id="modalError" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" onclick="cerrarModalError()">
+                    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+                        <div class="w-20 h-20 border-4 border-red-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-times text-4xl text-red-500"></i>
+                        </div>
+                        <p id="mensajeError" class="text-gray-700 text-xl font-bold leading-tight">
+                            Error al registrar la materia
+                        </p>
+                        <p class="text-gray-400 text-xs mt-4 uppercase tracking-widest font-black">
+                            Toca en cualquier parte para cerrar
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
+                    <!-- Barra de búsqueda y contador -->
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">{{ materias|length }} Materias registradas</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" id="buscadorMaterias" placeholder="Buscar materia..." oninput="filtrarMaterias()" onkeydown="manejarEnterBusqueda(event)" class="pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none w-64">
+                            </div>
+                            <a href="{% url 'exportar_materias_pdf' %}" class="bg-green-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-green-700 transition shadow-md uppercase text-xs tracking-widest">
+                                <i class="fas fa-file-pdf"></i> Exportar PDF
+                            </a>
+                            <button onclick="mostrarFormularioCrear()" class="bg-blue-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-blue-700 transition shadow-md uppercase text-xs tracking-widest">
+                                <i class="fas fa-plus"></i> Crear Materia
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla con scroll -->
+                    <div class="table-container bg-white shadow-2xl overflow-auto max-h-[500px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-100 border-b-2 border-gray-300">
+                                <tr class="text-gray-500 text-[11px] font-black uppercase tracking-[0.15em]">
+                                    <th class="p-4">Código</th>
+                                    <th class="p-4">Materia</th>
+                                    <th class="p-4 text-center">Semestre</th>
+                                    <th class="p-4 text-center">Créditos</th>
+                                    <th class="p-4 text-center">Estado</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% if materias %}
+                                    {% for materia in materias %}
+                                    <tr class="hover:bg-blue-50 transition font-medium text-sm">
+                                        <td class="p-4 text-gray-800 font-mono font-bold">{{ materia.codigo }}</td>
+                                        <td class="p-4 text-gray-800 font-bold">{{ materia.nombre }}</td>
+                                        <td class="p-4 text-center text-gray-600">{{ materia.semestre }}</td>
+                                        <td class="p-4 text-center text-gray-600">{{ materia.creditos }}</td>
+                                        <td class="p-4 text-center">
+                                            {% if materia.activa %}
+                                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full font-black text-xs">ACTIVA</span>
+                                            {% else %}
+                                                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full font-black text-xs">INACTIVA</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-3 border-x">
+                                            <div class="flex justify-center items-center">
+                                                <div class="inline-flex shadow-sm rounded-md" role="group">
+                                                    <button onclick="verMateria({{ materia.id_materia }})" class="bg-[#17a2b8] hover:bg-[#138496] text-white px-3 py-1.5 rounded-l-md border-r border-white/20 transition" title="Ver detalles">
+                                                        <i class="fas fa-eye text-xs"></i>
+                                                    </button>
+                                                    <button onclick="editarMateria({{ materia.id_materia }})" class="bg-[#28a745] hover:bg-[#218838] text-white px-3 py-1.5 border-r border-white/20 transition" title="Editar">
+                                                        <i class="fas fa-pencil-alt text-xs"></i>
+                                                    </button>
+                                                    <button onclick="eliminarMateria({{ materia.id_materia }})" class="bg-[#dc3545] hover:bg-[#c82333] text-white px-3 py-1.5 rounded-r-md transition" title="Eliminar">
+                                                        <i class="fas fa-trash text-xs"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    <!-- Fila de mensaje de búsqueda -->
+                                    <tr id="mensajeBusqueda" class="hidden">
+                                        <td colspan="6" class="p-8 text-center">
+                                            <div id="contenidoMensajeBusqueda" class="flex flex-col items-center">
+                                                <!-- Se actualiza dinámicamente con JavaScript -->
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="p-20 text-center text-gray-400 italic">
+                                            <div class="flex flex-col items-center opacity-40">
+                                                <i class="fas fa-book text-5xl mb-4"></i>
+                                                <p class="font-bold uppercase tracking-widest">Sin materias registradas</p>
+                                                <p class="text-xs not-italic mt-1">Cree una nueva materia para comenzar.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="flex justify-between items-center mt-4 px-2">
+                        <span id="infoPaginacion" class="text-xs font-bold text-gray-500 uppercase">Página 1 de 1</span>
+                        <div class="flex gap-2">
+                            <button onclick="cambiarPagina(-1)" id="btnAnterior" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-xs hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <div id="numerosPagina" class="flex gap-1">
+                                <button class="px-3 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs">1</button>
+                            </div>
+                            <button onclick="cambiarPagina(1)" id="btnSiguiente" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-xs hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 flex flex-wrap justify-between items-center border-t pt-8">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Última actualización: {% now "Y-m-d" %}</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Crear Materia -->
+    <div id="modalCrear" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-2xl font-black text-gray-700 mb-6 uppercase tracking-tighter">Crear Materia</h3>
+            <form method="post" action="{% url 'crear_materia' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código *</label>
+                        <input type="text" name="codigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. MAT101">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Nombre *</label>
+                        <input type="text" name="nombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. Matemáticas I">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase mb-1">Créditos</label>
+                            <input type="number" name="creditos" min="1" max="10" value="3" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase mb-1">Semestre</label>
+                            <select name="semestre" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
+                                {% for i in "123456789" %}
+                                <option value="{{ i }}">Semestre {{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="activa" id="activa" checked class="w-4 h-4">
+                        <label for="activa" class="text-sm font-bold text-gray-600">Materia activa</label>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModalCrear()" class="flex-1 bg-gray-400 text-white py-3 rounded-xl font-black hover:bg-gray-500 transition uppercase text-xs">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black hover:bg-blue-700 transition uppercase text-xs">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ver Detalles Materia -->
+    <div id="modalVer" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-2xl font-black text-gray-700 mb-6 uppercase tracking-tighter">Detalles de Materia</h3>
+            <div class="space-y-4">
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Código</label>
+                    <p id="verCodigo" class="text-lg font-bold text-gray-800"></p>
+                </div>
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Nombre</label>
+                    <p id="verNombre" class="text-lg font-bold text-gray-800"></p>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-100 p-3 rounded-lg">
+                        <label class="block text-xs font-black text-gray-500 uppercase">Créditos</label>
+                        <p id="verCreditos" class="text-lg font-bold text-gray-800"></p>
+                    </div>
+                    <div class="bg-gray-100 p-3 rounded-lg">
+                        <label class="block text-xs font-black text-gray-500 uppercase">Semestre</label>
+                        <p id="verSemestre" class="text-lg font-bold text-gray-800"></p>
+                    </div>
+                </div>
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Estado</label>
+                    <p id="verEstado" class="text-lg font-bold"></p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <button type="button" onclick="cerrarModalVer()" class="w-full bg-gray-400 text-white py-3 rounded-xl font-black hover:bg-gray-500 transition uppercase text-xs">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Materia -->
+    <div id="modalEditar" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <h3 class="text-2xl font-black text-gray-700 mb-6 uppercase tracking-tighter">Editar Materia</h3>
+            <form method="post" id="formEditar" action="">
+                {% csrf_token %}
+                <input type="hidden" name="id_materia" id="editarId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código</label>
+                        <input type="text" name="codigo" id="editarCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Nombre *</label>
+                        <input type="text" name="nombre" id="editarNombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase mb-1">Créditos</label>
+                            <input type="number" name="creditos" id="editarCreditos" min="1" max="10" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-gray-500 uppercase mb-1">Semestre</label>
+                            <select name="semestre" id="editarSemestre" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
+                                {% for i in "123456789" %}
+                                <option value="{{ i }}">Semestre {{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="activa" id="editarActiva" class="w-4 h-4">
+                        <label for="editarActiva" class="text-sm font-bold text-gray-600">Materia activa</label>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModalEditar()" class="flex-1 bg-gray-400 text-white py-3 rounded-xl font-black hover:bg-gray-500 transition uppercase text-xs">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-black hover:bg-blue-700 transition uppercase text-xs">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Eliminación -->
+    <div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+                <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <span class="text-4xl text-gray-400 font-serif">?</span>
+                </div>
+                <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar materia</h3>
+                <p class="text-gray-500 text-lg mb-8">¿Desea eliminar esta materia?</p>
+                <div class="flex gap-4 w-full justify-center">
+                    <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                        Eliminar
+                    </button>
+                    <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Eliminación Exitosa -->
+                <div id="modalEliminacionExitosa" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExito()">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-check text-4xl text-green-500"></i>
+            </div>
+            <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-2">¡Materia eliminada!</h3>
+            <p class="text-gray-700 text-xl font-bold leading-tight">
+                Se eliminó la materia de la manera correcta en la base de datos
+            </p>
+            <button type="button" onclick="cerrarModalExito()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
+                Entendido
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function cerrarModalExitoSistema() {
+            document.getElementById('modalExitoSistema').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        const msg = "{{ message|safe }}";
+                        document.getElementById('textoExitoSistema').textContent = msg;
+                        document.getElementById('modalExitoSistema').classList.remove('hidden');
+                        setTimeout(cerrarModalExitoSistema, 3000);
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        });
+
+        let materiaIdEliminar = null;
+
+        function mostrarFormularioCrear() {
+            document.getElementById('modalCrear').classList.remove('hidden');
+            document.getElementById('modalCrear').classList.add('flex');
+        }
+        
+        function cerrarModalCrear() {
+            document.getElementById('modalCrear').classList.add('hidden');
+            document.getElementById('modalCrear').classList.remove('flex');
+        }
+        
+        // Modal de éxito
+        function mostrarRegistroExitoso() {
+            const modal = document.getElementById('modalConfirmacion');
+            modal.classList.remove('hidden');
+        }
+        
+        function cerrarModal() {
+            const modal = document.getElementById('modalConfirmacion');
+            modal.classList.add('hidden');
+        }
+        
+        // Modal de error
+        function mostrarError(mensaje) {
+            const modal = document.getElementById('modalError');
+            if (mensaje) {
+                document.getElementById('mensajeError').textContent = mensaje;
+            }
+            modal.classList.remove('hidden');
+        }
+        
+        function cerrarModalError() {
+            const modal = document.getElementById('modalError');
+            modal.classList.add('hidden');
+        }
+        
+        // Datos de materias desde Django
+        const materiasData = {
+            {% for materia in materias %}
+            {{ materia.id_materia }}: {
+                codigo: '{{ materia.codigo|escapejs }}',
+                nombre: '{{ materia.nombre|escapejs }}',
+                creditos: {{ materia.creditos }},
+                semestre: {{ materia.semestre }},
+                activa: {{ materia.activo|yesno:"true,false" }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function verMateria(id) {
+            const materia = materiasData[id];
+            if (materia) {
+                document.getElementById('verCodigo').textContent = materia.codigo;
+                document.getElementById('verNombre').textContent = materia.nombre;
+                document.getElementById('verCreditos').textContent = materia.creditos;
+                document.getElementById('verSemestre').textContent = 'Semestre ' + materia.semestre;
+                document.getElementById('verEstado').textContent = materia.activa ? 'ACTIVA' : 'INACTIVA';
+                document.getElementById('verEstado').className = 'text-lg font-bold ' + (materia.activa ? 'text-green-600' : 'text-red-600');
+                
+                document.getElementById('modalVer').classList.remove('hidden');
+                document.getElementById('modalVer').classList.add('flex');
+            }
+        }
+        
+        function cerrarModalVer() {
+            document.getElementById('modalVer').classList.add('hidden');
+            document.getElementById('modalVer').classList.remove('flex');
+        }
+        
+        function editarMateria(id) {
+            const materia = materiasData[id];
+            if (materia) {
+                document.getElementById('editarId').value = id;
+                document.getElementById('editarCodigo').value = materia.codigo;
+                document.getElementById('editarNombre').value = materia.nombre;
+                document.getElementById('editarCreditos').value = materia.creditos;
+                document.getElementById('editarSemestre').value = materia.semestre;
+                document.getElementById('editarActiva').checked = materia.activa;
+                document.getElementById('formEditar').action = '/administrativo/materias/editar/' + id + '/';
+                
+                document.getElementById('modalEditar').classList.remove('hidden');
+                document.getElementById('modalEditar').classList.add('flex');
+            }
+        }
+        
+        function cerrarModalEditar() {
+            document.getElementById('modalEditar').classList.add('hidden');
+            document.getElementById('modalEditar').classList.remove('flex');
+        }
+        
+        // Modal de confirmación para eliminar
+        function eliminarMateria(id) {
+            console.log('Eliminar materia ID:', id);
+            materiaIdEliminar = id;
+            const modal = document.getElementById('modalEliminar');
+            modal.classList.remove('hidden');
+        }
+        
+        function cerrarModalEliminar() {
+            const modal = document.getElementById('modalEliminar');
+            modal.classList.add('hidden');
+            materiaIdEliminar = null;
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function confirmarBorrado() {
+            if (!materiaIdEliminar) {
+                cerrarModalEliminar();
+                return;
+            }
+            fetch('/administrativo/materias/eliminar/' + materiaIdEliminar + '/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                credentials: 'same-origin',
+            }).then(() => {
+                cerrarModalEliminar();
+                window.location.href = '/administrativo/materias/';
+            });
+        }
+        
+        // Modal de éxito para eliminación
+        function mostrarAvisoEliminado() {
+            const modal = document.getElementById('modalEliminacionExitosa');
+            modal.classList.remove('hidden');
+        }
+        
+        function cerrarModalExito() {
+            const modal = document.getElementById('modalEliminacionExitosa');
+            modal.classList.add('hidden');
+        }
+        
+
+        // ========== BUSCADOR Y PAGINACIÓN ==========
+        let paginaActual = 1;
+        const materiasPorPagina = 10;
+        let materiasFiltradas = [];
+        let hayFiltroActivo = false;
+
+        // Obtener todas las materias de la tabla
+        function obtenerMaterias() {
+            const filas = document.querySelectorAll('tbody tr');
+            return Array.from(filas).filter(fila => !fila.querySelector('td[colspan]')); // Excluir fila "Sin materias"
+        }
+
+        // Función para quitar acentos
+        function quitarAcentos(texto) {
+            return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        // Filtrar materias por búsqueda (desde el inicio, orden estricto)
+        function filtrarMaterias() {
+            const textoOriginal = document.getElementById('buscadorMaterias').value.toLowerCase().trim();
+            const texto = quitarAcentos(textoOriginal); // Quitar acentos para búsqueda
+            const todasLasMaterias = obtenerMaterias();
+            
+            if (textoOriginal === '') {
+                // Si el buscador está vacío, mostrar todas
+                materiasFiltradas = [];
+                hayFiltroActivo = false;
+                ocultarMensajeBusqueda();
+            } else {
+                // Búsqueda estricta: debe empezar con el texto escrito (sin acentos)
+                hayFiltroActivo = true;
+                materiasFiltradas = todasLasMaterias.filter(fila => {
+                    const clave = quitarAcentos(fila.querySelector('td:nth-child(1)').textContent.toLowerCase());
+                    const nombre = quitarAcentos(fila.querySelector('td:nth-child(2)').textContent.toLowerCase());
+                    return clave.startsWith(texto) || nombre.startsWith(texto);
+                });
+                
+                // Actualizar mensaje en la tabla
+                actualizarMensajeBusqueda(textoOriginal);
+            }
+            
+            paginaActual = 1;
+            mostrarPagina();
+        }
+        
+        function actualizarMensajeBusqueda(textoBuscado) {
+            const filaMensaje = document.getElementById('mensajeBusqueda');
+            const contenidoMensaje = document.getElementById('contenidoMensajeBusqueda');
+            
+            if (materiasFiltradas.length === 0) {
+                // No se encontró nada - diseño profesional estilo sistema
+                filaMensaje.classList.remove('hidden');
+                contenidoMensaje.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-16 px-8">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-search text-4xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">No hay resultados</h3>
+                        <p class="text-gray-500 text-center max-w-md">No se encontraron materias que coincidan con "<span class="font-bold text-gray-700">${textoBuscado}</span>"</p>
+                    </div>
+                `;
+            } else {
+                // Se encontraron resultados - mensaje compacto
+                filaMensaje.classList.remove('hidden');
+                contenidoMensaje.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 py-3">
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <p class="text-green-700 font-bold text-sm uppercase tracking-wider">${materiasFiltradas.length} resultado(s) encontrado(s)</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function ocultarMensajeBusqueda() {
+            document.getElementById('mensajeBusqueda').classList.add('hidden');
+        }
+        
+        function manejarEnterBusqueda(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const textoOriginal = document.getElementById('buscadorMaterias').value.toLowerCase().trim();
+                const texto = quitarAcentos(textoOriginal);
+                
+                if (textoOriginal === '') {
+                    ocultarMensajeBusqueda();
+                    return;
+                }
+                
+                // Buscar coincidencia exacta desde el inicio (ignorando acentos)
+                let encontrada = false;
+                let idEncontrada = null;
+                
+                for (const [id, materia] of Object.entries(materiasData)) {
+                    if (quitarAcentos(materia.codigo.toLowerCase()).startsWith(texto) || 
+                        quitarAcentos(materia.nombre.toLowerCase()).startsWith(texto)) {
+                        encontrada = true;
+                        idEncontrada = id;
+                        break;
+                    }
+                }
+                
+                const filaMensaje = document.getElementById('mensajeBusqueda');
+                const contenidoMensaje = document.getElementById('contenidoMensajeBusqueda');
+                
+                if (encontrada) {
+                    contenidoMensaje.innerHTML = `
+                        <div class="flex items-center justify-center gap-2 py-3">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                            <p class="text-green-700 font-bold text-sm uppercase tracking-wider">¡Asignatura encontrada!</p>
+                        </div>
+                    `;
+                    filaMensaje.classList.remove('hidden');
+                } else {
+                    contenidoMensaje.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-16 px-8">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                                <i class="fas fa-search text-4xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">No hay resultados</h3>
+                            <p class="text-gray-500 text-center max-w-md">No se encontró ninguna materia con "<span class="font-bold text-gray-700">${textoOriginal}</span>"</p>
+                        </div>
+                    `;
+                    filaMensaje.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Mostrar página actual
+        function mostrarPagina() {
+            const todasLasMaterias = obtenerMaterias();
+            // Si hay filtro activo, usar materiasFiltradas (incluso si está vacío)
+            // Si no hay filtro, mostrar todas
+            const materiasAMostrar = hayFiltroActivo ? materiasFiltradas : todasLasMaterias;
+            
+            // Ocultar todas primero
+            todasLasMaterias.forEach(fila => fila.style.display = 'none');
+            
+            // Calcular índices
+            const inicio = (paginaActual - 1) * materiasPorPagina;
+            const fin = inicio + materiasPorPagina;
+            
+            // Mostrar las de la página actual
+            materiasAMostrar.slice(inicio, fin).forEach(fila => fila.style.display = '');
+            
+            // Actualizar info de paginación
+            const totalPaginas = Math.ceil(materiasAMostrar.length / materiasPorPagina) || 1;
+            document.getElementById('infoPaginacion').textContent = `Página ${paginaActual} de ${totalPaginas} (${materiasAMostrar.length} materias)`;
+            
+            // Actualizar botones
+            document.getElementById('btnAnterior').disabled = paginaActual <= 1;
+            document.getElementById('btnSiguiente').disabled = paginaActual >= totalPaginas;
+            
+            // Generar números de página
+            generarNumerosPagina(totalPaginas);
+        }
+
+        // Generar botones de números de página
+        function generarNumerosPagina(totalPaginas) {
+            const contenedor = document.getElementById('numerosPagina');
+            contenedor.innerHTML = '';
+            
+            for (let i = 1; i <= totalPaginas; i++) {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-2 rounded-lg font-bold text-xs transition ${
+                    i === paginaActual ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`;
+                btn.textContent = i;
+                btn.onclick = () => { paginaActual = i; mostrarPagina(); };
+                contenedor.appendChild(btn);
+            }
+        }
+
+        // Cambiar de página
+        function cambiarPagina(direccion) {
+            const todasLasMaterias = obtenerMaterias();
+            const materiasAMostrar = materiasFiltradas.length > 0 ? materiasFiltradas : todasLasMaterias;
+            const totalPaginas = Math.ceil(materiasAMostrar.length / materiasPorPagina) || 1;
+            
+            paginaActual += direccion;
+            if (paginaActual < 1) paginaActual = 1;
+            if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+            
+            mostrarPagina();
+        }
+
+        // Inicializar paginación al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            mostrarPagina();
+        });
+    </script>
+
+</body>
+</html>
