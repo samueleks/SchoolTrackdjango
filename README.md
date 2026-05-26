@@ -140,3 +140,5 @@ SchoolTrackdjango/
 ## Licencia
 
 Este proyecto es para uso educativo.
+
+<!-- Deployment actualizado en Railway -->
