@@ -141,4 +141,4 @@ SchoolTrackdjango/
 
 Este proyecto es para uso educativo.
 
-<!-- Deployment actualizado en Railway -->
+<!-- DEBUG temporal habilitado para diagnosticar login -->
