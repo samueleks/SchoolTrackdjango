@@ -6,3 +6,5 @@ psycopg2-binary
 fpdf2
 pandas
 openpyxl
+whitenoise
+gunicorn
