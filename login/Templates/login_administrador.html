@@ -106,7 +106,6 @@
 
             <form id="loginForm" method="POST" action="" autocomplete="off" class="space-y-5">
                 {% csrf_token %}
-                <input type="hidden" name="ajax" value="1">
 
                 <div>
                     <label class="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-0.5">Usuario Administrador <span class="text-red-500">*</span></label>
@@ -183,50 +182,6 @@
                 eyeOff.classList.remove("hidden");
             }
         }
-
-        document.getElementById("loginForm").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const user = document.getElementById("usuario").value.trim();
-            const pass = document.getElementById("password").value.trim();
-            if (!user || !pass) {
-                document.getElementById("bannerValidation").classList.remove("hidden");
-                return;
-            }
-
-            // Guardar valores escritos antes de enviar
-            const usuarioEscrito = document.getElementById("usuario").value;
-            const contrasenaEscrita = document.getElementById("password").value;
-
-            // Enviar formulario vía AJAX
-            const formData = new FormData(this);
-            fetch('', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = data.redirect;
-                } else {
-                    // Restaurar valores escritos
-                    document.getElementById("usuario").value = usuarioEscrito;
-                    document.getElementById("password").value = contrasenaEscrita;
-                    
-                    // Mostrar error
-                    const bannerError = document.getElementById('bannerError');
-                    if (bannerError) {
-                        bannerError.querySelector('p.text-sm.text-red-700').textContent = data.error;
-                        bannerError.classList.remove('hidden');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
     </script>
 </body>
 </html>
