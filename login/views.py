@@ -709,6 +709,40 @@ def inicio_interfaces_alumnos(request):
     if not sesion_roles_permitidas(request, ('alumno',)):
         return redirect('selector_rol')
 
+    # Procesar POST para guardar datos personales
+    if request.method == 'POST':
+        try:
+            usuario_id = request.session.get('usuario_id')
+            usuario = Usuarios.objects.get(id_usuario=usuario_id)
+            
+            # Obtener o crear registro en DatosPersonales
+            datos_personales, _ = DatosPersonales.objects.get_or_create(id_usuario=usuario)
+            
+            # Obtener datos del formulario
+            telefono = request.POST.get('telefono', '').strip()
+            calle = request.POST.get('calle', '').strip()
+            numero_exterior = request.POST.get('numero_exterior', '').strip()
+            numero_interior = request.POST.get('numero_interior', '').strip()
+            colonia = request.POST.get('colonia', '').strip()
+            municipio = request.POST.get('municipio', '').strip()
+            estado = request.POST.get('estado', '').strip()
+            cp = request.POST.get('cp', '').strip()
+            
+            # Actualizar campos
+            datos_personales.telefono = telefono
+            datos_personales.calle = calle
+            datos_personales.numero_exterior = numero_exterior
+            datos_personales.numero_interior = numero_interior
+            datos_personales.colonia = colonia
+            datos_personales.municipio = municipio
+            datos_personales.estado = estado
+            datos_personales.cp = cp
+            datos_personales.save()
+            
+            messages.success(request, 'Datos guardados correctamente')
+        except Exception as e:
+            messages.error(request, f'Error al guardar: {str(e)}')
+
     perfil = _perfil_alumno(request)
     return render(request, 'alumno/alumno.html', {'perfil': perfil})
 
@@ -896,6 +930,45 @@ def consultar_asistencias(request):
 def dashboard_maestro(request):
     if not sesion_roles_permitidas(request, ('maestro',)):
         return redirect('selector_rol')
+
+    # Procesar POST para guardar datos personales
+    if request.method == 'POST':
+        try:
+            usuario_id = request.session.get('usuario_id')
+            usuario = Usuarios.objects.get(id_usuario=usuario_id)
+            
+            # Obtener o crear registro en DatosPersonales
+            datos_personales, _ = DatosPersonales.objects.get_or_create(id_usuario=usuario)
+            
+            # Obtener datos del formulario
+            telefono = request.POST.get('telefono', '').strip()
+            calle = request.POST.get('calle', '').strip()
+            numero_exterior = request.POST.get('numero_exterior', '').strip()
+            numero_interior = request.POST.get('numero_interior', '').strip()
+            colonia = request.POST.get('colonia', '').strip()
+            municipio = request.POST.get('municipio', '').strip()
+            estado = request.POST.get('estado', '').strip()
+            cp = request.POST.get('cp', '').strip()
+            correo_institucional = request.POST.get('correo_institucional', '').strip()
+            curp = request.POST.get('curp', '').strip()
+            
+            # Actualizar campos
+            datos_personales.telefono = telefono
+            datos_personales.calle = calle
+            datos_personales.numero_exterior = numero_exterior
+            datos_personales.numero_interior = numero_interior
+            datos_personales.colonia = colonia
+            datos_personales.municipio = municipio
+            datos_personales.estado = estado
+            datos_personales.cp = cp
+            datos_personales.correo_inst = correo_institucional
+            if curp:
+                datos_personales.curp = curp
+            datos_personales.save()
+            
+            messages.success(request, 'Datos guardados correctamente')
+        except Exception as e:
+            messages.error(request, f'Error al guardar: {str(e)}')
 
     perfil = _perfil_maestro(request)
     return render(request, 'maestro/maestro.html', {'perfil': perfil})
