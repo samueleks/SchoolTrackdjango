@@ -247,6 +247,66 @@ def selector_rol(request):
     return render(request, 'selector_rol.html')
 
 
+def cambiar_contrasena_temporal(request):
+    """Vista obligatoria para cambiar contraseña temporal antes de acceder al sistema."""
+    usuario_id = request.session.get('usuario_id')
+    if not usuario_id:
+        return redirect('selector_rol')
+    
+    try:
+        usuario = Usuarios.objects.get(id_usuario=usuario_id)
+    except Usuarios.DoesNotExist:
+        request.session.flush()
+        return redirect('selector_rol')
+    
+    # Si ya no tiene contraseña temporal, redirigir al dashboard correspondiente
+    if not usuario.contrasena_temporal:
+        rol = request.session.get('usuario_rol')
+        dashboards = {
+            'alumno': 'dashboard_alumno',
+            'maestro': 'dashboard_maestro',
+            'administrativo': 'dashboard_administrativo',
+            'admin': 'dashboard_administrador',
+        }
+        return redirect(dashboards.get(rol, 'selector_rol'))
+    
+    error_msg = None
+    
+    if request.method == 'POST':
+        nueva_contrasena = request.POST.get('nueva_contrasena', '').strip()
+        confirmar_contrasena = request.POST.get('confirmar_contrasena', '').strip()
+        
+        # Validaciones
+        if not nueva_contrasena or not confirmar_contrasena:
+            error_msg = 'Debes completar ambos campos.'
+        elif len(nueva_contrasena) < 8:
+            error_msg = 'La contraseña debe tener al menos 8 caracteres.'
+        elif nueva_contrasena != confirmar_contrasena:
+            error_msg = 'Las contraseñas no coinciden.'
+        else:
+            # Guardar nueva contraseña y desactivar flag temporal
+            usuario.contrasena = nueva_contrasena
+            usuario.contrasena_temporal = False
+            usuario.save()
+            
+            messages.success(request, '¡Contraseña actualizada exitosamente! Ya puedes acceder al sistema.')
+            
+            # Redirigir al dashboard correspondiente
+            rol = request.session.get('usuario_rol')
+            dashboards = {
+                'alumno': 'dashboard_alumno',
+                'maestro': 'dashboard_maestro',
+                'administrativo': 'dashboard_administrativo',
+                'admin': 'dashboard_administrador',
+            }
+            return redirect(dashboards.get(rol, 'selector_rol'))
+    
+    return render(request, 'cambiar_contrasena.html', {
+        'usuario': usuario,
+        'error_msg': error_msg,
+    })
+
+
 def logout_view(request):
     # Limpiar sesión
     request.session.flush()
@@ -457,6 +517,12 @@ def login_alumno(request):
                     request.session['usuario_rol'] = 'alumno'
                     request.session['alumno_id'] = str(alumno.id_usuario_id)
                     
+                    # Si tiene contraseña temporal, redirigir a cambio obligatorio
+                    if usuario.contrasena_temporal:
+                        if is_ajax:
+                            return JsonResponse({'success': True, 'redirect': '/cambiar-contrasena/'})
+                        return redirect('cambiar_contrasena_temporal')
+                    
                     if is_ajax:
                         return JsonResponse({'success': True, 'redirect': '/dashboard/alumno/'})
                     return redirect('dashboard_alumno')
@@ -526,6 +592,12 @@ def login_maestro(request):
                     request.session['usuario_nombre'] = f"{usuario.nombre} {usuario.apellido}"
                     request.session['usuario_rol'] = 'maestro'
                     request.session['maestro_id'] = str(maestro.id_usuario_id)
+                    
+                    # Si tiene contraseña temporal, redirigir a cambio obligatorio
+                    if usuario.contrasena_temporal:
+                        if is_ajax:
+                            return JsonResponse({'success': True, 'redirect': '/cambiar-contrasena/'})
+                        return redirect('cambiar_contrasena_temporal')
                     
                     if is_ajax:
                         return JsonResponse({'success': True, 'redirect': '/dashboard/maestro/'})
@@ -597,6 +669,12 @@ def login_administrativo(request):
                     request.session['usuario_rol'] = 'administrativo'
                     request.session['administrativo_id'] = str(administrativo.id_usuario_id)
                     
+                    # Si tiene contraseña temporal, redirigir a cambio obligatorio
+                    if usuario.contrasena_temporal:
+                        if is_ajax:
+                            return JsonResponse({'success': True, 'redirect': '/cambiar-contrasena/'})
+                        return redirect('cambiar_contrasena_temporal')
+                    
                     if is_ajax:
                         return JsonResponse({'success': True, 'redirect': '/dashboard/administrativo/'})
                     return redirect('dashboard_administrativo')
@@ -667,6 +745,12 @@ def login_administrador(request):
                     request.session['usuario_rol'] = 'admin'
                     request.session['administrador_id'] = str(administrador.id_usuario_id)
                     request.session['nivel_prioridad'] = int(administrador.nivel_prioridad)
+                    
+                    # Si tiene contraseña temporal, redirigir a cambio obligatorio
+                    if usuario.contrasena_temporal:
+                        if is_ajax:
+                            return JsonResponse({'success': True, 'redirect': '/cambiar-contrasena/'})
+                        return redirect('cambiar_contrasena_temporal')
                     
                     if is_ajax:
                         return JsonResponse({'success': True, 'redirect': '/dashboard/administrador/'})

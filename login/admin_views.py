@@ -1123,7 +1123,8 @@ def agregar_usuario(request):
                         nombre=nombre,
                         apellido=apellido,
                         rol=rol,
-                        contrasena=contrasena_temporal
+                        contrasena=contrasena_temporal,
+                        contrasena_temporal=True
                     )
                     usuario.save()
                 except ValidationError as e:
@@ -1829,6 +1830,7 @@ def restablecer_contrasena(request, usuario_id):
 
         # Guardar encriptada (el modelo se encarga de make_password en el save)
         usuario.contrasena = nueva_contrasena
+        usuario.contrasena_temporal = True
         usuario.save()
 
         messages.success(request, f"¡Clave restablecida! Nueva contraseña para {usuario.nombre}: {nueva_contrasena}")

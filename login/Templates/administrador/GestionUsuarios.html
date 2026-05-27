@@ -302,12 +302,9 @@
                                     <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{% url 'restablecer_contrasena' usuario.id_usuario %}" class="inline-block">
-                                        {% csrf_token %}
-                                        <button type="submit" onclick="return confirmarRestablecer('{{ usuario.nombre|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-1 action-btn" title="Restablecer Contraseña">
-                                            <i class="fas fa-key"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" onclick="confirmarRestablecer('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-1 action-btn" title="Restablecer Contraseña">
+                                        <i class="fas fa-key"></i>
+                                    </button>
                                     <button onclick="eliminarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -360,12 +357,9 @@
                                 <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-2" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form method="POST" action="{% url 'restablecer_contrasena' usuario.id_usuario %}" class="inline-block">
-                                    {% csrf_token %}
-                                    <button type="submit" onclick="return confirmarRestablecer('{{ usuario.nombre|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-2" title="Restablecer Contraseña">
-                                        <i class="fas fa-key"></i>
-                                    </button>
-                                </form>
+                                <button type="button" onclick="confirmarRestablecer('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-2" title="Restablecer Contraseña">
+                                    <i class="fas fa-key"></i>
+                                </button>
                                 <button onclick="eliminarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-red-500 hover:text-red-700 p-2" title="Eliminar">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -827,7 +821,16 @@
 
         function ejecutarRestablecer() {
             if (usuarioIdRestablecer) {
-                window.location.href = "{% url 'restablecer_contrasena' 0 %}".replace('0', usuarioIdRestablecer);
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'restablecer_contrasena' 0 %}".replace('/0/', '/' + usuarioIdRestablecer + '/');
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = 'csrfmiddlewaretoken';
+                csrf.value = '{{ csrf_token }}';
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
             }
         }
 

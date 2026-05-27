@@ -61,6 +61,9 @@ urlpatterns = [
     path('administrador/ejecutar-respaldo/', admin_views.ejecutar_respaldo, name='ejecutar_respaldo'),
     path('administrador/descargar-respaldo/<str:filename>/', admin_views.descargar_respaldo_especifico, name='descargar_respaldo_especifico'),
     
+    # Cambio obligatorio de contraseña temporal
+    path('cambiar-contrasena/', views.cambiar_contrasena_temporal, name='cambiar_contrasena_temporal'),
+    
     # Logout
     path('logout/', views.logout_view, name='logout'),
 ]
