@@ -132,7 +132,7 @@
                 left: -100%;
                 top: 90px;
                 height: calc(100vh - 90px);
-                width: 280px;
+                width: min(280px, 80%);
                 z-index: 40;
                 transition: left 0.3s ease;
             }
@@ -169,7 +169,7 @@
     </header>
 
     <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="sidebar w-72 bg-gray-200/80 backdrop-blur-sm p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-full lg:w-72 bg-gray-200/80 backdrop-blur-sm p-6 border-r border-gray-300 shadow-inner">
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'inicio_interfaces_alumnos' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
@@ -204,11 +204,11 @@
                         
                         <div class="space-y-3">
                             <div class="flex items-center border-b border-gray-100 pb-1">
-                                <span class="w-40 font-bold text-gray-500 text-sm uppercase">Nombre:</span>
+                                <span class="w-24 sm:w-40 font-bold text-gray-500 text-sm uppercase">Nombre:</span>
                                 <span class="flex-1 font-semibold text-gray-700">{{ perfil.nombre_completo|default:'---' }}</span>
                             </div>
                             <div class="flex items-center border-b border-gray-100 pb-1">
-                                <span class="w-40 font-bold text-gray-500 text-sm uppercase">CURP:</span>
+                                <span class="w-24 sm:w-40 font-bold text-gray-500 text-sm uppercase">CURP:</span>
                                 <span class="flex-1 font-mono text-gray-700">{{ perfil.curp|default:'---' }}</span>
                             </div>
                         </div>
@@ -296,7 +296,7 @@
                             </div>
                             <div class="flex flex-col gap-1 border-b border-gray-100 pb-1">
                                 <label class="text-xs font-black text-gray-500 uppercase ml-1">Código Postal:</label>
-                                <input type="text" name="cp" id="cp" value="{{ perfil.cp|default:'' }}" class="w-32 p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                <input type="text" name="cp" id="cp" value="{{ perfil.cp|default:'' }}" class="w-24 sm:w-32 p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                 <span id="error-cp" class="text-red-600 text-xs hidden"></span>
                             </div>
                         </div>

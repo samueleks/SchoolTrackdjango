@@ -52,7 +52,8 @@
             color: #2563eb !important;
         }
         .field-label {
-            width: 170px;
+            min-width: 90px;
+            max-width: 40%;
             flex-shrink: 0;
         }
         .toast-container {
@@ -98,7 +99,7 @@
                 left: -100%;
                 top: 90px;
                 height: calc(100vh - 90px);
-                width: 280px;
+                width: min(280px, 80%);
                 z-index: 40;
                 transition: left 0.3s ease;
             }
@@ -136,7 +137,7 @@
     </header>
 
     <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="sidebar w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_maestro' %}" class="nav-item nav-item-active text-gray-700">

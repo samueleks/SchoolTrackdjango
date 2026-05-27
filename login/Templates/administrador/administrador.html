@@ -66,7 +66,7 @@
                 left: -100%;
                 top: 90px;
                 height: calc(100vh - 90px);
-                width: 280px;
+                width: min(280px, 80%);
                 z-index: 40;
                 transition: left 0.3s ease;
             }
@@ -127,7 +127,7 @@
 
     <div class="flex min-h-[calc(100vh-90px)]">
 
-        <aside class="sidebar w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
             <nav class="space-y-4">
@@ -256,7 +256,7 @@
 
                         <span class="font-semibold text-gray-600">Semestre:</span>
 
-                        <input type="text" value="{{ config.periodo|default:'' }}" placeholder="Ej: 2025-B" class="p-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-center font-bold text-gray-800 w-32" readonly>
+                        <input type="text" value="{{ config.periodo|default:'' }}" placeholder="Ej: 2025-B" class="p-2 border-2 border-gray-200 rounded-lg bg-gray-50 text-center font-bold text-gray-800 w-24 sm:w-32" readonly>
 
                     </div>
 

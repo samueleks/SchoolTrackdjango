@@ -94,8 +94,8 @@
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner bg-gradient-to-b from-gray-200 to-gray-300">
+    <div class="flex min-h-[calc(100svh-90px)]">
+        <aside class="w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner bg-gradient-to-b from-gray-200 to-gray-300">
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
                     <i class="fas fa-home text-xl"></i> Panel
@@ -221,7 +221,7 @@
 
     <!-- Add Modal -->
     <div id="addModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Agregar Nueva Carrera</h3>
                 <button onclick="hideAddModal()" class="text-gray-400 hover:text-gray-600">
@@ -264,7 +264,7 @@
 
     <!-- Edit Modal -->
     <div id="editModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-xl bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Editar Carrera</h3>
                 <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-600">
@@ -307,7 +307,7 @@
     </div>
 
                 <div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[130]">
-                    <div class="flex items-center justify-center min-h-screen">
+                    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
                         <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
                             <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
                                 <span class="text-4xl text-gray-400 font-serif">?</span>
