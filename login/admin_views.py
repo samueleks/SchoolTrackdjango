@@ -1652,10 +1652,10 @@ def desbloquear_cuenta(request, usuario_id):
 
             mensaje = f'✓ Cuenta de {usuario.nombre} {usuario.apellido} desbloqueada exitosamente.'
 
-            messages.success(request, mensaje)
-
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': mensaje})
+
+            messages.success(request, mensaje)
         else:
             mensaje = 'La cuenta no está bloqueada.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
