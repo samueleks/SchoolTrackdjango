@@ -564,6 +564,75 @@
             const grupoNombre = grupoSelect.options[grupoSelect.selectedIndex]?.text || grupo;
             document.getElementById('pdf-nombre-grupo').textContent = grupoNombre;
             
+            // Copiar datos de la tabla visible al HTML oculto
+            const tablaVisible = document.querySelector('.overflow-x-auto table tbody');
+            const pdfBody = document.getElementById('pdf-horarios-body');
+            
+            if (tablaVisible && pdfBody) {
+                pdfBody.innerHTML = '';
+                const filas = tablaVisible.querySelectorAll('tr');
+                filas.forEach(fila => {
+                    const celdas = fila.querySelectorAll('td');
+                    if (celdas.length === 6) {
+                        const nuevaFila = document.createElement('tr');
+                        // Columna hora
+                        const horaCell = document.createElement('td');
+                        horaCell.style.cssText = 'border: 1px solid #ccc; padding: 6px 4px; text-align: center; font-weight: 700; background-color: #f5f5f5;';
+                        horaCell.textContent = celdas[0].textContent.trim();
+                        nuevaFila.appendChild(horaCell);
+                        
+                        // Columnas de días (lunes a viernes)
+                        for (let i = 1; i <= 5; i++) {
+                            const diaCell = document.createElement('td');
+                            diaCell.style.cssText = 'border: 1px solid #ccc; padding: 4px; vertical-align: top;';
+                            
+                            // Copiar segmentos de la celda visible
+                            const segmentos = celdas[i].querySelectorAll('.mb-2');
+                            segmentos.forEach(seg => {
+                                const div = document.createElement('div');
+                                div.style.cssText = 'margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;';
+                                
+                                const materia = seg.querySelector('.font-bold');
+                                const docente = seg.querySelectorAll('.text-xs')[0];
+                                const aula = seg.querySelectorAll('.text-xs')[1];
+                                const horarioTxt = seg.querySelector('.text-blue-600');
+                                
+                                if (materia) {
+                                    const matDiv = document.createElement('div');
+                                    matDiv.style.cssText = 'font-weight: 700; font-size: 9px;';
+                                    matDiv.textContent = materia.textContent.trim();
+                                    div.appendChild(matDiv);
+                                }
+                                if (docente) {
+                                    const docDiv = document.createElement('div');
+                                    docDiv.style.cssText = 'font-size: 8px; color: #666;';
+                                    docDiv.textContent = docente.textContent.trim();
+                                    div.appendChild(docDiv);
+                                }
+                                if (aula) {
+                                    const aulaDiv = document.createElement('div');
+                                    aulaDiv.style.cssText = 'font-size: 8px; color: #555;';
+                                    aulaDiv.textContent = aula.textContent.trim();
+                                    div.appendChild(aulaDiv);
+                                }
+                                if (horarioTxt) {
+                                    const horDiv = document.createElement('div');
+                                    horDiv.style.cssText = 'font-size: 8px; color: #2563eb; font-weight: 700;';
+                                    horDiv.textContent = horarioTxt.textContent.trim();
+                                    div.appendChild(horDiv);
+                                }
+                                
+                                diaCell.appendChild(div);
+                            });
+                            
+                            nuevaFila.appendChild(diaCell);
+                        }
+                        
+                        pdfBody.appendChild(nuevaFila);
+                    }
+                });
+            }
+            
             const generarPDF = () => {
                 horario.style.display = 'block';
                 const opt = {
@@ -1195,7 +1264,7 @@
 
     <!-- Horario oculto para exportar PDF -->
     <div id="horario-pdf" style="display:none;">
-        <div style="width:100%; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
+        <div style="width: 11in; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
             <!-- Header -->
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
                 <div style="flex: 1;">
