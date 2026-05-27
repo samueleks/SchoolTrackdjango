@@ -728,15 +728,14 @@ def inicio_interfaces_alumnos(request):
             estado = request.POST.get('estado', '').strip()
             cp = request.POST.get('cp', '').strip()
             
+            # Construir dirección concatenada (igual que admin_views.construir_direccion)
+            partes = [calle, numero_exterior, numero_interior, colonia, municipio, estado, cp]
+            partes = [parte for parte in partes if parte]
+            direccion = ', '.join(partes) if partes else None
+            
             # Actualizar campos
             datos_personales.telefono = telefono
-            datos_personales.calle = calle
-            datos_personales.numero_exterior = numero_exterior
-            datos_personales.numero_interior = numero_interior
-            datos_personales.colonia = colonia
-            datos_personales.municipio = municipio
-            datos_personales.estado = estado
-            datos_personales.cp = cp
+            datos_personales.direccion = direccion
             datos_personales.save()
             
             messages.success(request, 'Datos guardados correctamente')
@@ -946,21 +945,20 @@ def dashboard_maestro(request):
             numero_exterior = request.POST.get('numero_exterior', '').strip()
             numero_interior = request.POST.get('numero_interior', '').strip()
             colonia = request.POST.get('colonia', '').strip()
-            municipio = request.POST.get('municipio', '').strip()
+            ciudad = request.POST.get('ciudad', '').strip()
             estado = request.POST.get('estado', '').strip()
             cp = request.POST.get('cp', '').strip()
             correo_institucional = request.POST.get('correo_institucional', '').strip()
             curp = request.POST.get('curp', '').strip()
             
+            # Construir dirección concatenada (igual que admin_views.construir_direccion)
+            partes = [calle, numero_exterior, numero_interior, colonia, ciudad, estado, cp]
+            partes = [parte for parte in partes if parte]
+            direccion = ', '.join(partes) if partes else None
+            
             # Actualizar campos
             datos_personales.telefono = telefono
-            datos_personales.calle = calle
-            datos_personales.numero_exterior = numero_exterior
-            datos_personales.numero_interior = numero_interior
-            datos_personales.colonia = colonia
-            datos_personales.municipio = municipio
-            datos_personales.estado = estado
-            datos_personales.cp = cp
+            datos_personales.direccion = direccion
             datos_personales.correo_inst = correo_institucional
             if curp:
                 datos_personales.curp = curp
