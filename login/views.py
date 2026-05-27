@@ -1914,59 +1914,126 @@ def exportar_horario_pdf(request):
                     })
                     break
 
-    # Crear PDF en orientación horizontal
+    # Crear PDF en orientación horizontal (landscape) - formato por intervalos de hora
     pdf = FPDF(orientation='L')
     pdf.add_page()
-    
-    # Título
-    pdf.set_font('Helvetica', 'B', 18)
-    pdf.cell(0, 12, f'Horario de Clases', ln=True, align='C')
+    page_w = pdf.w - 20  # margen izq + der
+
+    # Header institucional
     pdf.set_font('Helvetica', 'B', 14)
-    pdf.cell(0, 8, f'{grupo_obj.clave} - {grupo_obj.nombre}', ln=True, align='C')
-    pdf.set_font('Helvetica', '', 11)
-    pdf.cell(0, 6, f'Ciclo Escolar: {ciclo_filtro}', ln=True, align='C')
-    pdf.ln(8)
+    pdf.cell(0, 7, 'SCHOOLTRACK', ln=True, align='C')
+    pdf.set_font('Helvetica', 'B', 11)
+    pdf.cell(0, 6, 'CARGA ACADEMICA', ln=True, align='L')
 
-    # Encabezados de tabla con fondo gris
-    pdf.set_fill_color(200, 200, 200)
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(35, 10, 'Hora', 1, 0, 'C', True)
-    pdf.cell(50, 10, 'Lunes', 1, 0, 'C', True)
-    pdf.cell(50, 10, 'Martes', 1, 0, 'C', True)
-    pdf.cell(50, 10, 'Miércoles', 1, 0, 'C', True)
-    pdf.cell(50, 10, 'Jueves', 1, 0, 'C', True)
-    pdf.cell(50, 10, 'Viernes', 1, 1, 'C', True)
+    # Info línea: fecha impresión + periodo
+    pdf.set_font('Helvetica', '', 9)
+    fecha_hoy = date.today().strftime('%Y-%m-%d')
+    pdf.cell(page_w / 2, 5, f'FECHA DE IMPRESION:     {fecha_hoy}', ln=False)
+    pdf.cell(page_w / 2, 5, f'PERIODO:     {ciclo_filtro}', ln=True, align='R')
+    pdf.ln(2)
 
-    # Crear filas usando horarios_tabla (misma estructura que la interfaz)
-    pdf.set_font('Helvetica', '', 8)
+    # Info del grupo
+    pdf.set_font('Helvetica', 'B', 9)
+    pdf.cell(page_w / 2, 5, f'GRUPO:     {grupo_obj.clave}', ln=False)
+    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(page_w / 2, 5, f'NOMBRE:     {grupo_obj.nombre}', ln=True, align='R')
+    pdf.ln(1)
+
+    # Línea separadora
+    pdf.set_draw_color(0, 0, 0)
+    pdf.line(10, pdf.get_y(), pdf.w - 10, pdf.get_y())
+    pdf.ln(4)
+
+    # Anchos de columna (HORA + 5 días)
+    col_hora = 22
+    col_dia = (page_w - col_hora) / 5
+
+    # Encabezados
+    pdf.set_fill_color(80, 80, 80)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.cell(col_hora, 9, 'HORA', 1, 0, 'C', True)
+    pdf.cell(col_dia, 9, 'LUNES', 1, 0, 'C', True)
+    pdf.cell(col_dia, 9, 'MARTES', 1, 0, 'C', True)
+    pdf.cell(col_dia, 9, 'MIERCOLES', 1, 0, 'C', True)
+    pdf.cell(col_dia, 9, 'JUEVES', 1, 0, 'C', True)
+    pdf.cell(col_dia, 9, 'VIERNES', 1, 1, 'C', True)
+
+    # Filas usando horarios_tabla (misma estructura que la interfaz, dividido por hora)
+    pdf.set_text_color(0, 0, 0)
+    row_h = 14  # Compacto para que quepa en 1 página
+
     for fila in horarios_tabla:
-        pdf.set_fill_color(245, 245, 245)  # Fondo gris claro para filas alternas
-        pdf.cell(35, 35, fila['hora'], 1, 0, 'C', True)
+        y_inicio = pdf.get_y()
 
+        # Verificar si necesitamos nueva página
+        if y_inicio + row_h > pdf.h - 12:
+            pdf.add_page()
+            # Repetir encabezados en nueva página
+            pdf.set_fill_color(80, 80, 80)
+            pdf.set_text_color(255, 255, 255)
+            pdf.set_font('Helvetica', 'B', 8)
+            pdf.cell(col_hora, 9, 'HORA', 1, 0, 'C', True)
+            pdf.cell(col_dia, 9, 'LUNES', 1, 0, 'C', True)
+            pdf.cell(col_dia, 9, 'MARTES', 1, 0, 'C', True)
+            pdf.cell(col_dia, 9, 'MIERCOLES', 1, 0, 'C', True)
+            pdf.cell(col_dia, 9, 'JUEVES', 1, 0, 'C', True)
+            pdf.cell(col_dia, 9, 'VIERNES', 1, 1, 'C', True)
+            pdf.set_text_color(0, 0, 0)
+            y_inicio = pdf.get_y()
+
+        # Columna HORA
+        pdf.set_xy(10, y_inicio)
+        pdf.set_font('Helvetica', 'B', 6)
+        pdf.set_fill_color(245, 245, 245)
+        pdf.cell(col_hora, row_h, fila['hora'], 1, 0, 'C', True)
+
+        # Columnas de días
+        x_pos = 10 + col_hora
         for dia in ['lunes', 'martes', 'miercoles', 'jueves', 'viernes']:
-            segmentos = fila[dia]
-            texto = ''
-            if segmentos:
-                # Si hay múltiples segmentos en la misma celda, concatenarlos
-                textos_celda = []
-                for seg in segmentos:
-                    textos_celda.append(f"{seg['materia'][:25]}")
-                    textos_celda.append(f"{seg['docente'][:22]}")
-                    textos_celda.append(f"Aula: {seg['aula']}")
-                texto = '\n'.join(textos_celda[:6])  # Máximo 6 líneas
-            
-            # Usar multi_cell para texto con saltos de línea
-            x = pdf.get_x()
-            y = pdf.get_y()
-            pdf.multi_cell(50, 35, texto, 1, 'C', True)
-            pdf.set_xy(x + 50, y)
+            segmentos = fila.get(dia, [])
+            pdf.set_xy(x_pos, y_inicio)
 
-        pdf.ln()
+            if segmentos:
+                seg = segmentos[0]
+                # Materia (negrita)
+                pdf.set_font('Helvetica', 'B', 5.5)
+                pdf.set_xy(x_pos + 1, y_inicio + 0.5)
+                pdf.cell(col_dia - 2, 3.5, seg['materia'][:28], 0, 0, 'L')
+                # Docente
+                pdf.set_font('Helvetica', '', 5)
+                pdf.set_xy(x_pos + 1, y_inicio + 4)
+                pdf.cell(col_dia - 2, 3.5, seg['docente'][:30], 0, 0, 'L')
+                # Aula + Horario en una línea
+                pdf.set_font('Helvetica', 'B', 5)
+                pdf.set_text_color(37, 99, 235)
+                pdf.set_xy(x_pos + 1, y_inicio + 7.5)
+                aula_txt = seg.get('aula', '')
+                pdf.cell(col_dia - 2, 3.5, f"{aula_txt}  {seg['hora_inicio']}-{seg['hora_fin']}", 0, 0, 'L')
+                pdf.set_text_color(0, 0, 0)
+
+                # Si hay más segmentos en la misma celda
+                if len(segmentos) > 1:
+                    seg2 = segmentos[1]
+                    pdf.set_font('Helvetica', '', 4.5)
+                    pdf.set_xy(x_pos + 1, y_inicio + 10.5)
+                    pdf.cell(col_dia - 2, 3, f"+ {seg2['materia'][:18]}", 0, 0, 'L')
+
+            # Borde de la celda
+            pdf.rect(x_pos, y_inicio, col_dia, row_h)
+            x_pos += col_dia
+
+        pdf.set_y(y_inicio + row_h)
+
+    # Footer
+    pdf.ln(6)
+    pdf.set_font('Helvetica', '', 7)
+    pdf.cell(0, 4, 'Documento generado por SchoolTrack - Este documento es informativo', ln=True, align='C')
 
     pdf_content = pdf.output(dest='S').encode('latin-1')
 
     response = HttpResponse(pdf_content, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="horario_{grupo_obj.clave}_{ciclo_filtro}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="carga_academica_{grupo_obj.clave}_{ciclo_filtro}.pdf"'
     return response
 
 

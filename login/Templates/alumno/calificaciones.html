@@ -30,12 +30,12 @@
         .nav-item-active { background-color: #d1d5db; color: #2563eb !important; }
         .nav-item-active i { color: #2563eb !important; }
         
-        /* Estilos simples y limpios para la tabla */
+        /* Tabla de calificaciones - Diseño limpio tipo imagen */
         .table-container { 
-            border: 1px solid #e5e7eb; 
-            border-radius: 0.75rem; 
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem; 
             overflow: hidden; 
-            box-shadow: 0 4px 12px rgba(0,0,0,.05); 
+            background: white;
         }
         
         table {
@@ -44,93 +44,85 @@
         }
         
         .table-head th {
-            background-color: #2b63d9;
+            background-color: #4a4a4a;
             color: white;
-            font-size: 12px;
-            letter-spacing: .1em;
-            text-transform: uppercase;
+            font-size: 0.8rem;
             font-weight: 700;
-            padding: 0.875rem;
+            padding: 0.85rem 1rem;
             text-align: center;
+            border-right: 1px solid #5a5a5a;
         }
         
         .table-head th:first-child {
             text-align: left;
+            padding-left: 1.25rem;
+        }
+        
+        .table-head th:last-child {
+            border-right: none;
         }
         
         tbody tr {
-            border-bottom: 1px solid #e5e7eb;
-            transition: background-color 0.15s ease;
-        }
-        
-        tbody tr:hover {
-            background-color: #f8fafc;
+            border-bottom: 1px solid #e8e8e8;
         }
         
         tbody tr:last-child {
             border-bottom: none;
         }
         
+        tbody tr:hover {
+            background-color: #fafafa;
+        }
+        
         tbody td {
-            padding: 0.875rem;
+            padding: 0.8rem 1rem;
             text-align: center;
+            vertical-align: middle;
+            font-size: 0.875rem;
+            color: #333;
+            border-right: 1px solid #f0f0f0;
         }
         
         tbody td:first-child {
             text-align: left;
+            padding-left: 1.25rem;
             font-weight: 600;
-            color: #374151;
+            color: #1a1a1a;
+        }
+        
+        tbody td:last-child {
+            border-right: none;
         }
         
         .materia-meta {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            font-weight: 500;
-            margin-top: 0.25rem;
+            font-size: 0.7rem;
+            color: #999;
+            font-weight: 400;
+            margin-top: 0.15rem;
         }
         
         .grade-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2.5rem;
-            padding: 0.375rem 0.625rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            background-color: #f3f4f6;
-            color: #1f2937;
-            border: 1px solid #e5e7eb;
+            font-weight: 400;
+            font-size: 0.875rem;
+            color: #000;
         }
         
         .grade-empty {
-            background-color: transparent;
-            color: #d1d5db;
-            border: none;
-            font-size: 1.25rem;
+            color: #ccc;
         }
         
         .promedio-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem 0.875rem;
-            border-radius: 0.5rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            border: 1px solid;
+            font-weight: 400;
+            font-size: 0.875rem;
+            color: #000;
         }
         
         .promedio-na {
-            background-color: #fee2e2;
-            color: #dc2626;
-            border-color: #fca5a5;
+            color: #000;
         }
         
         .promedio-ok {
-            background-color: #dbeafe;
-            color: #2563eb;
-            border-color: #93c5fd;
+            color: #000;
         }
         
         .empty-state {
@@ -145,14 +137,14 @@
         .empty-icon {
             width: 4rem;
             height: 4rem;
-            background-color: #fef3c7;
+            background-color: #f5f5f5;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 1rem;
-            font-size: 1.75rem;
-            color: #f59e0b;
+            font-size: 1.5rem;
+            color: #999;
         }
     </style>
 </head>
@@ -252,17 +244,119 @@
                     </table>
                 </div>
 
-                <div class="mt-10 flex justify-between items-center pt-8">
-                    <div class="flex flex-col gap-1">
-                        <p class="text-lg text-gray-700">Promedio General: <span class="ml-2 bg-gray-100 px-4 py-1 rounded-lg border border-gray-200 text-2xl text-gray-700">{% calculate_general_average calificaciones_rows %}</span></p>
+                <div class="mt-6 flex justify-between items-center pt-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-semibold text-gray-600">Promedio General:</span>
+                        <span class="text-xl font-bold text-gray-800">{% calculate_general_average calificaciones_rows %}</span>
                     </div>
-                    <button disabled class="bg-green-500/50 text-white flex items-center gap-3 px-10 py-4 rounded-2xl font-black shadow-lg cursor-not-allowed uppercase tracking-tighter">
+                    <button onclick="exportarPDF()" class="bg-green-600 hover:bg-green-700 text-white flex items-center gap-3 px-10 py-4 rounded-2xl font-black shadow-lg uppercase tracking-tighter transition-colors cursor-pointer">
                         <i class="fas fa-file-pdf text-2xl"></i> Exportar PDF
                     </button>
                 </div>
             </div>
         </main>
     </div>
+    <!-- Preload foto para PDF -->
+    {% if perfil.foto_url %}
+    <img src="{{ perfil.foto_url }}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" aria-hidden="true">
+    {% endif %}
+    <!-- Boleta oculta para exportar PDF -->
+    <div id="boleta-pdf" style="display:none;">
+        <div style="width:100%; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
+            <!-- Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <h1 style="margin:0; font-size: 20px; font-weight: 900; color: #1a1a1a; letter-spacing: 1px;">SCHOOLTRACK</h1>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #555;">Sistema de Control Escolar</p>
+                </div>
+                <div style="text-align: center; flex: 2;">
+                    <h2 style="margin:0; font-size: 16px; font-weight: 700; color: #000;">BOLETA DE CALIFICACIONES</h2>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; color: #333;">PERIODO: <strong>{{ perfil.periodo_actual|default:"---" }}</strong></p>
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <p style="margin:0; font-size: 11px; color: #555;">FECHA: <strong id="pdf-fecha"></strong></p>
+                </div>
+            </div>
+
+            <!-- Datos del alumno -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <table style="border-collapse: collapse; font-size: 12px; width: 100%;">
+                        <tr>
+                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">MATRICULA:</td>
+                            <td style="padding: 4px 0; border-bottom: 1px solid #999; width: 100%;">{{ perfil.matricula|default:"---" }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">NOMBRE:</td>
+                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.nombre_completo|default:"---" }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">CARRERA:</td>
+                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.carrera|default:"---" }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">SEMESTRE:</td>
+                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.semestre|default:"---" }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="width: 100px; height: 120px; border: 2px solid #333; margin-left: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f9f9f9;">
+                    {% if perfil.foto_url %}
+                        <img id="foto-alumno-pdf" src="{{ perfil.foto_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    {% else %}
+                        <span style="font-size: 10px; color: #aaa; text-align: center;">SIN FOTO</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tabla de calificaciones -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 2px solid #333;">
+                <thead>
+                    <tr style="background-color: #4a4a4a;">
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: left; font-size: 10px;">CLAVE</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: left; font-size: 10px;">MATERIA</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U1</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U2</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U3</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U4</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U5</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U6</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">PROMEDIO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in calificaciones_rows %}
+                    <tr>
+                        <td style="border: 1px solid #ccc; padding: 7px 6px; font-weight: 400;">{{ row.codigo }}</td>
+                        <td style="border: 1px solid #ccc; padding: 7px 6px; font-weight: 400;">{{ row.materia }}</td>
+                        {% for unidad in row.unidades %}
+                            <td style="border: 1px solid #ccc; padding: 7px 6px; text-align: center;">{{ unidad }}</td>
+                        {% endfor %}
+                        <td style="border: 1px solid #ccc; padding: 7px 6px; text-align: center; font-weight: 700;">{{ row.promedio }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="border: 1px solid #ccc; padding: 20px; text-align: center; color: #999;">Sin calificaciones registradas</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Promedio general -->
+            <div style="margin-top: 20px; text-align: right; border-top: 2px solid #333; padding-top: 12px;">
+                <span style="font-size: 13px; font-weight: 700; color: #000;">PROMEDIO GENERAL: &nbsp;</span>
+                <span style="font-size: 16px; font-weight: 900; color: #000; border: 2px solid #333; padding: 4px 14px; border-radius: 4px;">{% calculate_general_average calificaciones_rows %}</span>
+            </div>
+
+            <!-- Footer -->
+            <div style="margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 9px; color: #888;">
+                <span>Documento generado por SchoolTrack</span>
+                <span>Este documento es informativo y no tiene validez oficial</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
@@ -270,6 +364,55 @@
             if (!sidebar || !overlay) return;
             sidebar.classList.toggle('open');
             overlay.classList.toggle('open');
+        }
+
+        function exportarPDF() {
+            const boleta = document.getElementById('boleta-pdf');
+            // Poner fecha actual
+            const hoy = new Date();
+            const fechaStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+            document.getElementById('pdf-fecha').textContent = fechaStr;
+
+            // Convertir foto a base64 antes de generar PDF
+            const fotoImg = boleta.querySelector('img');
+            const generarPDF = () => {
+                boleta.style.display = 'block';
+                const opt = {
+                    margin: [0.3, 0.3, 0.3, 0.3],
+                    filename: 'boleta_calificaciones_{{ perfil.matricula|default:"alumno" }}.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(boleta).save().then(() => {
+                    boleta.style.display = 'none';
+                });
+            };
+
+            if (fotoImg && fotoImg.src) {
+                // Precargar y convertir a base64 para que html2pdf la renderice
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    try {
+                        fotoImg.src = canvas.toDataURL('image/jpeg', 0.9);
+                    } catch(e) {
+                        // Si falla CORS, dejar la URL original
+                    }
+                    generarPDF();
+                };
+                img.onerror = function() {
+                    generarPDF();
+                };
+                img.src = fotoImg.src;
+            } else {
+                generarPDF();
+            }
         }
     </script>
 </body>
