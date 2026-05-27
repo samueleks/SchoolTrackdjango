@@ -113,6 +113,7 @@
 
             <form id="loginForm" method="POST" action="" autocomplete="off" class="space-y-5">
                 {% csrf_token %}
+                <input type="hidden" name="ajax" value="1">
 
                 <div>
                     <label class="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-0.5">Usuario Administrador <span class="text-red-500">*</span></label>
@@ -120,7 +121,7 @@
                         <span class="mr-3 text-gray-400" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
                         </span>
-                        <input type="text" id="usuario" name="usuario" placeholder="Usuario Administrador" class="input-clean" autocomplete="off">
+                        <input type="text" id="usuario" name="usuario" placeholder="Usuario Administrador" class="input-clean" autocomplete="off" readonly>
                     </div>
                 </div>
 
@@ -130,7 +131,7 @@
                         <span class="mr-3 text-gray-400" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                         </span>
-                        <input type="password" id="password" name="contrasena" placeholder="••••••••" class="input-clean" autocomplete="off">
+                        <input type="password" id="password" name="contrasena" placeholder="••••••••" class="input-clean" autocomplete="off" readonly>
                         <button type="button" onclick="togglePassword()" class="ml-2 shrink-0 text-gray-400 hover:text-[#2b63d9] outline-none rounded-lg p-1 transition-colors" aria-label="Mostrar u ocultar contraseña">
                             <svg id="eyeIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             <svg id="eyeOffIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
@@ -157,6 +158,24 @@
     </div>
 
     <script>
+        // Evitar autocompletado del navegador
+        document.addEventListener('DOMContentLoaded', function() {
+            const usuarioField = document.getElementById('usuario');
+            const passField = document.getElementById('password');
+
+            // Limpiar cualquier valor inicial
+            usuarioField.value = '';
+            passField.value = '';
+
+            // Al hacer foco, habilitar edición
+            usuarioField.addEventListener('focus', function() {
+                this.removeAttribute('readonly');
+            });
+            passField.addEventListener('focus', function() {
+                this.removeAttribute('readonly');
+            });
+        });
+
         function togglePassword() {
             const pass = document.getElementById("password");
             const eye = document.getElementById("eyeIcon");
@@ -171,6 +190,50 @@
                 eyeOff.classList.remove("hidden");
             }
         }
+
+        document.getElementById("loginForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const user = document.getElementById("usuario").value.trim();
+            const pass = document.getElementById("password").value.trim();
+            if (!user || !pass) {
+                document.getElementById("bannerValidation").classList.remove("hidden");
+                return;
+            }
+
+            // Guardar valores escritos antes de enviar
+            const usuarioEscrito = document.getElementById("usuario").value;
+            const contrasenaEscrita = document.getElementById("password").value;
+
+            // Enviar formulario vía AJAX
+            const formData = new FormData(this);
+            fetch('', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    // Restaurar valores escritos
+                    document.getElementById("usuario").value = usuarioEscrito;
+                    document.getElementById("password").value = contrasenaEscrita;
+
+                    // Mostrar error
+                    const bannerError = document.getElementById('bannerError');
+                    if (bannerError) {
+                        bannerError.querySelector('p.text-sm.text-red-700').textContent = data.error;
+                        bannerError.classList.remove('hidden');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
     </script>
 </body>
 </html>
