@@ -540,11 +540,24 @@
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest',
             },
             credentials: 'same-origin',
-        }).then(() => {
-            cerrarModalEliminar();
-            window.location.href = '{% url "gestion_carreras" %}?exito=eliminar';
+        }).then(response => response.json().then(data => ({
+            status: response.status,
+            body: data
+        }))).then(({status, body}) => {
+            if (!body.success) {
+                // Si hay error, mostrar el mensaje pero NO cerrar el modal
+                alert(body.error || 'Error al eliminar carrera');
+            } else {
+                // Éxito - cerrar modal y redirigir
+                cerrarModalEliminar();
+                window.location.href = '{% url "gestion_carreras" %}?exito=eliminar';
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            alert(error.message || 'Error al eliminar carrera. Por favor, intenta nuevamente.');
         });
     }
 

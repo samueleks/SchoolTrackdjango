@@ -140,6 +140,9 @@ STATICFILES_DIRS = [
     BASE_DIR / 'login' / 'static',
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # Configuración de caché en memoria local para mejorar rendimiento

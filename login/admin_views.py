@@ -1430,7 +1430,113 @@ def editar_usuario(request, usuario_id):
                 # Actualizar datos básicos
                 usuario.nombre = nombre
                 usuario.apellido = apellido
-                
+
+                # Manejar subida de foto (solo para alumnos y maestros)
+                if usuario.rol in ['alumno', 'maestro']:
+                    foto_archivo = request.FILES.get('foto')
+                    if foto_archivo:
+                        # Validar dimensiones de la foto
+                        from PIL import Image
+                        from io import BytesIO
+
+                        img = Image.open(foto_archivo)
+                        width, height = img.size
+
+                        # Validar dimensiones (480x640)
+                        if width != 480 or height != 640:
+                            errores_campos['foto'] = f'La foto debe tener dimensiones de 480x640 píxeles. La foto subida tiene {width}x{height} píxeles.'
+                            context = {
+                                'usuario': usuario,
+                                'datos_especificos': datos_especificos,
+                                'datos_personales': datos_personales,
+                                'carreras': Carrera.objects.order_by('nombre').all(),
+                                'direccion_data': desglosar_direccion(datos_personales.direccion if datos_personales else None),
+                                'alumno_data': {
+                                    'id_carrera_id': datos_especificos.id_carrera_id if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'semestre': datos_especificos.semestre if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'periodo_ingreso': datos_especificos.periodo_ingreso if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'estatus': datos_especificos.estatus if usuario.rol == 'alumno' and datos_especificos else 'Activo',
+                                },
+                                'maestro_data': {
+                                    'departamento': datos_especificos.departamento if usuario.rol == 'maestro' and datos_especificos else '',
+                                    'cubiculo': datos_especificos.cubiculo if usuario.rol == 'maestro' and datos_especificos else '',
+                                    'grado_academico': datos_especificos.grado_academico if usuario.rol == 'maestro' and datos_especificos else '',
+                                },
+                                'administrativo_data': {
+                                    'departamento': datos_especificos.departamento if usuario.rol == 'administrativo' and datos_especificos else '',
+                                    'puesto': datos_especificos.puesto if usuario.rol == 'administrativo' and datos_especificos else '',
+                                },
+                                'admin_data': {
+                                    'puesto': datos_especificos.puesto if usuario.rol == 'admin' and datos_especificos else '',
+                                    'nivel_prioridad': datos_especificos.nivel_prioridad if usuario.rol == 'admin' and datos_especificos else 1,
+                                },
+                                'datos_personales_data': {
+                                    'correo_inst': correo,
+                                    'telefono': telefono,
+                                    'curp': curp,
+                                    'fecha_nacimiento': fecha_nacimiento,
+                                    'genero': genero,
+                                    'direccion': direccion,
+                                },
+                                'form_data': request.POST,
+                                'errores_campos': errores_campos,
+                                'timestamp': timezone.now().timestamp(),
+                                'perfil': {
+                                    'nombre_completo': request.session.get('usuario_nombre', 'Administrador'),
+                                    'matricula': request.session.get('usuario_matricula', 'N/A')
+                                }
+                            }
+                            return render(request, 'administrador/EditarUsuario.html', context)
+
+                        # Validar tamaño máximo (5MB)
+                        if foto_archivo.size > 5 * 1024 * 1024:
+                            errores_campos['foto'] = 'La foto no puede superar los 5MB.'
+                            context = {
+                                'usuario': usuario,
+                                'datos_especificos': datos_especificos,
+                                'datos_personales': datos_personales,
+                                'carreras': Carrera.objects.order_by('nombre').all(),
+                                'direccion_data': desglosar_direccion(datos_personales.direccion if datos_personales else None),
+                                'alumno_data': {
+                                    'id_carrera_id': datos_especificos.id_carrera_id if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'semestre': datos_especificos.semestre if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'periodo_ingreso': datos_especificos.periodo_ingreso if usuario.rol == 'alumno' and datos_especificos else '',
+                                    'estatus': datos_especificos.estatus if usuario.rol == 'alumno' and datos_especificos else 'Activo',
+                                },
+                                'maestro_data': {
+                                    'departamento': datos_especificos.departamento if usuario.rol == 'maestro' and datos_especificos else '',
+                                    'cubiculo': datos_especificos.cubiculo if usuario.rol == 'maestro' and datos_especificos else '',
+                                    'grado_academico': datos_especificos.grado_academico if usuario.rol == 'maestro' and datos_especificos else '',
+                                },
+                                'administrativo_data': {
+                                    'departamento': datos_especificos.departamento if usuario.rol == 'administrativo' and datos_especificos else '',
+                                    'puesto': datos_especificos.puesto if usuario.rol == 'administrativo' and datos_especificos else '',
+                                },
+                                'admin_data': {
+                                    'puesto': datos_especificos.puesto if usuario.rol == 'admin' and datos_especificos else '',
+                                    'nivel_prioridad': datos_especificos.nivel_prioridad if usuario.rol == 'admin' and datos_especificos else 1,
+                                },
+                                'datos_personales_data': {
+                                    'correo_inst': correo,
+                                    'telefono': telefono,
+                                    'curp': curp,
+                                    'fecha_nacimiento': fecha_nacimiento,
+                                    'genero': genero,
+                                    'direccion': direccion,
+                                },
+                                'form_data': request.POST,
+                                'errores_campos': errores_campos,
+                                'timestamp': timezone.now().timestamp(),
+                                'perfil': {
+                                    'nombre_completo': request.session.get('usuario_nombre', 'Administrador'),
+                                    'matricula': request.session.get('usuario_matricula', 'N/A')
+                                }
+                            }
+                            return render(request, 'administrador/EditarUsuario.html', context)
+
+                        # Si pasa las validaciones, guardar la foto
+                        usuario.foto = foto_archivo
+
                 # Actualizar contraseña si se proporcionó
                 nueva_contrasena = request.POST.get('contrasena', '').strip()
                 if nueva_contrasena:

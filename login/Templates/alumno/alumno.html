@@ -204,10 +204,14 @@
                 <div class="space-y-8">
                     <div class="p-6 rounded-2xl">
                         <div class="flex flex-col items-center mb-6">
-                            <div class="w-32 h-32 border-2 border-dashed border-gray-400 flex items-center justify-center relative bg-gray-50 mb-2">
-                                <i class="fas fa-user text-4xl text-gray-200"></i>
-                                <span class="absolute bottom-1 text-[8px] font-bold text-gray-400 uppercase">Foto del Alumno</span>
-                            </div>
+                            {% if perfil.foto_url %}
+                                <img src="{{ perfil.foto_url }}" alt="Foto del Alumno" class="w-32 h-40 object-cover rounded-lg border-2 border-gray-300 bg-gray-50 mb-2">
+                            {% else %}
+                                <div class="w-32 h-40 border-2 border-dashed border-gray-400 flex items-center justify-center relative bg-gray-50 mb-2">
+                                    <i class="fas fa-user text-4xl text-gray-200"></i>
+                                    <span class="absolute bottom-1 text-[8px] font-bold text-gray-400 uppercase">Foto del Alumno</span>
+                                </div>
+                            {% endif %}
                         </div>
                         
                         <div class="space-y-3">

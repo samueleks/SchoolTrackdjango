@@ -886,9 +886,8 @@
                 body: data
             }))).then(({status, body}) => {
                 if (!body.success) {
-                    // Si hay error, mostrar el mensaje
+                    // Si hay error, mostrar el mensaje pero NO cerrar el modal
                     alert(body.error || 'Error al eliminar usuario');
-                    cerrarModalEliminar();
                 } else {
                     // Éxito - mostrar mensaje y redirigir
                     cerrarModalEliminar();

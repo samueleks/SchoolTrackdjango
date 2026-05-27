@@ -131,7 +131,7 @@
                 {% endfor %}
             {% endif %}
             
-            <form method="POST" action="{% url 'editar_usuario' usuario.id_usuario %}" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+            <form method="POST" action="{% url 'editar_usuario' usuario.id_usuario %}" enctype="multipart/form-data" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
                 {% csrf_token %}
                 
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información de Sistema</h3>
@@ -167,7 +167,31 @@
                 </div>
                 
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información Personal</h3>
-                
+
+                {% if usuario.rol == 'alumno' or usuario.rol == 'maestro' %}
+                <div class="mb-8">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Foto de Perfil</label>
+                    <div class="flex items-start gap-6">
+                        <div class="flex-shrink-0">
+                            {% if usuario.foto %}
+                                <img src="{{ usuario.foto.url }}" alt="Foto de perfil" class="w-32 h-40 object-cover rounded-lg border-2 border-gray-200">
+                            {% else %}
+                                <div class="w-32 h-40 bg-gray-200 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                                    <i class="fas fa-user text-gray-400 text-4xl"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <input type="file" name="foto" accept="image/*" class="w-full p-3 border-2 {% if errores_campos.foto %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                            <p class="text-xs text-gray-500 mt-2">Formato recomendado: 480x640 píxeles. Tamaño máximo: 5MB.</p>
+                            {% if errores_campos.foto %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.foto }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2" for="nombre">Nombre *</label>

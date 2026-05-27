@@ -23,6 +23,7 @@ class Usuarios(models.Model):
     rol = models.CharField(max_length=20, choices=ROL_CHOICES)
     ultimo_acceso = models.DateTimeField(null=True, blank=True)
     contrasena_temporal = models.BooleanField(default=False)
+    foto = models.ImageField(upload_to='fotos_perfil/', null=True, blank=True)
     
     # Campos de seguridad para bloqueo de cuentas
     intentos_fallidos_login = models.IntegerField(default=0)
