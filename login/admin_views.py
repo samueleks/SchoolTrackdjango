@@ -1561,6 +1561,8 @@ def editar_usuario(request, usuario_id):
 def eliminar_usuario(request, usuario_id):
     """Vista para eliminar un usuario"""
     if not sesion_roles_permitidas(request, ('admin',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No tienes permisos'}, status=403)
         return redirect('selector_rol')
     
     usuario = get_object_or_404(Usuarios, id_usuario=usuario_id)
@@ -1572,7 +1574,10 @@ def eliminar_usuario(request, usuario_id):
                 if usuario.rol == 'admin':
                     total_admins = Usuarios.objects.filter(rol='admin').count()
                     if total_admins <= 1:
-                        messages.error(request, 'No puedes eliminar al último administrador del sistema')
+                        error_msg = 'No puedes eliminar al último administrador del sistema'
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({'success': False, 'error': error_msg}, status=400)
+                        messages.error(request, error_msg)
                         return redirect('gestion_usuarios')
                 
                 # Eliminar en cascada (se eliminarán los registros relacionados)
@@ -1581,12 +1586,18 @@ def eliminar_usuario(request, usuario_id):
                 logger.info(f'Usuario eliminado: {usuario_nombre} (ID: {usuario_id}) por {admin_nombre}')
                 usuario.delete()
                 
-                messages.success(request, f'Usuario {usuario_nombre} eliminado exitosamente')
+                success_msg = f'Usuario {usuario_nombre} eliminado exitosamente'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': success_msg})
+                messages.success(request, success_msg)
                 return redirect('gestion_usuarios')
                 
         except Exception as e:
             logger.error(f'Error al eliminar usuario {usuario_id}: {str(e)}')
-            messages.error(request, f'Error al eliminar usuario: {str(e)}')
+            error_msg = f'Error al eliminar usuario: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_msg}, status=500)
+            messages.error(request, error_msg)
             return redirect('gestion_usuarios')
     
     context = {

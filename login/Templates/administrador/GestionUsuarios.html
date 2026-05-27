@@ -878,22 +878,23 @@
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
-            }).then(response => {
-                if (!response.ok) {
-                    if (response.status === 403) {
-                        throw new Error('No tienes permiso para eliminar este usuario');
-                    } else if (response.status === 404) {
-                        throw new Error('Usuario no encontrado');
-                    } else if (response.status === 500) {
-                        throw new Error('Error del servidor');
-                    } else {
-                        throw new Error('Error al eliminar usuario');
-                    }
+            }).then(response => response.json().then(data => ({
+                status: response.status,
+                body: data
+            }))).then(({status, body}) => {
+                if (!body.success) {
+                    // Si hay error, mostrar el mensaje
+                    alert(body.error || 'Error al eliminar usuario');
+                    cerrarModalEliminar();
+                } else {
+                    // Éxito - mostrar mensaje y redirigir
+                    cerrarModalEliminar();
+                    alert(body.message || 'Usuario eliminado exitosamente');
+                    window.location.href = '{% url "gestion_usuarios" %}';
                 }
-                cerrarModalEliminar();
-                window.location.href = '{% url "gestion_usuarios" %}';
             }).catch(error => {
                 console.error('Error:', error);
                 alert(error.message || 'Error al eliminar usuario. Por favor, intenta nuevamente.');
