@@ -141,4 +141,4 @@ SchoolTrackdjango/
 
 Este proyecto es para uso educativo.
 
-<!-- DEBUG temporal habilitado para diagnosticar login -->
+<!-- Tabla django_migrations borrada para recrear migraciones -->
