@@ -1901,7 +1901,7 @@ def exportar_materias_pdf(request):
         pdf.cell(25, 7, str(materia.creditos), 1, 0, 'C')
         pdf.cell(30, 7, estado, 1, 1, 'C')
     
-    pdf_content = pdf.output(dest='S').encode('latin-1')
+    pdf_content = pdf.output(dest='S')
     
     response = HttpResponse(pdf_content, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="materias.pdf"'
@@ -2114,7 +2114,7 @@ def exportar_horario_pdf(request):
     pdf.set_font('Helvetica', '', 7)
     pdf.cell(0, 4, 'Documento generado por SchoolTrack - Este documento es informativo', ln=True, align='C')
 
-    pdf_content = pdf.output(dest='S').encode('latin-1')
+    pdf_content = pdf.output(dest='S')
 
     response = HttpResponse(pdf_content, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="carga_academica_{grupo_obj.clave}_{ciclo_filtro}.pdf"'
