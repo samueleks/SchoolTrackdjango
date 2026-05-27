@@ -25,6 +25,7 @@
                 <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
             </div>
+            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
         </div>
     </header>
 
@@ -1148,6 +1149,15 @@
             }
         `;
         document.head.appendChild(style);
+    </script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (!sidebar || !overlay) return;
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
     </script>
 </body>
 </html>

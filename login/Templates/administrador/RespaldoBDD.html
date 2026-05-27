@@ -46,6 +46,7 @@
                 </div>
             </div>
             <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
         </div>
     </header>
 
@@ -260,6 +261,15 @@
             }
         });
     </script>
-
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (!sidebar || !overlay) return;
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+    </script>
+    
 </body>
 </html>

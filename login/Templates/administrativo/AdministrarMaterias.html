@@ -25,6 +25,7 @@
                 <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
             </div>
+            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
         </div>
     </header>
 
@@ -213,8 +214,17 @@
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Última actualización: {% now "Y-m-d" %}</p>
                 </div>
             </div>
-        </main>
+</main>
     </div>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (!sidebar || !overlay) return;
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+    </script>
 
     <!-- Modal Crear Materia -->
     <div id="modalCrear" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">

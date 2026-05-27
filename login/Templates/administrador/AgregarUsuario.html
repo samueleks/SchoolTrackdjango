@@ -70,6 +70,7 @@
                 </div>
             </div>
             <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
         </div>
     </header>
 
@@ -554,7 +555,16 @@
             });
 
         });
-    </script>
+</script>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (!sidebar || !overlay) return;
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    }
+</script>
 
 <!-- Modal Confirmar Agregar Usuario -->
 <div id="modalAgregar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalAgregar">

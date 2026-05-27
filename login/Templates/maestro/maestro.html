@@ -121,6 +121,16 @@
             }
         }
     </style>
+    <style>
+        /* Mobile header adjustments */
+        @media (max-width: 640px) {
+            .header-pro { height: 64px !important; padding-left: 1rem; padding-right: 1rem; }
+            .logo-custom { font-size: 1.25rem !important; }
+            .header-pro .text-xl { font-size: 0.95rem; }
+            .sidebar { top: 64px !important; height: calc(100svh - 64px) !important; z-index: 60 !important; }
+            .sidebar-overlay { top: 64px !important; z-index: 50 !important; }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
