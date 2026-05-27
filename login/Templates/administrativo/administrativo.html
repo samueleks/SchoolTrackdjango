@@ -20,6 +20,34 @@
             background-color: #e5e7eb;
             border-radius: 0.75rem;
         }
+        /* Responsive styles for mobile */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 90px;
+                height: calc(100vh - 90px);
+                width: 280px;
+                z-index: 40;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 90px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 30;
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body class="font-sans text-gray-800">
@@ -34,12 +62,14 @@
                 </div>
                 <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
+                <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
             </div>
         </div>
     </header>
 
     <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrativo' %}" class="flex items-center gap-4 p-4 sidebar-item-active font-bold text-gray-800 shadow-sm">
                     <i class="fas fa-home text-xl"></i> Panel
@@ -99,5 +129,13 @@
         </main>
     </div>
 
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+    </script>
 </body>
 </html>

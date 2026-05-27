@@ -59,6 +59,35 @@
             color: #374151 !important;
         }
 
+        /* Responsive styles for mobile */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 90px;
+                height: calc(100vh - 90px);
+                width: 280px;
+                z-index: 40;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 90px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 30;
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+        }
+
     </style>
 
 </head>
@@ -88,6 +117,7 @@
             </div>
 
             <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
+            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
 
         </div>
 
@@ -97,7 +127,8 @@
 
     <div class="flex min-h-[calc(100vh-90px)]">
 
-        <aside class="w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
             <nav class="space-y-4">
 
@@ -316,6 +347,13 @@
             }
 
         });
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
 
     </script>
 

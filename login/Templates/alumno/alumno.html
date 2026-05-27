@@ -124,6 +124,35 @@
             from { width: 100%; }
             to { width: 0%; }
         }
+
+        /* Responsive styles for mobile */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 90px;
+                height: calc(100vh - 90px);
+                width: 280px;
+                z-index: 40;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 90px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 30;
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body class="font-sans text-gray-800">
@@ -134,13 +163,14 @@
             <div class="flex items-center gap-3">
                 <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Alumno' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer"></i>
-                <i class="fas fa-bars text-2xl cursor-pointer ml-4"></i>
+                <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
             </div>
         </div>
     </header>
 
     <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="w-72 bg-gray-200/80 backdrop-blur-sm p-6 border-r border-gray-300 shadow-inner">
+        <aside class="sidebar w-72 bg-gray-200/80 backdrop-blur-sm p-6 border-r border-gray-300 shadow-inner">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'inicio_interfaces_alumnos' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
                     <i class="fas fa-user text-xl text-blue-600"></i> Mi Perfil
@@ -388,6 +418,13 @@
         {% endif %}
         {% endfor %}
         {% endif %}
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
     </script>
 </body>
 </html>
