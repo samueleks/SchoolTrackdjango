@@ -843,6 +843,8 @@ def editar_carrera(request, carrera_id):
 def eliminar_carrera(request, carrera_id):
     """Elimina una carrera"""
     if not sesion_roles_permitidas(request, ('admin',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
         return redirect('selector_rol')
 
     if request.method != 'POST':
@@ -853,19 +855,31 @@ def eliminar_carrera(request, carrera_id):
     try:
         # Validar que la carrera no tenga alumnos asociados
         if Alumnos.objects.filter(id_carrera=carrera).exists():
-            messages.error(request, f'No se puede eliminar "{carrera.nombre}" porque tiene alumnos inscritos')
+            error_msg = f'No se puede eliminar "{carrera.nombre}" porque tiene alumnos inscritos'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
             return redirect('gestion_carreras')
 
         # Validar que la carrera no tenga grupos asociados (con materias)
         if Grupo.objects.filter(id_carrera=carrera).exists():
-            messages.error(request, f'No se puede eliminar "{carrera.nombre}" porque tiene grupos/materias asignadas')
+            error_msg = f'No se puede eliminar "{carrera.nombre}" porque tiene grupos/materias asignadas'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
             return redirect('gestion_carreras')
 
         nombre = carrera.nombre
         carrera.delete()
-        messages.success(request, f'Carrera {nombre} eliminada correctamente')
+        success_msg = f'Carrera {nombre} eliminada correctamente'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
     except Exception as e:
-        messages.error(request, f'Error al eliminar carrera: {str(e)}')
+        error_msg = f'Error al eliminar carrera: {str(e)}'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
 
     return redirect('gestion_carreras')
 
