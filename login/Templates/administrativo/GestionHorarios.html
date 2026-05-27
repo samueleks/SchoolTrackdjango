@@ -550,8 +550,35 @@
                 return;
             }
             
-            const url = `{% url 'exportar_horario_pdf' %}?ciclo=${encodeURIComponent(ciclo)}&grupo=${encodeURIComponent(grupo)}`;
-            window.open(url, '_blank');
+            const horario = document.getElementById('horario-pdf');
+            // Poner fecha actual
+            const hoy = new Date();
+            const fechaStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+            document.getElementById('pdf-fecha').textContent = fechaStr;
+            
+            // Actualizar ciclo en el PDF
+            document.getElementById('pdf-ciclo').textContent = ciclo;
+            
+            // Obtener nombre del grupo
+            const grupoSelect = document.getElementById('filtro-grupo');
+            const grupoNombre = grupoSelect.options[grupoSelect.selectedIndex]?.text || grupo;
+            document.getElementById('pdf-nombre-grupo').textContent = grupoNombre;
+            
+            const generarPDF = () => {
+                horario.style.display = 'block';
+                const opt = {
+                    margin: [0.3, 0.3, 0.3, 0.3],
+                    filename: `carga_academica_${grupo}_${ciclo}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                };
+                html2pdf().set(opt).from(horario).save().then(() => {
+                    horario.style.display = 'none';
+                });
+            };
+            
+            generarPDF();
         }
 
         // Función para abrir modal de edición (fuera de DOMContentLoaded)
@@ -1165,5 +1192,118 @@
             overlay.classList.toggle('open');
         }
     </script>
+
+    <!-- Horario oculto para exportar PDF -->
+    <div id="horario-pdf" style="display:none;">
+        <div style="width:100%; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
+            <!-- Header -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <h1 style="margin:0; font-size: 20px; font-weight: 900; color: #1a1a1a; letter-spacing: 1px;">SCHOOLTRACK</h1>
+                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #555;">Sistema de Control Escolar</p>
+                </div>
+                <div style="text-align: center; flex: 2;">
+                    <h2 style="margin:0; font-size: 16px; font-weight: 700; color: #000;">CARGA ACADÉMICA</h2>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; color: #333;">PERIODO: <strong id="pdf-ciclo">{{ ciclo_filtro|default:"---" }}</strong></p>
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <p style="margin:0; font-size: 11px; color: #555;">FECHA: <strong id="pdf-fecha"></strong></p>
+                </div>
+            </div>
+
+            <!-- Datos del grupo -->
+            <div style="margin-bottom: 20px;">
+                <table style="border-collapse: collapse; font-size: 12px; width: 100%;">
+                    <tr>
+                        <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">GRUPO:</td>
+                        <td style="padding: 4px 0; border-bottom: 1px solid #999; width: 100%;">{{ grupo_filtro|default:"---" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">NOMBRE:</td>
+                        <td style="padding: 4px 0; border-bottom: 1px solid #999;" id="pdf-nombre-grupo">---</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Tabla de horarios -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 2px solid #333;">
+                <thead>
+                    <tr style="background-color: #4a4a4a;">
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">HORA</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">LUNES</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">MARTES</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">MIÉRCOLES</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">JUEVES</th>
+                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">VIERNES</th>
+                    </tr>
+                </thead>
+                <tbody id="pdf-horarios-body">
+                    {% for fila in horarios_tabla %}
+                    <tr>
+                        <td style="border: 1px solid #ccc; padding: 6px 4px; text-align: center; font-weight: 700; background-color: #f5f5f5;">{{ fila.hora }}</td>
+                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
+                            {% for segmento in fila.lunes %}
+                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
+                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
+                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
+                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
+                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
+                                </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
+                            {% for segmento in fila.martes %}
+                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
+                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
+                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
+                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
+                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
+                                </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
+                            {% for segmento in fila.miercoles %}
+                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
+                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
+                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
+                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
+                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
+                                </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
+                            {% for segmento in fila.jueves %}
+                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
+                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
+                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
+                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
+                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
+                                </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
+                            {% for segmento in fila.viernes %}
+                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
+                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
+                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
+                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
+                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
+                                </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Footer -->
+            <div style="margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 9px; color: #888;">
+                <span>Documento generado por SchoolTrack</span>
+                <span>Este documento es informativo y no tiene validez oficial</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>

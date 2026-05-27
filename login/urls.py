@@ -33,7 +33,6 @@ urlpatterns = [
     # Vistas de administrador
     path('administrativo/reportes/', views.admin_reportes, name='admin_reportes'),
     path('administrativo/horarios/', views.admin_horarios, name='admin_horarios'),
-    path('administrativo/horarios/exportar-pdf/', views.exportar_horario_pdf, name='exportar_horario_pdf'),
     path('administrativo/materias/', views.admin_materias, name='admin_materias'),
     path('administrativo/materias/exportar-pdf/', views.exportar_materias_pdf, name='exportar_materias_pdf'),
     path('administrativo/materias/crear/', views.crear_materia, name='crear_materia'),
