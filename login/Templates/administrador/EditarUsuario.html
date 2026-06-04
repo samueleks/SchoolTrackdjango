@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue/material_blue.css">
     <style>
@@ -77,11 +78,11 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
-    <header class="header-pro text-white flex justify-between items-center px-10 shadow-2xl sticky top-0 z-50">
+    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-2xl sticky top-0 z-50">
         <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
         <div class="flex items-center gap-8">
             <div class="flex items-center gap-3">
-                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
                 <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
                     <i class="fas fa-user-shield text-lg"></i>
                 </div>
@@ -91,8 +92,9 @@
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100svh-90px)]">
-        <aside class="w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+    <div class="flex layout-dashboard min-h-0">
+        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
                     <i class="fas fa-home text-xl"></i> Panel
@@ -115,12 +117,12 @@
             </nav>
         </aside>
 
-        <main class="flex-1 p-10 bg-white admin-main">
+        <main class="flex-1 dashboard-main bg-white admin-main">
             <div class="flex items-center gap-4 mb-8">
                 <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
-                <h2 class="text-4xl font-bold text-gray-700">Editar Usuario</h2>
+                <h2 class="page-title text-4xl font-bold text-gray-700">Editar Usuario</h2>
             </div>
             
             {% if messages %}
@@ -545,14 +547,7 @@
         });
     </script>
     <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            if (!sidebar || !overlay) return;
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
-    </script>
+</script>
 
 <!-- Modal Confirmar Guardar Cambios -->
 <div id="modalGuardar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalGuardar">

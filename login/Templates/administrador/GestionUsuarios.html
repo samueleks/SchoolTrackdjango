@@ -7,6 +7,7 @@
     <title>SchoolTrack - Gestionar Usuarios</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
     <style>
         .header-pro {
             background-color: #2b63d9 !important;
@@ -175,11 +176,11 @@
         });
     </script>
 
-    <header class="header-pro text-white flex justify-between items-center px-10 sticky top-0 z-50">
+    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 sticky top-0 z-50">
         <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
         <div class="flex items-center gap-8">
             <div class="flex items-center gap-3">
-                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
                 <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
                     <i class="fas fa-user-shield text-lg"></i>
                 </div>
@@ -189,8 +190,9 @@
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner bg-gradient-to-b from-gray-200 to-gray-300">
+    <div class="flex layout-dashboard min-h-0">
+        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
                     <i class="fas fa-home text-xl"></i> Panel
@@ -213,10 +215,10 @@
             </nav>
         </aside>
 
-        <main class="flex-1 p-10 bg-white admin-main">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-4xl font-bold text-gray-700">Gestionar Usuarios</h2>
-                <div class="flex gap-3">
+        <main class="flex-1 dashboard-main bg-white admin-main">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+                <h2 class="page-title text-4xl font-bold text-gray-700">Gestionar Usuarios</h2>
+                <div class="flex flex-wrap gap-3 btn-stack-mobile">
                     <a href="{% url 'exportar_usuarios' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
                         <i class="fas fa-file-excel mr-2"></i> Exportar Excel
                     </a>
@@ -265,11 +267,11 @@
             <div id="resultadoUsuarios">
                 {% if usuarios and usuarios|length > 0 %}
                 <!-- Vista de Tabla -->
-                <div id="vistaTabla" class="table-container show bg-white mt-6 border border-gray-200 rounded-md overflow-hidden">
+                <div id="vistaTabla" class="table-container table-scroll show bg-white mt-6 border border-gray-200 rounded-md overflow-hidden">
                     <table id="tablaUsuarios" class="w-full text-left border-collapse">
                         <thead class="bg-[#f8fafc] text-gray-700">
                             <tr class="text-[11px] font-semibold uppercase tracking-wider">
-                                <th class="p-4 text-center border-b border-gray-200">ID</th>
+                                <th class="p-4 text-center border-b border-gray-200 col-hide-mobile">ID</th>
                                 <th class="p-4 text-center border-b border-gray-200">Matrícula</th>
                                 <th class="p-4 text-center border-b border-gray-200">Nombre</th>
                                 <th class="p-4 text-center border-b border-gray-200">Perfil</th>
@@ -280,7 +282,7 @@
                         <tbody class="divide-y divide-gray-200">
                             {% for usuario in usuarios %}
                             <tr class="hover:bg-gray-50 transition text-sm table-row-hover">
-                                <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.id_usuario|default:'-' }}</td>
+                                <td class="p-4 text-black text-center border-b border-gray-100 col-hide-mobile">{{ usuario.id_usuario|default:'-' }}</td>
                                 <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.matricula|default:'-' }}</td>
                                 <td class="p-4 text-black text-center border-b border-gray-100">{{ usuario.nombre|default:'-' }} {{ usuario.apellido|default:'-' }}</td>
                                 <td class="p-4 text-black text-center uppercase border-b border-gray-100">{{ usuario.rol|default:'-' }}</td>
@@ -997,13 +999,6 @@
 </div>
 
 <script>
-    function toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const overlay = document.querySelector('.sidebar-overlay');
-        if (!sidebar || !overlay) return;
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('open');
-    }
 </script>
 
 </body>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 
+{% load static %}
 <html lang="es">
 
 <head>
@@ -13,6 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
 
     <style>
 
@@ -38,7 +40,7 @@
 
 
 
-    <header class="header-pro text-white flex justify-between items-center px-10 shadow-lg sticky top-0 z-50">
+    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
 
         <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
 
@@ -47,7 +49,7 @@
                 <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
                     <i class="fas fa-user-tie text-xl"></i>
                 </div>
-                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
+                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
             </div>
             <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
@@ -56,9 +58,9 @@
 
 
 
-    <div class="flex min-h-[calc(100svh-90px)]">
+    <div class="flex layout-dashboard min-h-0">
 
-        <aside class="w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 sidebar">
+        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
             <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
             <nav class="space-y-4">
@@ -103,7 +105,7 @@
 
 
 
-        <main class="flex-1 p-8 bg-white overflow-y-auto">
+        <main class="flex-1 dashboard-main bg-white overflow-y-auto">
 
             <div class="max-w-6xl mx-auto">
 
@@ -181,7 +183,7 @@
 
 
 
-                <div class="table-container bg-white shadow-2xl">
+                <div class="table-container table-scroll bg-white shadow-2xl">
 
                     <table class="w-full text-left border-collapse">
 
@@ -291,13 +293,6 @@
 
 
     <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            if (!sidebar || !overlay) return;
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
-    </script>
+</script>
 </body>
 </html>

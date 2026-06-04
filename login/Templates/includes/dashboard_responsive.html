@@ -1,0 +1,27 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/dashboard-responsive.css' %}">
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+    document.body.classList.toggle('sidebar-open', sidebar.classList.contains('open'));
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sidebar a').forEach(function(link) {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 1024) {
+                const sidebar = document.querySelector('.sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('open');
+                    document.body.classList.remove('sidebar-open');
+                }
+            }
+        });
+    });
+});
+</script>

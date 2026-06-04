@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +7,7 @@
     <title>SchoolTrack - Registro de Asistencias</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
     <style>
         .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
         .logo-custom { font-size: 2.5rem !important; font-weight: 800; }
@@ -44,19 +46,20 @@
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
-    <header class="header-pro text-white flex justify-between items-center px-10 shadow-lg sticky top-0 z-50">
+    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
         <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
         <div class="flex items-center gap-6">
             <div class="flex items-center gap-3">
-                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
+                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer"></i>
                 <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
             </div>
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100svh-90px)]">
-        <aside class="w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+    <div class="flex layout-dashboard min-h-0">
+        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_maestro' %}" class="nav-item text-gray-700">
                     <i class="fas fa-user text-xl"></i> Mi Perfil
@@ -78,7 +81,7 @@
             </nav>
         </aside>
 
-        <main class="flex-1 p-8 overflow-y-auto">
+        <main class="flex-1 dashboard-main overflow-y-auto">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-8">
                     <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Pase de Lista</h2>
@@ -719,14 +722,6 @@
                 cargarDatos(false);
             }
         });
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            if (!sidebar || !overlay) return;
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
-    </script>
+</script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +7,7 @@
     <title>SchoolTrack - Panel Administrativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
     <style>
         .header-pro {
             background-color: #2b63d9 !important;
@@ -26,47 +28,11 @@
         .sidebar-item-active, .sidebar-item-active i {
             color: #2563eb !important;
         }
-        /* Responsive styles for mobile */
-        @media (max-width: 1024px) {
-            .sidebar {
-                position: fixed;
-                left: -100%;
-                top: 90px;
-                height: calc(100vh - 90px);
-                width: min(280px, 80%);
-                z-index: 40;
-                transition: left 0.3s ease;
-            }
-            .sidebar.open {
-                left: 0;
-            }
-            .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 90px;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 30;
-            }
-            .sidebar-overlay.open {
-                display: block;
-            }
-        }
-    </style>
-    <style>
-        @media (max-width: 640px) {
-            .header-pro { height: 64px !important; padding-left: 1rem; padding-right: 1rem; }
-            .logo-custom { font-size: 1.25rem !important; }
-            .sidebar { top: 64px !important; height: calc(100svh - 64px) !important; z-index: 60 !important; }
-            .sidebar-overlay { top: 64px !important; z-index: 50 !important; }
-        }
-    </style>
+</style>
 </head>
 <body class="font-sans text-gray-800">
 
-    <header class="header-pro text-white flex justify-between items-center px-10 shadow-lg sticky top-0 z-50">
+    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
         <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
         
         <div class="flex items-center gap-6">
@@ -74,16 +40,16 @@
                 <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
                     <i class="fas fa-user-tie text-xl"></i>
                 </div>
-                <span class="text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
+                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
                 <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
                 <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
             </div>
         </div>
     </header>
 
-    <div class="flex min-h-[calc(100vh-90px)]">
-        <aside class="sidebar w-full lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="flex layout-dashboard min-h-0">
+        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
+            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrativo' %}" class="flex items-center gap-4 p-4 sidebar-item-active font-bold text-gray-800 shadow-sm">
                     <i class="fas fa-home text-xl"></i> Panel
@@ -144,12 +110,6 @@
     </div>
 
     <script>
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-        }
-    </script>
+</script>
 </body>
 </html>
