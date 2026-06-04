@@ -1,56 +1,10 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/dashboard-responsive.css' %}">
 <script>
-function closeSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    sidebar.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.classList.remove('sidebar-open');
-    overlay.setAttribute('aria-hidden', 'true');
-}
-
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    if (!sidebar || !overlay) return;
-    const willOpen = !sidebar.classList.contains('open');
-    sidebar.classList.toggle('open', willOpen);
-    overlay.classList.toggle('open', willOpen);
-    document.body.classList.toggle('sidebar-open', willOpen);
-    overlay.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
-}
-
+/* Layout SIE: barra fija en móvil; sin drawer ni overlay */
 document.addEventListener('DOMContentLoaded', function() {
-    const layout = document.querySelector('.layout-dashboard');
-    const overlay = document.querySelector('.sidebar-overlay');
-    const sidebar = document.querySelector('.sidebar');
-
-    /* Overlay fuera del aside: evita que position:fixed bloquee clics al contenido */
-    if (layout && overlay && sidebar && overlay.parentElement === sidebar) {
-        layout.insertBefore(overlay, sidebar);
-    }
-
-    if (overlay) {
-        overlay.setAttribute('aria-hidden', 'true');
-        overlay.addEventListener('click', closeSidebar);
-    }
-
-    document.querySelectorAll('.sidebar a').forEach(function(link) {
-        link.addEventListener('click', function() {
-            if (window.innerWidth < 1024) {
-                closeSidebar();
-            }
-        });
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeSidebar();
-    });
-
-    window.addEventListener('resize', function() {
-        if (window.innerWidth >= 1024) closeSidebar();
+    document.querySelectorAll('.sidebar-overlay').forEach(function(el) {
+        el.remove();
     });
 });
 </script>
