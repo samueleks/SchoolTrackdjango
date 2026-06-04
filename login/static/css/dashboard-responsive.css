@@ -1,22 +1,31 @@
 /**
  * SchoolTrack — layout responsive compartido (dashboards)
+ * Capas: header (100) > sidebar abierto (70) > overlay (60) > contenido (1)
  */
 
 .header-pro {
     height: 90px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .layout-dashboard {
     display: flex;
+    flex-direction: row;
     width: 100%;
     min-height: calc(100svh - 90px);
+    position: relative;
 }
 
 .dashboard-main {
     flex: 1 1 0%;
     min-width: 0;
+    width: 100%;
     padding: 1rem;
     overflow-x: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 .page-title {
@@ -38,6 +47,14 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    z-index: 101;
+    cursor: pointer;
+}
+
+/* Overlay: hermano del sidebar, NO bloquea clics cuando está cerrado */
+.sidebar-overlay {
+    display: none;
 }
 
 /* Tablas: scroll horizontal sin romper la página */
@@ -55,55 +72,82 @@
 
 /* Sidebar drawer — tablet y móvil */
 @media (max-width: 1023px) {
+    .layout-dashboard {
+        flex-direction: row;
+    }
+
+    /* Sidebar fuera del flujo: el main ocupa todo el ancho */
     .sidebar {
         position: fixed !important;
-        left: -100% !important;
         top: 90px;
+        left: 0;
         height: calc(100svh - 90px) !important;
         width: min(280px, 85vw) !important;
         max-width: 85vw;
-        z-index: 60;
-        transition: left 0.3s ease;
+        z-index: 70;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
         overflow-y: auto;
+        pointer-events: none;
+        visibility: hidden;
     }
 
     .sidebar.open {
-        left: 0 !important;
+        transform: translateX(0);
+        pointer-events: auto;
+        visibility: visible;
     }
 
     .sidebar-overlay {
-        display: none;
+        display: block;
         position: fixed;
         top: 90px;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 50;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 60;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.25s ease, visibility 0.25s ease;
     }
 
     .sidebar-overlay.open {
-        display: block;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 
     body.sidebar-open {
         overflow: hidden;
     }
+
+    .dashboard-main {
+        flex: 1 1 100%;
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
-/* Escritorio: sidebar visible, sin hamburguesa */
+/* Escritorio: sidebar en flujo, sin overlay ni hamburguesa */
 @media (min-width: 1024px) {
     .sidebar {
         position: relative !important;
-        left: auto !important;
         top: auto !important;
+        left: auto !important;
+        transform: none !important;
         height: auto !important;
         flex-shrink: 0;
         width: 18rem;
+        pointer-events: auto !important;
+        visibility: visible !important;
+        z-index: auto;
     }
 
     .sidebar-overlay {
         display: none !important;
+        pointer-events: none !important;
     }
 
     #menuToggle {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 {% load static %}
 <html lang="es">
 <head>
@@ -39,7 +39,7 @@
 
     <div class="flex layout-dashboard min-h-0">
         <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_administrativo' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
                     <i class="fas fa-home text-xl"></i> Panel

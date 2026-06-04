@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 {% load static %}
 <html lang="es">
 <head>
@@ -94,15 +94,8 @@
             color: rgba(255, 255, 255, 0.8);
             margin-left: 12px;
         }
-</style>
-    <style>
-        /* Mobile header adjustments */
         @media (max-width: 640px) {
-            .header-pro { height: 64px !important; padding-left: 1rem; padding-right: 1rem; }
-            .logo-custom { font-size: 1.25rem !important; }
             .header-pro .text-xl { font-size: 0.95rem; }
-            .sidebar { top: 64px !important; height: calc(100svh - 64px) !important; z-index: 60 !important; }
-            .sidebar-overlay { top: 64px !important; z-index: 50 !important; }
         }
     </style>
 </head>
@@ -122,7 +115,7 @@
 
     <div class="flex layout-dashboard min-h-0">
         <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
             <nav class="space-y-4">
                 <a href="{% url 'dashboard_maestro' %}" class="nav-item nav-item-active text-gray-700">
                     <i class="fas fa-user text-xl"></i> Mi Perfil

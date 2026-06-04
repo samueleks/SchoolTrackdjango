@@ -1,27 +1,56 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'css/dashboard-responsive.css' %}">
 <script>
+function closeSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+    overlay.setAttribute('aria-hidden', 'true');
+}
+
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
     if (!sidebar || !overlay) return;
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('open');
-    document.body.classList.toggle('sidebar-open', sidebar.classList.contains('open'));
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    overlay.classList.toggle('open', willOpen);
+    document.body.classList.toggle('sidebar-open', willOpen);
+    overlay.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
 }
+
 document.addEventListener('DOMContentLoaded', function() {
+    const layout = document.querySelector('.layout-dashboard');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const sidebar = document.querySelector('.sidebar');
+
+    /* Overlay fuera del aside: evita que position:fixed bloquee clics al contenido */
+    if (layout && overlay && sidebar && overlay.parentElement === sidebar) {
+        layout.insertBefore(overlay, sidebar);
+    }
+
+    if (overlay) {
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.addEventListener('click', closeSidebar);
+    }
+
     document.querySelectorAll('.sidebar a').forEach(function(link) {
         link.addEventListener('click', function() {
             if (window.innerWidth < 1024) {
-                const sidebar = document.querySelector('.sidebar');
-                const overlay = document.querySelector('.sidebar-overlay');
-                if (sidebar && sidebar.classList.contains('open')) {
-                    sidebar.classList.remove('open');
-                    overlay.classList.remove('open');
-                    document.body.classList.remove('sidebar-open');
-                }
+                closeSidebar();
             }
         });
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSidebar();
+    });
+
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 1024) closeSidebar();
     });
 });
 </script>

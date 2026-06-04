@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 {% load static %}
 <html lang="es">
 <head>
@@ -143,7 +143,7 @@
 
     <div class="flex layout-dashboard min-h-0">
         <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
             <nav class="space-y-4">
                 <a href="{% url 'inicio_interfaces_alumnos' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
                     <i class="fas fa-user text-xl text-blue-600"></i> Mi Perfil
