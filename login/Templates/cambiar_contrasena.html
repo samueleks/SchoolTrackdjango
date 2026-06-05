@@ -92,7 +92,20 @@
                 </div>
             </div>
 
-            {% if error_msg %}
+            {% if errores_lista %}
+            <div class="mb-5 bg-red-50 border border-red-200 rounded-xl p-4" role="alert">
+                <div class="flex gap-3 items-start">
+                    <div class="flex-shrink-0 w-9 h-9 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <ul class="text-sm font-medium text-red-700 list-disc pl-4 space-y-1">
+                        {% for err in errores_lista %}
+                        <li>{{ err }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% elif error_msg %}
             <div class="mb-5 bg-red-50 border border-red-200 rounded-xl p-4" role="alert">
                 <div class="flex items-center gap-3">
                     <div class="flex-shrink-0 w-9 h-9 bg-red-100 rounded-full flex items-center justify-center">
@@ -112,7 +125,7 @@
                         <span class="mr-3 text-gray-400" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                         </span>
-                        <input type="password" id="nueva_contrasena" name="nueva_contrasena" placeholder="Mínimo 8 caracteres" class="input-clean" autocomplete="new-password" required>
+                        <input type="password" id="nueva_contrasena" name="nueva_contrasena" placeholder="Mínimo {{ min_longitud_contrasena }} caracteres" class="input-clean" autocomplete="new-password" minlength="{{ min_longitud_contrasena }}" maxlength="128" required>
                         <button type="button" onclick="togglePassword('nueva_contrasena', 'eye1', 'eyeOff1')" class="ml-2 shrink-0 text-gray-400 hover:text-[#2b63d9] outline-none rounded-lg p-1 transition-colors" aria-label="Mostrar u ocultar contraseña">
                             <svg id="eye1" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             <svg id="eyeOff1" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
@@ -126,7 +139,7 @@
                         <span class="mr-3 text-gray-400" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                         </span>
-                        <input type="password" id="confirmar_contrasena" name="confirmar_contrasena" placeholder="Repite la contraseña" class="input-clean" autocomplete="new-password" required>
+                        <input type="password" id="confirmar_contrasena" name="confirmar_contrasena" placeholder="Repite la contraseña" class="input-clean" autocomplete="new-password" minlength="{{ min_longitud_contrasena }}" maxlength="128" required>
                         <button type="button" onclick="togglePassword('confirmar_contrasena', 'eye2', 'eyeOff2')" class="ml-2 shrink-0 text-gray-400 hover:text-[#2b63d9] outline-none rounded-lg p-1 transition-colors" aria-label="Mostrar u ocultar contraseña">
                             <svg id="eye2" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             <svg id="eyeOff2" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
@@ -134,9 +147,30 @@
                     </div>
                 </div>
 
-                <div id="matchIndicator" class="hidden text-xs font-bold ml-1 mt-1"></div>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                    <p class="text-[11px] font-black text-gray-500 uppercase tracking-widest">Requisitos de seguridad</p>
+                    <ul class="space-y-1.5 text-xs font-semibold" id="passwordRules">
+                        <li id="rule-length" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Mínimo {{ min_longitud_contrasena }} caracteres</li>
+                        <li id="rule-upper" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Una letra mayúscula</li>
+                        <li id="rule-lower" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Una letra minúscula</li>
+                        <li id="rule-digit" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Un número</li>
+                        <li id="rule-symbol" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Un símbolo (!@#$%&amp;*+-=?)</li>
+                        <li id="rule-personal" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Sin nombre, apellido ni matrícula</li>
+                        <li id="rule-common" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> No usar contraseñas comunes</li>
+                        <li id="rule-match" class="text-gray-400 flex items-center gap-2"><span class="rule-icon">○</span> Las contraseñas coinciden</li>
+                    </ul>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Fortaleza</span>
+                            <span id="strengthLabel" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">—</span>
+                        </div>
+                        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="strengthBar" class="h-full w-0 rounded-full transition-all duration-300 bg-gray-300"></div>
+                        </div>
+                    </div>
+                </div>
 
-                <button type="submit" id="btnSubmit" class="btn-primary-login w-full text-white font-black py-3.5 sm:py-4 rounded-xl text-base sm:text-lg shadow-lg tracking-[0.15em] mt-2">
+                <button type="submit" id="btnSubmit" disabled class="btn-primary-login w-full text-white font-black py-3.5 sm:py-4 rounded-xl text-base sm:text-lg shadow-lg tracking-[0.15em] mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#2b63d9] disabled:shadow-none disabled:transform-none">
                     GUARDAR CONTRASEÑA
                 </button>
             </form>
@@ -171,28 +205,119 @@
             }
         }
 
-        // Validación en tiempo real de coincidencia
+        const MIN_LENGTH = {{ min_longitud_contrasena }};
+        const SIMBOLOS_SEGUROS = '!@#$%&*+-=?';
+        const CONTRASENAS_COMUNES = new Set([
+            'password', 'password123', 'password1234', '12345678', '123456789',
+            '1234567890', 'qwerty123', 'qwertyuiop', 'admin123', 'admin1234',
+            'schooltrack', 'contrasena', 'letmein', 'welcome123', 'iloveyou',
+            'abc12345', 'changeme', 'temporal123'
+        ]);
+        const USER_FRAGMENTS = [
+            '{{ usuario.nombre|escapejs }}',
+            '{{ usuario.apellido|escapejs }}',
+            '{{ usuario.matricula|escapejs }}'
+        ].map(f => f.trim().toLowerCase()).filter(f => f.length >= 3);
+
         const nueva = document.getElementById('nueva_contrasena');
         const confirmar = document.getElementById('confirmar_contrasena');
-        const indicator = document.getElementById('matchIndicator');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthLabel = document.getElementById('strengthLabel');
 
-        function checkMatch() {
-            if (!confirmar.value) {
-                indicator.classList.add('hidden');
-                return;
-            }
-            indicator.classList.remove('hidden');
-            if (nueva.value === confirmar.value) {
-                indicator.textContent = '✓ Las contraseñas coinciden';
-                indicator.className = 'text-xs font-bold ml-1 mt-1 text-green-600';
-            } else {
-                indicator.textContent = '✗ Las contraseñas no coinciden';
-                indicator.className = 'text-xs font-bold ml-1 mt-1 text-red-500';
-            }
+        function setRule(id, ok) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = ok
+                ? 'text-green-600 flex items-center gap-2'
+                : 'text-gray-400 flex items-center gap-2';
+            el.querySelector('.rule-icon').textContent = ok ? '✓' : '○';
         }
 
-        nueva.addEventListener('input', checkMatch);
-        confirmar.addEventListener('input', checkMatch);
+        function tieneSimboloSeguro(value) {
+            return [...value].some(ch => SIMBOLOS_SEGUROS.includes(ch));
+        }
+
+        function contieneDatosPersonales(value) {
+            const lower = value.toLowerCase();
+            return USER_FRAGMENTS.some(fragmento => lower.includes(fragmento));
+        }
+
+        function evaluarContrasena() {
+            const value = nueva.value;
+            const confirmValue = confirmar.value;
+
+            const rules = {
+                length: value.length >= MIN_LENGTH,
+                upper: /[A-Z]/.test(value),
+                lower: /[a-z]/.test(value),
+                digit: /\d/.test(value),
+                symbol: tieneSimboloSeguro(value),
+                personal: value.length === 0 || !contieneDatosPersonales(value),
+                common: value.length === 0 || !CONTRASENAS_COMUNES.has(value.toLowerCase()),
+                match: value.length > 0 && confirmValue.length > 0 && value === confirmValue,
+            };
+
+            setRule('rule-length', rules.length);
+            setRule('rule-upper', rules.upper);
+            setRule('rule-lower', rules.lower);
+            setRule('rule-digit', rules.digit);
+            setRule('rule-symbol', rules.symbol);
+            setRule('rule-personal', rules.personal);
+            setRule('rule-common', rules.common);
+            setRule('rule-match', rules.match);
+
+            const score = [
+                rules.length,
+                rules.upper,
+                rules.lower,
+                rules.digit,
+                rules.symbol,
+                rules.personal,
+                rules.common,
+            ].filter(Boolean).length;
+
+            let label = '—';
+            let width = '0%';
+            let color = 'bg-gray-300';
+            if (value.length > 0) {
+                if (score <= 2) {
+                    label = 'Débil';
+                    width = '33%';
+                    color = 'bg-red-500';
+                } else if (score <= 4) {
+                    label = 'Media';
+                    width = '66%';
+                    color = 'bg-amber-500';
+                } else if (!rules.match) {
+                    label = 'Fuerte';
+                    width = '90%';
+                    color = 'bg-green-500';
+                } else {
+                    label = 'Lista';
+                    width = '100%';
+                    color = 'bg-green-600';
+                }
+            }
+
+            strengthBar.className = `h-full rounded-full transition-all duration-300 ${color}`;
+            strengthBar.style.width = width;
+            strengthLabel.textContent = label;
+            strengthLabel.className = `text-[10px] font-bold uppercase tracking-wider ${
+                label === 'Débil' ? 'text-red-500' :
+                label === 'Media' ? 'text-amber-500' :
+                label === 'Lista' || label === 'Fuerte' ? 'text-green-600' : 'text-gray-400'
+            }`;
+
+            const valida = rules.length && rules.upper && rules.lower && rules.digit &&
+                rules.symbol && rules.personal && rules.common && rules.match;
+
+            btnSubmit.disabled = !valida;
+        }
+
+        nueva.addEventListener('input', evaluarContrasena);
+        confirmar.addEventListener('input', evaluarContrasena);
+        evaluarContrasena();
     </script>
 </body>
 </html>

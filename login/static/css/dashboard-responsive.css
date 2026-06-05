@@ -96,9 +96,9 @@ body {
         overflow-x: hidden;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%) !important;
-        border-right: 2px solid #1e3a8a !important;
-        box-shadow: 2px 0 8px rgba(30, 64, 175, 0.25);
+        background-color: #e5e7eb !important;
+        border-right: 1px solid #d1d5db !important;
+        box-shadow: none;
     }
 
     .sidebar nav {
@@ -124,7 +124,7 @@ body {
         line-height: 1.05 !important;
         text-align: center !important;
         text-decoration: none !important;
-        color: #dbeafe !important;
+        color: #374151 !important;
         word-break: break-word;
         hyphens: auto;
         transition: background-color 0.2s ease, color 0.2s ease;
@@ -135,39 +135,47 @@ body {
         font-size: 1.15rem !important;
         width: auto !important;
         margin: 0 !important;
-        color: #93c5fd !important;
+        color: #4b5563 !important;
         flex-shrink: 0;
     }
 
     .sidebar .nav-item:hover,
     .sidebar nav a:hover {
-        background-color: rgba(255, 255, 255, 0.12) !important;
-        color: #fff !important;
+        background-color: #d1d5db !important;
+        color: #374151 !important;
     }
 
     .sidebar .nav-item-active,
     .sidebar nav a.sidebar-item-active,
     .sidebar .nav-item.nav-item-active {
-        background-color: rgba(255, 255, 255, 0.22) !important;
-        color: #fff !important;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+        background-color: #d1d5db !important;
+        color: #2563eb !important;
+        box-shadow: none;
     }
 
     .sidebar .nav-item-active i,
     .sidebar nav a.sidebar-item-active i,
-    .sidebar .nav-item.nav-item-active i {
-        color: #fff !important;
+    .sidebar .nav-item.nav-item-active i,
+    .sidebar .nav-item i.text-blue-600,
+    .sidebar nav a i.text-blue-600 {
+        color: #2563eb !important;
     }
 
     .sidebar .nav-item.text-red-600,
     .sidebar nav a.text-red-600 {
-        color: #fecaca !important;
+        color: #dc2626 !important;
         margin-top: 0.5rem !important;
+    }
+
+    .sidebar .nav-item.text-red-600:hover,
+    .sidebar nav a.text-red-600:hover {
+        background-color: #fee2e2 !important;
+        color: #dc2626 !important;
     }
 
     .sidebar .nav-item.text-red-600 i,
     .sidebar nav a.text-red-600 i {
-        color: #f87171 !important;
+        color: #dc2626 !important;
     }
 
     .sidebar .mt-20,
@@ -448,5 +456,148 @@ body {
     .dashboard-main h3.flex.items-center .ml-auto a {
         width: 100%;
         justify-content: center;
+    }
+
+    /* Paginación: info arriba, botones abajo con wrap */
+    .dashboard-main .pagination-usuarios,
+    .dashboard-main .flex.justify-between.items-center.mt-4.px-2 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.65rem !important;
+        min-width: 0;
+    }
+
+    .dashboard-main .pagination-usuarios > div:first-child,
+    .dashboard-main .flex.justify-between.items-center.mt-4.px-2 > span,
+    .dashboard-main .flex.justify-between.items-center.mt-4.px-2 > #infoPaginacion {
+        text-align: center;
+        font-size: 0.7rem !important;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .dashboard-main .pagination-usuarios > .flex.items-center,
+    .dashboard-main .pagination-usuarios > .flex.items-center.gap-2,
+    .dashboard-main .flex.justify-between.items-center.mt-4.px-2 > .flex.gap-2 {
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 0.35rem !important;
+    }
+
+    .dashboard-main .pagination-usuarios a,
+    .dashboard-main .pagination-usuarios span,
+    .dashboard-main .flex.justify-between.items-center.mt-4.px-2 button,
+    .dashboard-main #numerosPagina button {
+        padding: 0.45rem 0.6rem !important;
+        font-size: 0.68rem !important;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Promedio general + exportar PDF (calificaciones alumno) */
+    .dashboard-main .mt-6.flex.justify-between.items-center.pt-4 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 1rem !important;
+        padding-top: 1rem !important;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .dashboard-main .mt-6.flex.justify-between.items-center.pt-4 > div {
+        justify-content: center !important;
+        text-align: center;
+        width: 100%;
+    }
+
+    .dashboard-main .mt-6.flex.justify-between.items-center.pt-4 button {
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-content: center !important;
+        padding: 0.85rem 1rem !important;
+        font-size: 0.75rem !important;
+        border-radius: 0.85rem !important;
+    }
+
+    .dashboard-main .mt-6.flex.justify-between.items-center.pt-4 button i {
+        font-size: 1.1rem !important;
+    }
+
+    /* Foto de perfil: imagen arriba, selector abajo */
+    .dashboard-main .flex.items-start.gap-6 {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.85rem !important;
+    }
+
+    .dashboard-main .flex.items-start.gap-6 > .flex-shrink-0,
+    .dashboard-main .flex.items-start.gap-6 > .flex-1 {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .dashboard-main input[type="file"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+        font-size: 0.75rem !important;
+        padding: 0.55rem !important;
+        overflow: hidden;
+    }
+
+    .dashboard-main input[type="file"]::file-selector-button {
+        margin-right: 0.5rem;
+        padding: 0.4rem 0.65rem;
+        font-size: 0.7rem;
+        max-width: 9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Tarjetas y formularios menos apretados */
+    .dashboard-main .card-soft.p-6,
+    .dashboard-main .card-soft.p-8,
+    .dashboard-main .section-crema.p-10,
+    .dashboard-main .bg-white.p-10 {
+        padding: 1rem !important;
+    }
+
+    .dashboard-main .card-soft .grid .flex.gap-3,
+    .dashboard-main .card-soft .flex.gap-3 {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.5rem !important;
+    }
+
+    .dashboard-main .card-soft .flex.gap-3 > button,
+    .dashboard-main .card-soft .grid .flex.gap-3 > button {
+        width: 100% !important;
+        flex: none !important;
+    }
+
+    .dashboard-main select,
+    .dashboard-main .card-soft select {
+        font-size: 0.82rem !important;
+        padding: 0.65rem 2rem 0.65rem 0.65rem !important;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .dashboard-main tbody td,
+    .dashboard-main tbody th {
+        padding: 0.55rem 0.45rem !important;
+        font-size: 0.78rem !important;
+        line-height: 1.35 !important;
+        word-break: break-word;
+    }
+
+    .dashboard-main .table-head th {
+        padding: 0.55rem 0.4rem !important;
+        font-size: 0.68rem !important;
     }
 }

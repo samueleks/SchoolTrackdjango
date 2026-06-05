@@ -20,6 +20,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from fpdf import FPDF
 
+from .password_utils import LONGITUD_MINIMA_USUARIO, validar_contrasena_usuario
 from .models import (
     Usuarios,
     Alumnos,
@@ -271,39 +272,42 @@ def cambiar_contrasena_temporal(request):
         return redirect(dashboards.get(rol, 'selector_rol'))
     
     error_msg = None
+    errores_lista = None
     
     if request.method == 'POST':
         nueva_contrasena = request.POST.get('nueva_contrasena', '').strip()
         confirmar_contrasena = request.POST.get('confirmar_contrasena', '').strip()
         
-        # Validaciones
         if not nueva_contrasena or not confirmar_contrasena:
             error_msg = 'Debes completar ambos campos.'
-        elif len(nueva_contrasena) < 8:
-            error_msg = 'La contraseña debe tener al menos 8 caracteres.'
         elif nueva_contrasena != confirmar_contrasena:
             error_msg = 'Las contraseñas no coinciden.'
         else:
-            # Guardar nueva contraseña y desactivar flag temporal
-            usuario.contrasena = nueva_contrasena
-            usuario.contrasena_temporal = False
-            usuario.save()
-            
-            messages.success(request, '¡Contraseña actualizada exitosamente! Ya puedes acceder al sistema.')
-            
-            # Redirigir al dashboard correspondiente
-            rol = request.session.get('usuario_rol')
-            dashboards = {
-                'alumno': 'dashboard_alumno',
-                'maestro': 'dashboard_maestro',
-                'administrativo': 'dashboard_administrativo',
-                'admin': 'dashboard_administrador',
-            }
-            return redirect(dashboards.get(rol, 'selector_rol'))
+            valida, errores = validar_contrasena_usuario(nueva_contrasena, usuario)
+            if not valida:
+                errores_lista = errores
+                error_msg = errores[0]
+            else:
+                usuario.contrasena = nueva_contrasena
+                usuario.contrasena_temporal = False
+                usuario.save()
+                
+                messages.success(request, '¡Contraseña actualizada exitosamente! Ya puedes acceder al sistema.')
+                
+                rol = request.session.get('usuario_rol')
+                dashboards = {
+                    'alumno': 'dashboard_alumno',
+                    'maestro': 'dashboard_maestro',
+                    'administrativo': 'dashboard_administrativo',
+                    'admin': 'dashboard_administrador',
+                }
+                return redirect(dashboards.get(rol, 'selector_rol'))
     
     return render(request, 'cambiar_contrasena.html', {
         'usuario': usuario,
         'error_msg': error_msg,
+        'errores_lista': errores_lista,
+        'min_longitud_contrasena': LONGITUD_MINIMA_USUARIO,
     })
 
 

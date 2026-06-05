@@ -19,6 +19,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from fpdf import FPDF
 
 from .models import Usuarios, Alumnos, Maestros, Administrativos, Administrador, DatosPersonales, Carrera, CicloEscolar, Grupo, LogCalificacion
+from .password_utils import generar_contrasena_temporal
 
 
 logger = logging.getLogger(__name__)
@@ -951,11 +952,7 @@ def agregar_usuario(request):
         if rol == 'administrador':
             rol = 'admin'
         
-        # Generar contraseña temporal segura de 8 caracteres
-        import secrets
-        import string
-        caracteres = string.ascii_letters + string.digits + string.punctuation
-        contrasena_temporal = ''.join(secrets.choice(caracteres) for _ in range(8))
+        contrasena_temporal = generar_contrasena_temporal()
         
         # Obtener datos personales
         correo = request.POST.get('correo_inst', '').strip()
@@ -1830,11 +1827,7 @@ def restablecer_contrasena(request, usuario_id):
     usuario = get_object_or_404(Usuarios, id_usuario=usuario_id)
 
     try:
-        # Generar nueva contraseña temporal segura
-        import secrets
-        import string
-        caracteres = string.ascii_letters + string.digits + string.punctuation
-        nueva_contrasena = ''.join(secrets.choice(caracteres) for _ in range(8))
+        nueva_contrasena = generar_contrasena_temporal()
 
         # Guardar encriptada (el modelo se encarga de make_password en el save)
         usuario.contrasena = nueva_contrasena
