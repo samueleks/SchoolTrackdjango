@@ -75,13 +75,13 @@
                             </div>
                         {% endif %}
                         <div class="w-full space-y-4">
-                            <div class="flex justify-between items-center border-b border-gray-100 pb-2 gap-4">
+                            <div class="perfil-fila flex justify-between items-center border-b border-gray-100 pb-2 gap-4">
                                 <span class="field-label font-bold text-gray-500 text-sm uppercase">Nombre:</span>
-                                <span class="text-md text-gray-700 text-right">{{ perfil.nombre_completo|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-md text-gray-700 text-right">{{ perfil.nombre_completo|default:'---' }}</span>
                             </div>
-                            <div class="flex justify-between items-center border-b border-gray-100 pb-2 gap-4">
+                            <div class="perfil-fila flex justify-between items-center border-b border-gray-100 pb-2 gap-4">
                                 <span class="field-label font-bold text-gray-500 text-sm uppercase">CURP:</span>
-                                <span class="text-md font-mono text-gray-700 text-right">{{ perfil.curp|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-md font-mono text-gray-700 text-right">{{ perfil.curp|default:'---' }}</span>
                             </div>
                         </div>
                     </div>
@@ -89,25 +89,25 @@
                     <div class="section-crema p-8 shadow-md">
                         <h3 class="font-bold text-xl mb-6 text-gray-700 border-b border-white/30 pb-2">Datos Laborales</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
+                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3">
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Departamento:</label>
-                                <span class="text-gray-700 leading-relaxed">{{ perfil.departamento|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-gray-700 leading-relaxed">{{ perfil.departamento|default:'---' }}</span>
                             </div>
-                            <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
+                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3">
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Cubículo:</label>
-                                <span class="text-gray-700 leading-relaxed">{{ perfil.cubiculo|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-gray-700 leading-relaxed">{{ perfil.cubiculo|default:'---' }}</span>
                             </div>
-                            <div class="flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
+                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Grado académico:</label>
-                                <span class="text-gray-700 leading-relaxed">{{ perfil.grado_academico|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-gray-700 leading-relaxed">{{ perfil.grado_academico|default:'---' }}</span>
                             </div>
-                            <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
+                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3">
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Matrícula:</label>
-                                <span class="text-gray-700 leading-relaxed">{{ perfil.matricula|default:'---' }}</span>
+                                <span class="perfil-dato-valor text-gray-700 leading-relaxed">{{ perfil.matricula|default:'---' }}</span>
                             </div>
-                            <div class="flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
+                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Correo institucional:</label>
-                                <span class="text-gray-700 leading-relaxed break-words">{{ perfil.correo_institucional|default:'---' }}</span>
+                                <span class="perfil-dato-correo text-gray-700 leading-relaxed">{{ perfil.correo_institucional|default:'---' }}</span>
                             </div>
                         </div>
                     </div>

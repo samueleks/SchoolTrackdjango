@@ -794,4 +794,43 @@ body {
     .dashboard-main .mt-8.flex.justify-between.items-center button {
         padding: 0.65rem 1rem !important;
     }
+
+    /* Perfil alumno / maestro: datos completos en móvil */
+    .dashboard-main .max-w-7xl.grid {
+        gap: 0.85rem !important;
+    }
+
+    .dashboard-main .perfil-fila {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.25rem !important;
+    }
+
+    .dashboard-main .perfil-fila > .flex-1,
+    .dashboard-main .perfil-fila > span:not(.field-label) {
+        width: 100% !important;
+        text-align: left !important;
+    }
+
+    .dashboard-main .field-label {
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .dashboard-main .section-crema .grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-main .section-crema input[readonly],
+    .dashboard-main .section-crema input:not([type="hidden"]) {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .dashboard-main .perfil-dato-correo {
+        font-size: 0.82rem !important;
+    }
 }

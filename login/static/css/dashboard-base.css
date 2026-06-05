@@ -121,3 +121,30 @@
     from { width: 100%; }
     to { width: 0%; }
 }
+
+/* Perfil alumno/maestro — correos y textos largos sin cortes raros */
+.perfil-campo {
+    min-width: 0;
+    width: 100%;
+}
+
+.perfil-dato-correo {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    line-height: 1.5;
+    hyphens: none;
+}
+
+.perfil-dato-valor {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.45;
+}
