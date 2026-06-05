@@ -1,6 +1,5 @@
 /**
- * SchoolTrack — estilos base del dashboard (administrador)
- * Compartidos por todas las páginas que extienden base/dashboard_administrador.html
+ * SchoolTrack — estilos base compartidos de todos los dashboards
  */
 
 .header-pro {
@@ -49,4 +48,76 @@
 
 .nav-logout {
     margin-top: 5rem;
+}
+
+.section-crema,
+.bg-white.p-6.rounded-2xl {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 1rem !important;
+    border: none !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.field-label {
+    min-width: 90px;
+    max-width: 40%;
+    flex-shrink: 0;
+}
+
+.toast-container {
+    display: none;
+    margin-bottom: 15px;
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    background: #2ecc71 !important;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    min-width: 100%;
+}
+
+.icon-check {
+    font-size: 20px;
+    margin-right: 12px;
+    color: white;
+}
+
+.toast-content .text-1 {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+}
+
+.toast-content .text-2 {
+    display: block;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 2px;
+}
+
+.close-btn {
+    font-size: 20px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    margin-left: 12px;
+}
+
+.progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: #2ecc71;
+    border-radius: 0 0 8px 8px;
+    animation: progress 3s linear forwards;
+}
+
+@keyframes progress {
+    from { width: 100%; }
+    to { width: 0%; }
 }

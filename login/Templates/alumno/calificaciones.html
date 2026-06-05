@@ -1,44 +1,12 @@
-﻿{% load static %}
+{% extends 'base/dashboard_alumno.html' %}
 {% load calificaciones_filters %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Consultar Calificaciones</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {% include 'includes/dashboard_responsive.html' %}
-    <style>
-        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
-        .logo-custom { font-size: 2.5rem !important; font-weight: 800; }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-height: 56px;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            font-weight: 400 !important;
-            line-height: 1.15;
-        }
-        .nav-item i {
-            width: 1.25rem;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .nav-item:hover { background-color: #d1d5db; }
-        .nav-item-active { background-color: #d1d5db; color: #2563eb !important; }
-        .nav-item-active i { color: #2563eb !important; }
+
+{% block title %}SchoolTrack - Consultar Calificaciones{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Tabla de calificaciones - Diseño limpio tipo imagen */
         
-        /* Tabla de calificaciones - Diseño limpio tipo imagen */
-        .table-container { 
-            border: 1px solid #e0e0e0;
-            border-radius: 0.5rem; 
-            overflow: hidden; 
-            background: white;
-        }
         
         table {
             width: 100%;
@@ -148,44 +116,11 @@
             font-size: 1.5rem;
             color: #999;
         }
-    </style>
-</head>
-<body class="font-sans text-gray-800">
+</style>
+{% endblock %}
 
-    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
-        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3">
-                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
-                <i class="fas fa-bell text-2xl cursor-pointer"></i>
-                <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
-            </div>
-        </div>
-    </header>
-
-    <div class="layout-dashboard">
-        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
-            <nav class="space-y-4">
-                <a href="{% url 'inicio_interfaces_alumnos' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-user text-xl"></i> Mi Perfil
-                </a>
-                <a href="{% url 'consultar_calificaciones' %}" class="nav-item nav-item-active font-bold text-gray-800 shadow-sm">
-                    <i class="fas fa-list-alt text-xl text-blue-600"></i> Consultar Calificaciones
-                </a>
-                <a href="{% url 'consultar_asistencias' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-chart-line text-xl"></i> Consultar Asistencias
-                </a>
-                <div class="mt-20">
-                    <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase">
-                        <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
-                    </a>
-                </div>
-            </nav>
-        </aside>
-
-        <main class="flex-1 dashboard-main overflow-y-auto">
-            <div class="max-w-6xl mx-auto">
+{% block content %}
+<div class="max-w-6xl mx-auto">
                 <h2 class="text-2xl font-black text-gray-700 mb-8 tracking-tighter uppercase">Consultas de Calificaciones</h2>
 
                 <div class="table-container table-scroll bg-white">
@@ -257,9 +192,10 @@
                     </button>
                 </div>
             </div>
-        </main>
-    </div>
-    <!-- Preload foto para PDF -->
+{% endblock %}
+
+{% block page_modals %}
+<!-- Preload foto para PDF -->
     {% if perfil.foto_url %}
     <img src="{{ perfil.foto_url }}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" aria-hidden="true">
     {% endif %}
@@ -358,9 +294,12 @@
             </div>
         </div>
     </div>
+{% endblock %}
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
 function exportarPDF() {
             const boleta = document.getElementById('boleta-pdf');
             // Poner fecha actual
@@ -410,5 +349,4 @@ function exportarPDF() {
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}

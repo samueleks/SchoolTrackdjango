@@ -1,22 +1,10 @@
-﻿<!DOCTYPE html>
-{% load static %}
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Perfil Alumno</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {% include 'includes/dashboard_responsive.html' %}
-    <style>
+{% extends 'base/dashboard_alumno.html' %}
 
-        .header-pro {
-            background-color: #2b63d9 !important;
-            height: 90px;
-            border-bottom: 4px solid #1e40af;
-        }
+{% block title %}SchoolTrack - Perfil Alumno{% endblock %}
 
-        /* TARJETAS BLANCAS: Estilo limpio y moderno */
+{% block extra_css %}
+<style>
+/* TARJETAS BLANCAS: Estilo limpio y moderno */
         .section-crema, .bg-white.p-6.rounded-2xl {
             background-color: rgba(255, 255, 255, 0.95) !important;
             border-radius: 1rem !important;
@@ -24,36 +12,12 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
         }
 
-        .logo-custom {
-            font-size: 2.5rem !important;
-            font-weight: 800;
-        }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-height: 56px;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            font-weight: 400 !important;
-            line-height: 1.15;
-        }
-        .nav-item i {
-            width: 1.25rem;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .nav-item:hover {
-            background-color: #d1d5db;
-        }
-        .nav-item-active {
-            background-color: #d1d5db;
-            color: #2563eb !important;
-        }
-        .nav-item-active i {
-            color: #2563eb !important;
-        }
+        
+        
+        
+        
+        
+        
 
         .toast-container {
             display: none;
@@ -127,44 +91,10 @@
             to { width: 0%; }
         }
 </style>
-</head>
-<body class="font-sans text-gray-800">
+{% endblock %}
 
-    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
-        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3">
-                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Alumno' }}</span>
-                <i class="fas fa-bell text-2xl cursor-pointer"></i>
-                <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
-            </div>
-        </div>
-    </header>
-
-    <div class="layout-dashboard">
-        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
-            <nav class="space-y-4">
-                <a href="{% url 'inicio_interfaces_alumnos' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
-                    <i class="fas fa-user text-xl text-blue-600"></i> Mi Perfil
-                </a>
-                <a href="{% url 'consultar_calificaciones' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-list-alt text-xl"></i> Consultar Calificaciones
-                </a>
-                <a href="{% url 'consultar_asistencias' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-chart-line text-xl"></i> Consultar Asistencias
-                </a>
-                
-                <div class="mt-20">
-                    <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase">
-                        <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
-                    </a>
-                </div>
-            </nav>
-        </aside>
-
-        <main class="flex-1 dashboard-main overflow-y-auto">
-            <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
+{% block content %}
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10">
                 
                 <div class="space-y-8">
                     <div class="p-6 rounded-2xl">
@@ -305,10 +235,10 @@
                     </form>
                 </div>
             </div>
-        </main>
-    </div>
+{% endblock %}
 
-    <script>
+{% block extra_js %}
+<script>
         // Variable para guardar valores originales
         let valoresOriginales = {};
 
@@ -396,5 +326,4 @@
         {% endfor %}
         {% endif %}
 </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,9 @@
+<header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
+    <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
+    <div class="flex items-center gap-4 md:gap-6">
+        <div class="flex items-center gap-3">
+            <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Alumno' }}</span>
+            <i class="fas fa-bell text-2xl cursor-pointer"></i>
+        </div>
+    </div>
+</header>

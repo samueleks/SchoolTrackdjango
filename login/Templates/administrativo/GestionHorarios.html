@@ -1,68 +1,9 @@
-﻿<!DOCTYPE html>
-{% load static %}
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Gestión de Horarios</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {% include 'includes/dashboard_responsive.html' %}
-    <style>
-        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
-        .logo-custom { font-size: 2.5rem !important; font-weight: 800; }
-        .sidebar-item-active { background-color: #d1d5db; border-radius: 0.75rem; border: 1px solid #9ca3af; }
-        aside nav a {
-            font-weight: 400 !important;
-        }
-        .sidebar-item-active, .sidebar-item-active i {
-            color: #2563eb !important;
-        }
-        .table-container { border: 2px solid #9ca3af; border-radius: 12px; overflow: hidden; }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans text-gray-800">
+{% extends 'base/dashboard_administrativo.html' %}
 
-    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-lg sticky top-0 z-50">
-        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center border border-white/30">
-                    <i class="fas fa-user-tie text-xl"></i>
-                </div>
-                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando usuario...' }}</span>
-                <i class="fas fa-bell text-2xl cursor-pointer hover:text-blue-200 transition"></i>
-            </div>
-            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
-        </div>
-    </header>
+{% block title %}SchoolTrack - Gestión de Horarios{% endblock %}
 
-    <div class="layout-dashboard">
-        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
-            <nav class="space-y-4">
-                <a href="{% url 'dashboard_administrativo' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
-                    <i class="fas fa-home text-xl"></i> Panel
-                </a>
-                <a href="{% url 'admin_reportes' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
-                    <i class="fas fa-chart-bar text-xl"></i> Consultar Reportes
-                </a>
-                <a href="{% url 'admin_horarios' %}" class="flex items-center gap-4 p-4 sidebar-item-active font-bold text-gray-800 shadow-sm">
-                    <i class="fas fa-clock text-xl text-blue-600"></i> Gestionar Horarios
-                </a>
-                <a href="{% url 'admin_materias' %}" class="flex items-center gap-4 p-4 hover:bg-gray-300 rounded-xl transition text-gray-700 font-semibold">
-                    <i class="fas fa-book text-xl"></i> Administrar Materias
-                </a>
-                <div class="mt-20">
-                    <a href="{% url 'logout' %}" class="flex items-center gap-4 p-4 hover:bg-red-100 text-red-600 rounded-xl transition font-bold uppercase">
-                        <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
-                    </a>
-                </div>
-            </nav>
-        </aside>
-
-        <main class="flex-1 dashboard-main bg-white overflow-y-auto">
-            <div class="max-w-6xl mx-auto">
+{% block content %}
+<div class="max-w-6xl mx-auto">
                 <div class="text-center mb-10">
                     <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Gestión de Horarios</h2>
                     <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Administrar horarios académicos</p>
@@ -320,9 +261,9 @@
                             <input type="date" id="selectorFecha" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
                         </div>
 
-                        <!-- Tabla de horarios estilo PDF -->
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border-2 border-gray-300 text-sm">
+                        <!-- Tabla de horarios semanal -->
+                        <div class="overflow-x-auto" id="contenedor-tabla-horario">
+                            <table id="tabla-horario-semanal" class="w-full border-collapse border-2 border-gray-300 text-sm">
                                 <thead>
                                     <tr class="bg-gray-200">
                                         <th class="border border-gray-300 p-3 text-center font-bold">HORA</th>
@@ -459,12 +400,120 @@
                 </section>
 
             </div>
-        </main>
+{% endblock %}
+
+{% block page_modals %}
+<div class="hidden" aria-hidden="true">{% csrf_token %}</div>
+
+<!-- Horario oculto para exportar PDF (mismo patrón que boleta de calificaciones) -->
+    <div id="horario-pdf" style="display:none;">
+        <div style="width:10in; font-family:Arial,sans-serif; padding:12px; box-sizing:border-box; background:#fff; color:#1f2937;">
+            <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #333; padding-bottom:6px; margin-bottom:8px; gap:8px;">
+                <div style="flex:1;">
+                    <h1 style="margin:0; font-size:14px; font-weight:900; letter-spacing:0.5px;">SCHOOLTRACK</h1>
+                    <p style="margin:2px 0 0 0; font-size:8px; color:#555;">Sistema de Control Escolar</p>
+                </div>
+                <div style="text-align:center; flex:2;">
+                    <h2 style="margin:0; font-size:12px; font-weight:700;">CARGA ACADÉMICA</h2>
+                    <p style="margin:3px 0 0 0; font-size:8px; color:#333;">PERIODO: <strong id="pdf-ciclo">{{ ciclo_filtro|default:"---" }}</strong></p>
+                </div>
+                <div style="flex:1; text-align:right;">
+                    <p style="margin:0; font-size:8px; color:#555;">FECHA: <strong id="pdf-fecha"></strong></p>
+                </div>
+            </div>
+
+            <table style="border-collapse:collapse; font-size:9px; width:100%; margin-bottom:8px;">
+                <tr>
+                    <td style="padding:4px 10px 4px 0; font-weight:700; white-space:nowrap;">GRUPO:</td>
+                    <td style="padding:4px 0; border-bottom:1px solid #999; width:100%;" id="pdf-grupo-clave">{{ grupo_filtro|default:"---" }}</td>
+                </tr>
+                <tr>
+                    <td style="padding:4px 10px 4px 0; font-weight:700; white-space:nowrap;">NOMBRE:</td>
+                    <td style="padding:4px 0; border-bottom:1px solid #999;" id="pdf-nombre-grupo">---</td>
+                </tr>
+            </table>
+
+            <table style="width:100%; border-collapse:collapse; border:1px solid #d1d5db; font-size:10px; table-layout:fixed;">
+                <thead>
+                    <tr>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px; width:10%;">HORA</th>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">LUNES</th>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">MARTES</th>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">MIÉRCOLES</th>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">JUEVES</th>
+                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">VIERNES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in horarios_tabla %}
+                    <tr>
+                        <td style="border:1px solid #d1d5db; padding:3px 2px; text-align:center; font-weight:600; background-color:#f9fafb; font-size:8px; vertical-align:middle;">{{ fila.hora }}</td>
+                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
+                            {% for segmento in fila.lunes %}
+                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
+                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
+                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
+                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
+                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
+                            {% for segmento in fila.martes %}
+                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
+                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
+                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
+                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
+                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
+                            {% for segmento in fila.miercoles %}
+                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
+                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
+                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
+                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
+                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
+                            {% for segmento in fila.jueves %}
+                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
+                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
+                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
+                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
+                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
+                            {% for segmento in fila.viernes %}
+                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
+                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
+                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
+                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
+                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
+                            </div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div style="margin-top:8px; padding-top:4px; border-top:1px solid #d1d5db; display:flex; justify-content:space-between; font-size:7px; color:#9ca3af;">
+                <span>Documento generado por SchoolTrack</span>
+                <span>Este documento es informativo y no tiene validez oficial</span>
+            </div>
+        </div>
     </div>
+{% endblock %}
 
-    <div class="hidden" aria-hidden="true">{% csrf_token %}</div>
-
-    <script>
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
         // Función global para filtrar por ciclo escolar (fuera de DOMContentLoaded)
         function filtrarPorCiclo() {
             const cicloSeleccionado = document.getElementById('filtro-ciclo').value;
@@ -543,114 +592,76 @@
             });
         }
 
-        // Función para exportar horario a PDF (fuera de DOMContentLoaded)
+        // Función para exportar horario a PDF (mismo patrón que calificaciones)
         function exportarHorarioPDF() {
             const ciclo = document.getElementById('filtro-ciclo').value;
             const grupo = document.getElementById('filtro-grupo').value;
-            
+
             if (!ciclo || !grupo) {
                 alert('Debes seleccionar un ciclo y un grupo para exportar el horario');
                 return;
             }
-            
+
             const horario = document.getElementById('horario-pdf');
-            // Poner fecha actual
+            if (!horario) {
+                alert('No se encontró el contenedor del PDF.');
+                return;
+            }
+
             const hoy = new Date();
-            const fechaStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
+            const fechaStr = hoy.getFullYear() + '-' +
+                String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+                String(hoy.getDate()).padStart(2, '0');
             document.getElementById('pdf-fecha').textContent = fechaStr;
-            
-            // Actualizar ciclo en el PDF
             document.getElementById('pdf-ciclo').textContent = ciclo;
-            
-            // Obtener nombre del grupo
+            document.getElementById('pdf-grupo-clave').textContent = grupo;
+
             const grupoSelect = document.getElementById('filtro-grupo');
             const grupoNombre = grupoSelect.options[grupoSelect.selectedIndex]?.text || grupo;
             document.getElementById('pdf-nombre-grupo').textContent = grupoNombre;
-            
-            // Copiar datos de la tabla visible al HTML oculto
-            const tablaVisible = document.querySelector('.overflow-x-auto table tbody');
-            const pdfBody = document.getElementById('pdf-horarios-body');
-            
-            if (tablaVisible && pdfBody) {
-                pdfBody.innerHTML = '';
-                const filas = tablaVisible.querySelectorAll('tr');
-                filas.forEach(fila => {
-                    const celdas = fila.querySelectorAll('td');
-                    if (celdas.length === 6) {
-                        const nuevaFila = document.createElement('tr');
-                        // Columna hora
-                        const horaCell = document.createElement('td');
-                        horaCell.style.cssText = 'border: 1px solid #ccc; padding: 6px 4px; text-align: center; font-weight: 700; background-color: #f5f5f5;';
-                        horaCell.textContent = celdas[0].textContent.trim();
-                        nuevaFila.appendChild(horaCell);
-                        
-                        // Columnas de días (lunes a viernes)
-                        for (let i = 1; i <= 5; i++) {
-                            const diaCell = document.createElement('td');
-                            diaCell.style.cssText = 'border: 1px solid #ccc; padding: 4px; vertical-align: top;';
-                            
-                            // Copiar segmentos de la celda visible
-                            const segmentos = celdas[i].querySelectorAll('.mb-2');
-                            segmentos.forEach(seg => {
-                                const div = document.createElement('div');
-                                div.style.cssText = 'margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;';
-                                
-                                const materia = seg.querySelector('.font-bold');
-                                const docente = seg.querySelectorAll('.text-xs')[0];
-                                const aula = seg.querySelectorAll('.text-xs')[1];
-                                const horarioTxt = seg.querySelector('.text-blue-600');
-                                
-                                if (materia) {
-                                    const matDiv = document.createElement('div');
-                                    matDiv.style.cssText = 'font-weight: 700; font-size: 9px;';
-                                    matDiv.textContent = materia.textContent.trim();
-                                    div.appendChild(matDiv);
-                                }
-                                if (docente) {
-                                    const docDiv = document.createElement('div');
-                                    docDiv.style.cssText = 'font-size: 8px; color: #666;';
-                                    docDiv.textContent = docente.textContent.trim();
-                                    div.appendChild(docDiv);
-                                }
-                                if (aula) {
-                                    const aulaDiv = document.createElement('div');
-                                    aulaDiv.style.cssText = 'font-size: 8px; color: #555;';
-                                    aulaDiv.textContent = aula.textContent.trim();
-                                    div.appendChild(aulaDiv);
-                                }
-                                if (horarioTxt) {
-                                    const horDiv = document.createElement('div');
-                                    horDiv.style.cssText = 'font-size: 8px; color: #2563eb; font-weight: 700;';
-                                    horDiv.textContent = horarioTxt.textContent.trim();
-                                    div.appendChild(horDiv);
-                                }
-                                
-                                diaCell.appendChild(div);
-                            });
-                            
-                            nuevaFila.appendChild(diaCell);
-                        }
-                        
-                        pdfBody.appendChild(nuevaFila);
-                    }
-                });
-            }
-            
+
+            const restaurarHorarioPDF = () => {
+                horario.style.display = 'none';
+                horario.style.zoom = '';
+                horario.style.width = '';
+            };
+
+            horario.style.display = 'block';
+            horario.style.width = '10in';
+
             const generarPDF = () => {
-                horario.style.display = 'block';
+                horario.style.zoom = '1';
+                const margen = 0.2;
+                const anchoUtil = (11 - margen * 2) * 96;
+                const altoUtil = (8.5 - margen * 2) * 96;
+                const escala = Math.min(
+                    anchoUtil / horario.offsetWidth,
+                    altoUtil / horario.offsetHeight,
+                    1
+                );
+                if (escala < 0.995) {
+                    horario.style.zoom = escala;
+                }
+
                 const opt = {
-                    margin: [0.3, 0.3, 0.3, 0.3],
+                    margin: margen,
                     filename: `carga_academica_${grupo}_${ciclo}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-                    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
+                    pagebreak: { mode: ['avoid-all'] }
                 };
-                html2pdf().set(opt).from(horario).save().then(() => {
-                    horario.style.display = 'none';
-                });
+
+                html2pdf().set(opt).from(horario).save()
+                    .then(restaurarHorarioPDF)
+                    .catch((error) => {
+                        console.error('Error al exportar PDF:', error);
+                        restaurarHorarioPDF();
+                        alert('No se pudo generar el PDF. Intenta de nuevo.');
+                    });
             };
-            
-            generarPDF();
+
+            setTimeout(generarPDF, 80);
         }
 
         // Función para abrir modal de edición (fuera de DOMContentLoaded)
@@ -1255,120 +1266,4 @@
         `;
         document.head.appendChild(style);
     </script>
-    <script>
-</script>
-
-    <!-- Horario oculto para exportar PDF -->
-    <div id="horario-pdf" style="display:none;">
-        <div style="width: 11in; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
-            <!-- Header -->
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
-                <div style="flex: 1;">
-                    <h1 style="margin:0; font-size: 20px; font-weight: 900; color: #1a1a1a; letter-spacing: 1px;">SCHOOLTRACK</h1>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #555;">Sistema de Control Escolar</p>
-                </div>
-                <div style="text-align: center; flex: 2;">
-                    <h2 style="margin:0; font-size: 16px; font-weight: 700; color: #000;">CARGA ACADÉMICA</h2>
-                    <p style="margin: 6px 0 0 0; font-size: 11px; color: #333;">PERIODO: <strong id="pdf-ciclo">{{ ciclo_filtro|default:"---" }}</strong></p>
-                </div>
-                <div style="flex: 1; text-align: right;">
-                    <p style="margin:0; font-size: 11px; color: #555;">FECHA: <strong id="pdf-fecha"></strong></p>
-                </div>
-            </div>
-
-            <!-- Datos del grupo -->
-            <div style="margin-bottom: 20px;">
-                <table style="border-collapse: collapse; font-size: 12px; width: 100%;">
-                    <tr>
-                        <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">GRUPO:</td>
-                        <td style="padding: 4px 0; border-bottom: 1px solid #999; width: 100%;">{{ grupo_filtro|default:"---" }}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">NOMBRE:</td>
-                        <td style="padding: 4px 0; border-bottom: 1px solid #999;" id="pdf-nombre-grupo">---</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Tabla de horarios -->
-            <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 2px solid #333;">
-                <thead>
-                    <tr style="background-color: #4a4a4a;">
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">HORA</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">LUNES</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">MARTES</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">MIÉRCOLES</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">JUEVES</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">VIERNES</th>
-                    </tr>
-                </thead>
-                <tbody id="pdf-horarios-body">
-                    {% for fila in horarios_tabla %}
-                    <tr>
-                        <td style="border: 1px solid #ccc; padding: 6px 4px; text-align: center; font-weight: 700; background-color: #f5f5f5;">{{ fila.hora }}</td>
-                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
-                            {% for segmento in fila.lunes %}
-                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
-                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
-                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
-                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
-                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
-                                </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
-                            {% for segmento in fila.martes %}
-                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
-                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
-                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
-                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
-                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
-                                </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
-                            {% for segmento in fila.miercoles %}
-                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
-                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
-                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
-                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
-                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
-                                </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
-                            {% for segmento in fila.jueves %}
-                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
-                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
-                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
-                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
-                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
-                                </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border: 1px solid #ccc; padding: 4px; vertical-align: top;">
-                            {% for segmento in fila.viernes %}
-                                <div style="margin-bottom: 4px; padding: 3px; background-color: #e8f4ff; border-radius: 2px;">
-                                    <div style="font-weight: 700; font-size: 9px;">{{ segmento.materia }}</div>
-                                    <div style="font-size: 8px; color: #666;">{{ segmento.docente }}</div>
-                                    <div style="font-size: 8px; color: #555;">{{ segmento.aula }}</div>
-                                    <div style="font-size: 8px; color: #2563eb; font-weight: 700;">{{ segmento.hora_inicio }}-{{ segmento.hora_fin }}</div>
-                                </div>
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <!-- Footer -->
-            <div style="margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 9px; color: #888;">
-                <span>Documento generado por SchoolTrack</span>
-                <span>Este documento es informativo y no tiene validez oficial</span>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% with nav=request.resolver_match.url_name|default:'' %}
+<aside class="sidebar bg-gray-200 border-r border-gray-300 shadow-inner">
+    <nav class="space-y-4">
+        <a href="{% url 'inicio_interfaces_alumnos' %}"
+           class="nav-item {% if nav == 'inicio_interfaces_alumnos' or nav == 'dashboard_alumno' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-user text-xl {% if nav == 'inicio_interfaces_alumnos' or nav == 'dashboard_alumno' %}text-blue-600{% endif %}"></i> Mi Perfil
+        </a>
+        <a href="{% url 'consultar_calificaciones' %}"
+           class="nav-item {% if nav == 'consultar_calificaciones' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-list-alt text-xl {% if nav == 'consultar_calificaciones' %}text-blue-600{% endif %}"></i> Consultar Calificaciones
+        </a>
+        <a href="{% url 'consultar_asistencias' %}"
+           class="nav-item {% if nav == 'consultar_asistencias' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-chart-line text-xl {% if nav == 'consultar_asistencias' %}text-blue-600{% endif %}"></i> Consultar Asistencias
+        </a>
+        <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase nav-logout">
+            <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+        </a>
+    </nav>
+</aside>
+{% endwith %}

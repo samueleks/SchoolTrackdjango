@@ -1,0 +1,25 @@
+{% with nav=request.resolver_match.url_name|default:'' %}
+<aside class="sidebar bg-gray-200 border-r border-gray-300 shadow-inner">
+    <nav class="space-y-4">
+        <a href="{% url 'dashboard_administrativo' %}"
+           class="nav-item {% if nav == 'dashboard_administrativo' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-home text-xl {% if nav == 'dashboard_administrativo' %}text-blue-600{% endif %}"></i> Panel
+        </a>
+        <a href="{% url 'admin_reportes' %}"
+           class="nav-item {% if nav == 'admin_reportes' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-chart-bar text-xl {% if nav == 'admin_reportes' %}text-blue-600{% endif %}"></i> Consultar Reportes
+        </a>
+        <a href="{% url 'admin_horarios' %}"
+           class="nav-item {% if nav == 'admin_horarios' or nav == 'agregar_horario' or nav == 'editar_horario' or nav == 'eliminar_horario' or nav == 'get_horarios_semanales' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-clock text-xl {% if nav == 'admin_horarios' or nav == 'agregar_horario' or nav == 'editar_horario' or nav == 'eliminar_horario' or nav == 'get_horarios_semanales' %}text-blue-600{% endif %}"></i> Gestionar Horarios
+        </a>
+        <a href="{% url 'admin_materias' %}"
+           class="nav-item {% if nav == 'admin_materias' or nav == 'crear_materia' or nav == 'editar_materia' or nav == 'eliminar_materia' or nav == 'exportar_materias_pdf' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-book text-xl {% if nav == 'admin_materias' or nav == 'crear_materia' or nav == 'editar_materia' or nav == 'eliminar_materia' or nav == 'exportar_materias_pdf' %}text-blue-600{% endif %}"></i> Administrar Materias
+        </a>
+        <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase nav-logout">
+            <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+        </a>
+    </nav>
+</aside>
+{% endwith %}

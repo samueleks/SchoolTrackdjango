@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SchoolTrack - Perfil Docente{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% include 'includes/dashboard_responsive.html' %}
+    {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="font-sans text-gray-800 {% block body_class %}bg-gray-100{% endblock %}">
+
+    {% block modals %}{% endblock %}
+
+    {% include 'partials/maestro_header.html' %}
+
+    <div class="layout-dashboard">
+        {% include 'partials/maestro_sidebar.html' %}
+        <main class="dashboard-main {% block main_class %}overflow-y-auto{% endblock %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    {% block page_modals %}{% endblock %}
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>
