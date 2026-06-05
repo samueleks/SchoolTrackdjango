@@ -24,6 +24,14 @@ from .models import Usuarios, Alumnos, Maestros, Administrativos, Administrador,
 logger = logging.getLogger(__name__)
 
 
+def _fpdf_output_bytes(pdf: FPDF) -> bytes:
+    """fpdf2 devuelve str en versiones viejas y bytearray/bytes en versiones nuevas."""
+    content = pdf.output(dest='S')
+    if isinstance(content, str):
+        return content.encode('latin-1')
+    return bytes(content)
+
+
 def sesion_roles_permitidas(request, roles: tuple) -> bool:
     role = request.session.get('usuario_rol')
     return role is not None and role in roles
@@ -723,7 +731,7 @@ def exportar_usuarios_pdf(request):
     pdf.cell(0, 5, f'Página {pdf.page_no()}', 0, 0, 'R')
 
     # Generar respuesta
-    response = HttpResponse(pdf.output(dest='S').encode('latin-1'), content_type='application/pdf')
+    response = HttpResponse(_fpdf_output_bytes(pdf), content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="reporte_usuarios_{}.pdf"'.format(
         datetime.now().strftime('%Y%m%d_%H%M%S')
     )

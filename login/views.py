@@ -1902,7 +1902,11 @@ def exportar_materias_pdf(request):
         pdf.cell(30, 7, estado, 1, 1, 'C')
     
     pdf_content = pdf.output(dest='S')
-    
+    if isinstance(pdf_content, str):
+        pdf_content = pdf_content.encode('latin-1')
+    else:
+        pdf_content = bytes(pdf_content)
+
     response = HttpResponse(pdf_content, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="materias.pdf"'
     return response
