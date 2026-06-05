@@ -209,25 +209,7 @@ body {
     }
 
     .header-welcome {
-        display: inline-flex !important;
-        flex-direction: column;
-        align-items: flex-end;
-        font-size: 0.65rem !important;
-        max-width: 5.5rem;
-        line-height: 1.15;
-    }
-
-    .header-welcome-prefix {
-        font-size: 0.58rem !important;
-        font-weight: 600;
-        opacity: 0.95;
-        white-space: nowrap;
-    }
-
-    .header-welcome-name {
-        font-size: 0.7rem !important;
-        font-weight: 700;
-        max-width: 100%;
+        display: none !important;
     }
 
     .header-pro .w-10.h-10 {
@@ -327,20 +309,8 @@ body {
         flex-shrink: 0;
     }
 
-    .header-welcome {
-        max-width: 4.75rem;
-    }
-
-    .header-welcome-prefix {
-        font-size: 0.55rem !important;
-    }
-
-    .header-welcome-name {
-        font-size: 0.65rem !important;
-    }
-
     .layout-dashboard {
-        grid-template-columns: 3.25rem minmax(0, 1fr);
+        grid-template-columns: 4.5rem minmax(0, 1fr);
         grid-template-rows: minmax(calc(100svh - 56px), auto);
         min-height: calc(100svh - 56px) !important;
     }
@@ -349,20 +319,19 @@ body {
         padding: 0.35rem 0.1rem !important;
     }
 
-    /* Solo iconos en móvil: evita textos achocados (N/A, INACTIVA, etc. en menú) */
     .sidebar .nav-item,
     .sidebar nav a {
-        font-size: 0 !important;
-        line-height: 0 !important;
-        padding: 0.5rem 0.15rem !important;
-        min-height: 2.5rem !important;
-        word-break: normal !important;
-        hyphens: none !important;
+        font-size: 0.4375rem !important;
+        line-height: 1.05 !important;
+        padding: 0.4rem 0.12rem !important;
+        min-height: auto !important;
+        word-break: break-word;
+        hyphens: auto;
     }
 
     .sidebar .nav-item i,
     .sidebar nav a i {
-        font-size: 1.15rem !important;
+        font-size: 1.05rem !important;
         line-height: 1 !important;
     }
 
