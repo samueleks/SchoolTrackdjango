@@ -1,40 +1,11 @@
-﻿{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Gestionar Carreras</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {% include 'includes/dashboard_responsive.html' %}
-    <style>
-        .header-pro {
-            background-color: #2b63d9 !important;
-            height: 90px;
-            border-bottom: 4px solid #1e40af;
-        }
-        .logo-custom {
-            font-size: 2.5rem !important;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-        }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-height: 56px;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
-            font-weight: 400 !important;
-            line-height: 1.15;
-        }
-        .nav-item:hover { background-color: #d1d5db; }
-        .nav-item-active { background-color: #d1d5db; color: #2563eb !important; }
-        .nav-item-active i { color: #2563eb !important; }
+{% extends 'base/dashboard_administrador.html' %}
 
-        .career-card {
+{% block title %}SchoolTrack - Gestionar Carreras{% endblock %}
+{% block body_class %}bg-gray-100{% endblock %}
+
+{% block extra_css %}
+<style>
+.career-card {
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
         }
@@ -69,60 +40,11 @@
             border-color: #2b63d9;
             box-shadow: 0 0 0 0.2rem rgba(43, 99, 217, 0.25);
         }
-        .sidebar-item {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .sidebar-item:hover {
-            transform: none;
-        }
-    </style>
-</head>
+</style>
+{% endblock %}
 
-<body class="bg-gray-100 font-sans text-gray-800">
-
-    <!-- Header -->
-    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-2xl sticky top-0 z-50">
-        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
-        
-        <div class="flex items-center gap-8">
-            <div class="flex items-center gap-3">
-                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
-                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
-                    <i class="fas fa-user-shield text-lg"></i>
-                </div>
-            </div>
-            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
-            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
-        </div>
-    </header>
-
-    <div class="flex layout-dashboard min-h-0">
-        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
-            <nav class="space-y-4">
-                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-home text-xl"></i> Panel
-                </a>
-                <a href="{% url 'gestion_usuarios' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-users text-xl"></i> Gestionar Usuarios
-                </a>
-                <a href="{% url 'gestion_carreras' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
-                    <i class="fas fa-graduation-cap text-xl text-blue-600"></i> Gestionar Carreras
-                </a>
-                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
-                </a>
-                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
-                </a>
-                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
-                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
-                </a>
-            </nav>
-        </aside>
-
-        <main class="flex-1 dashboard-main bg-white admin-main">
-            <div class="max-w-7xl mx-auto">
+{% block content %}
+<div class="max-w-7xl mx-auto">
                 <div class="flex items-center gap-4 mb-8">
                     <h2 class="page-title text-4xl font-bold text-gray-700">Gestión de Carreras</h2>
                 </div>
@@ -219,117 +141,10 @@
                     {% endif %}
                 </div>
             </div>
-        </main>
-    </div>
+{% endblock %}
 
-    <!-- Add Modal -->
-    <div id="addModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Agregar Nueva Carrera</h3>
-                <button onclick="hideAddModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form method="POST" action="{% url 'agregar_carrera' %}">
-                {% csrf_token %}
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Carrera *</label>
-                        <input type="text" name="nombre" required maxlength="100" 
-                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Ej: Ingeniería en Sistemas">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Clave *</label>
-                        <input type="text" name="clave" required minlength="3" maxlength="10"
-                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
-                               placeholder="Ej: IEM001" style="text-transform: uppercase;">
-                        <p class="text-xs text-gray-500 mt-1">Formato: 3-10 caracteres alfanuméricos (ej: IEM001, LCC01, ADM)</p>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="hideAddModal()" 
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                        <i class="fas fa-save mr-2"></i> Guardar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="editModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Editar Carrera</h3>
-                <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form method="POST" id="editForm">
-                {% csrf_token %}
-                <input type="hidden" name="carrera_id" id="editCarreraId">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Carrera *</label>
-                        <input type="text" name="nombre" id="editNombre" required maxlength="100" 
-                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Ej: Ingeniería en Sistemas">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Clave *</label>
-                        <input type="text" name="clave" id="editClave" required minlength="3" maxlength="10"
-                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
-                               placeholder="Ej: IEM001" style="text-transform: uppercase;">
-                        <p class="text-xs text-gray-500 mt-1">Formato: 3-10 caracteres alfanuméricos (ej: IEM001, LCC01, ADM)</p>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="hideEditModal()" 
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                        <i class="fas fa-save mr-2"></i> Guardar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-                <div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[130]">
-                    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
-                        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
-                            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
-                                <span class="text-4xl text-gray-400 font-serif">?</span>
-                            </div>
-                            <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar carrera</h3>
-                            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar esta carrera?</p>
-                            <div class="flex gap-4 w-full justify-center">
-                                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
-                                    Eliminar
-                                </button>
-                                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-    <script>
+{% block extra_js %}
+<script>
     let carreraIdEliminar = null;
     const eliminarCarreraUrl = '{% url "eliminar_carrera" 0 %}'.replace('/0/', '/');
     const verificarClaveUrl = '{% url "verificar_clave_carrera" %}';
@@ -600,7 +415,4 @@
         {% endif %}
     });
     </script>
-    <script>
-</script>
-</body>
-</html>
+{% endblock %}

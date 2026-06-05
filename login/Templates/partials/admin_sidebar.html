@@ -1,0 +1,29 @@
+{% with nav=request.resolver_match.url_name|default:'' %}
+<aside class="sidebar bg-gray-200 border-r border-gray-300 shadow-inner">
+    <nav class="space-y-4">
+        <a href="{% url 'dashboard_administrador' %}"
+           class="nav-item {% if nav == 'dashboard_administrador' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-home text-xl {% if nav == 'dashboard_administrador' %}text-blue-600{% endif %}"></i> Panel
+        </a>
+        <a href="{% url 'gestion_usuarios' %}"
+           class="nav-item {% if nav == 'gestion_usuarios' or nav == 'agregar_usuario' or nav == 'editar_usuario' or nav == 'exportar_usuarios' or nav == 'exportar_usuarios_pdf' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-users text-xl {% if nav == 'gestion_usuarios' or nav == 'agregar_usuario' or nav == 'editar_usuario' or nav == 'exportar_usuarios' or nav == 'exportar_usuarios_pdf' %}text-blue-600{% endif %}"></i> Gestionar Usuarios
+        </a>
+        <a href="{% url 'gestion_carreras' %}"
+           class="nav-item {% if nav == 'gestion_carreras' or nav == 'agregar_carrera' or nav == 'editar_carrera' or nav == 'eliminar_carrera' or nav == 'verificar_clave_carrera' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-graduation-cap text-xl {% if nav == 'gestion_carreras' or nav == 'agregar_carrera' or nav == 'editar_carrera' or nav == 'eliminar_carrera' or nav == 'verificar_clave_carrera' %}text-blue-600{% endif %}"></i> Gestionar Carreras
+        </a>
+        <a href="{% url 'gestion_seguridad' %}"
+           class="nav-item {% if nav == 'gestion_seguridad' or nav == 'desbloquear_cuenta' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-shield-alt text-xl {% if nav == 'gestion_seguridad' or nav == 'desbloquear_cuenta' %}text-blue-600{% endif %}"></i> Gestionar Seguridad
+        </a>
+        <a href="{% url 'respaldo_bdd' %}"
+           class="nav-item {% if nav == 'respaldo_bdd' or nav == 'ejecutar_respaldo' or nav == 'descargar_respaldo_especifico' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-database text-xl {% if nav == 'respaldo_bdd' or nav == 'ejecutar_respaldo' or nav == 'descargar_respaldo_especifico' %}text-blue-600{% endif %}"></i> Respaldar Base de Datos
+        </a>
+        <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase nav-logout">
+            <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
+        </a>
+    </nav>
+</aside>
+{% endwith %}

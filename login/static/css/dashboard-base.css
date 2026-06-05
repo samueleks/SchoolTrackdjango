@@ -1,0 +1,52 @@
+/**
+ * SchoolTrack — estilos base del dashboard (administrador)
+ * Compartidos por todas las páginas que extienden base/dashboard_administrador.html
+ */
+
+.header-pro {
+    background-color: #2b63d9 !important;
+    height: 90px;
+    border-bottom: 4px solid #1e40af;
+}
+
+.logo-custom {
+    font-size: 2.5rem !important;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 56px;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 400 !important;
+    line-height: 1.15;
+    text-decoration: none;
+}
+
+.nav-item:hover {
+    background-color: #d1d5db;
+}
+
+.nav-item-active {
+    background-color: #d1d5db;
+    color: #2563eb !important;
+}
+
+.nav-item-active i {
+    color: #2563eb !important;
+}
+
+.table-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    display: block;
+}
+
+.nav-logout {
+    margin-top: 5rem;
+}

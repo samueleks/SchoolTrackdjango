@@ -1,0 +1,33 @@
+<script>
+    let gPressed = false;
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'g' || e.key === 'G') {
+            gPressed = true;
+            setTimeout(() => gPressed = false, 1000);
+        }
+
+        if (gPressed && (e.key === 'u' || e.key === 'U')) {
+            window.location.href = "{% url 'gestion_usuarios' %}";
+            gPressed = false;
+        }
+
+        if (gPressed && (e.key === 's' || e.key === 'S')) {
+            window.location.href = "{% url 'gestion_seguridad' %}";
+            gPressed = false;
+        }
+
+        if (gPressed && (e.key === 'b' || e.key === 'B')) {
+            window.location.href = "{% url 'respaldo_bdd' %}";
+            gPressed = false;
+        }
+
+        if (e.key === 'Escape') {
+            window.location.href = "{% url 'dashboard_administrador' %}";
+        }
+
+        if (e.key === 'Delete') {
+            window.location.href = "{% url 'logout' %}";
+        }
+    });
+</script>

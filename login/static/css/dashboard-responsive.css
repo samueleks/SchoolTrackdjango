@@ -4,6 +4,17 @@
  * Escritorio: menú ancho clásico
  */
 
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100%;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+}
+
 .header-pro {
     height: 90px;
     position: sticky;
@@ -13,16 +24,19 @@
 }
 
 .layout-dashboard {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
+    display: grid !important;
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+    grid-template-rows: minmax(calc(100svh - 90px), auto);
+    flex: 1 1 auto;
     width: 100%;
-    min-height: calc(100svh - 90px);
+    min-height: calc(100svh - 90px) !important;
 }
 
 .dashboard-main {
-    flex: 1 1 0%;
+    grid-column: 2;
+    grid-row: 1;
     min-width: 0;
+    min-height: 100%;
     padding: 1rem;
     overflow-x: hidden;
     background-color: #f3f4f6;
@@ -58,12 +72,18 @@
     min-width: 640px;
 }
 
+.sidebar {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 100% !important;
+    height: 100% !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+}
+
 /* ——— Móvil y tablet: barra lateral fija estrecha (como SIE) ——— */
 @media (max-width: 1023px) {
-    .layout-dashboard {
-        flex-direction: row;
-    }
-
     .sidebar {
         position: relative !important;
         top: auto !important;
@@ -71,12 +91,6 @@
         transform: none !important;
         visibility: visible !important;
         pointer-events: auto !important;
-        flex: 0 0 4.25rem;
-        width: 4.25rem !important;
-        min-width: 4.25rem;
-        max-width: 4.25rem;
-        height: auto !important;
-        min-height: calc(100svh - 90px);
         padding: 0.5rem 0.2rem !important;
         z-index: 10;
         overflow-x: hidden;
@@ -157,19 +171,14 @@
     }
 
     .sidebar .mt-20,
-    .sidebar nav .mt-20 {
+    .sidebar nav .mt-20,
+    .sidebar .nav-logout,
+    .sidebar nav .nav-logout {
         margin-top: 0.75rem !important;
     }
 
     .sidebar nav .space-y-4 > * + * {
         margin-top: 0.35rem;
-    }
-
-    .dashboard-main {
-        flex: 1 1 0%;
-        width: auto;
-        max-width: none;
-        min-width: 0;
     }
 
     .header-welcome {
@@ -182,11 +191,11 @@
 }
 
 @media (min-width: 641px) and (max-width: 1023px) {
+    .layout-dashboard {
+        grid-template-columns: 5rem minmax(0, 1fr);
+    }
+
     .sidebar {
-        flex: 0 0 5rem;
-        width: 5rem !important;
-        min-width: 5rem;
-        max-width: 5rem;
         padding: 0.6rem 0.25rem !important;
     }
 
@@ -204,12 +213,12 @@
 
 /* ——— Escritorio: menú ancho ——— */
 @media (min-width: 1024px) {
+    .layout-dashboard {
+        grid-template-columns: 18rem minmax(0, 1fr);
+    }
+
     .sidebar {
         position: relative !important;
-        flex: 0 0 18rem;
-        width: 18rem !important;
-        min-width: 18rem;
-        height: auto !important;
         padding: 1.5rem !important;
         background-color: #e5e7eb !important;
         border-right: 1px solid #d1d5db !important;
@@ -262,15 +271,12 @@
     }
 
     .layout-dashboard {
-        min-height: calc(100svh - 56px);
+        grid-template-columns: 3.75rem minmax(0, 1fr);
+        grid-template-rows: minmax(calc(100svh - 56px), auto);
+        min-height: calc(100svh - 56px) !important;
     }
 
     .sidebar {
-        flex: 0 0 3.75rem;
-        width: 3.75rem !important;
-        min-width: 3.75rem;
-        max-width: 3.75rem;
-        min-height: calc(100svh - 56px);
         padding: 0.35rem 0.15rem !important;
     }
 

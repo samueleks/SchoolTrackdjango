@@ -1,36 +1,17 @@
-﻿{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Editar Usuario</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {% include 'includes/dashboard_responsive.html' %}
+{% extends 'base/dashboard_administrador.html' %}
+
+{% block title %}SchoolTrack - Editar Usuario{% endblock %}
+{% block body_class %}bg-gray-100{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue/material_blue.css">
-    <style>
-        .header-pro {
-            background-color: #2b63d9 !important;
-            height: 90px;
-            border-bottom: 4px solid #1e40af;
-        }
-        .logo-custom {
-            font-size: 2.5rem !important;
-            font-weight: 800;
-        }
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            min-height: 56px;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        @keyframes fade-in {
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@keyframes fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
         }
@@ -50,13 +31,7 @@
         .animate-slide-up {
             animation: slide-up 0.3s ease-out;
         }
-            font-weight: 400 !important;
-            line-height: 1.15;
-        }
-        .nav-item:hover { background-color: #d1d5db; }
-        .nav-item-active { background-color: #d1d5db; color: #2563eb !important; }
-        .nav-item-active i { color: #2563eb !important; }
-        
+
         .campo-no-editable {
             background-color: transparent;
             border: none;
@@ -73,52 +48,11 @@
             color: #9ca3af;
             font-size: 0.875rem;
         }
+</style>
+{% endblock %}
 
-    </style>
-</head>
-<body class="bg-gray-100 font-sans text-gray-800">
-
-    <header class="header-pro text-white flex justify-between items-center px-4 md:px-10 shadow-2xl sticky top-0 z-50">
-        <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
-        <div class="flex items-center gap-8">
-            <div class="flex items-center gap-3">
-                <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
-                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
-                    <i class="fas fa-user-shield text-lg"></i>
-                </div>
-            </div>
-            <i class="fas fa-bell text-2xl cursor-pointer hover:scale-110 transition"></i>
-            <i class="fas fa-bars text-2xl cursor-pointer ml-4" id="menuToggle" onclick="toggleSidebar()"></i>
-        </div>
-    </header>
-
-    <div class="flex layout-dashboard min-h-0">
-        <aside class="sidebar lg:w-72 bg-gray-200 p-6 border-r border-gray-300 shadow-inner">
-            <div class="sidebar-overlay" role="presentation" aria-hidden="true"></div>
-            <nav class="space-y-4">
-                <a href="{% url 'dashboard_administrador' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-home text-xl"></i> Panel
-                </a>
-                <a href="{% url 'gestion_usuarios' %}" class="nav-item nav-item-active text-gray-800 shadow-sm">
-                    <i class="fas fa-users text-xl text-blue-600"></i> Gestionar Usuarios
-                </a>
-                <a href="{% url 'gestion_carreras' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-graduation-cap text-xl"></i> Gestionar Carreras
-                </a>
-                <a href="{% url 'gestion_seguridad' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-shield-alt text-xl"></i> Gestionar Seguridad
-                </a>
-                <a href="{% url 'respaldo_bdd' %}" class="nav-item text-gray-700">
-                    <i class="fas fa-database text-xl"></i> Respaldar Base de Datos
-                </a>
-                <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase mt-20">
-                    <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
-                </a>
-            </nav>
-        </aside>
-
-        <main class="flex-1 dashboard-main bg-white admin-main">
-            <div class="flex items-center gap-4 mb-8">
+{% block content %}
+<div class="flex items-center gap-4 mb-8">
                 <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
@@ -404,14 +338,18 @@
                     </button>
                 </div>
             </form>
-        </main>
-    </div>
+{% endblock %}
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
-    <script>
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             const fechaNacimiento = document.querySelector('[data-datepicker="fecha_nacimiento"]');
             if (fechaNacimiento) {
@@ -546,55 +484,6 @@
             });
         });
     </script>
-    <script>
-</script>
-
-<!-- Modal Confirmar Guardar Cambios -->
-<div id="modalGuardar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalGuardar">
-    <div class="flex items-center justify-center min-h-[calc(100svh-90px)] p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
-            <!-- Header con icono -->
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl p-6 text-center">
-                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
-                    <i class="fas fa-user-edit text-3xl text-white"></i>
-                </div>
-                <h3 id="tituloModalGuardar" class="text-white text-xl font-bold">Guardar Cambios</h3>
-            </div>
-
-            <!-- Contenido -->
-            <div class="p-6">
-                <p class="text-gray-600 text-center mb-6 leading-relaxed">
-                    ¿Está seguro de que desea guardar los cambios en la información del usuario?
-                </p>
-
-                <!-- Información del usuario -->
-                <div class="bg-gray-50 rounded-xl p-4 mb-6 border border-gray-200">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-user text-blue-600"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-gray-800">{{ usuario.nombre }} {{ usuario.apellido }}</p>
-                            <p class="text-xs text-gray-500">{{ usuario.matricula }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Botones -->
-                <div class="flex gap-3">
-                    <button onclick="cerrarModalGuardar()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 flex items-center justify-center gap-2">
-                        <i class="fas fa-times"></i>
-                        Cancelar
-                    </button>
-                    <button onclick="ejecutarGuardar()" class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
-                        <i class="fas fa-check"></i>
-                        Guardar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script>
     function confirmarGuardarCambios() {
@@ -609,6 +498,4 @@
         document.querySelector('form').submit();
     }
 </script>
-
-</body>
-</html>
+{% endblock %}
