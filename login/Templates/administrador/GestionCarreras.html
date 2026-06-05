@@ -143,6 +143,115 @@
             </div>
 {% endblock %}
 
+{% block page_modals %}
+<!-- Add Modal -->
+    <div id="addModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Agregar Nueva Carrera</h3>
+                <button onclick="hideAddModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form method="POST" action="{% url 'agregar_carrera' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Carrera *</label>
+                        <input type="text" name="nombre" required maxlength="100" 
+                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Ej: Ingeniería en Sistemas">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Clave *</label>
+                        <input type="text" name="clave" required minlength="3" maxlength="10"
+                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                               placeholder="Ej: IEM001" style="text-transform: uppercase;">
+                        <p class="text-xs text-gray-500 mt-1">Formato: 3-10 caracteres alfanuméricos (ej: IEM001, LCC01, ADM)</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideAddModal()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        <i class="fas fa-save mr-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full sm:w-96 shadow-lg rounded-xl bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900 text-center flex-1">Editar Carrera</h3>
+                <button onclick="hideEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form method="POST" id="editForm">
+                {% csrf_token %}
+                <input type="hidden" name="carrera_id" id="editCarreraId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Carrera *</label>
+                        <input type="text" name="nombre" id="editNombre" required maxlength="100" 
+                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Ej: Ingeniería en Sistemas">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Clave *</label>
+                        <input type="text" name="clave" id="editClave" required minlength="3" maxlength="10"
+                               class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                               placeholder="Ej: IEM001" style="text-transform: uppercase;">
+                        <p class="text-xs text-gray-500 mt-1">Formato: 3-10 caracteres alfanuméricos (ej: IEM001, LCC01, ADM)</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="hideEditModal()" 
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        <i class="fas fa-save mr-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+                <div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[130]">
+                    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
+                        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+                            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                                <span class="text-4xl text-gray-400 font-serif">?</span>
+                            </div>
+                            <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar carrera</h3>
+                            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar esta carrera?</p>
+                            <div class="flex gap-4 w-full justify-center">
+                                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                                    Eliminar
+                                </button>
+                                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+{% endblock %}
+
 {% block extra_js %}
 <script>
     let carreraIdEliminar = null;
