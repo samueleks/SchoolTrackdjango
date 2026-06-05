@@ -48,10 +48,19 @@ body {
 }
 
 .header-welcome {
-    max-width: 12rem;
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem;
+    max-width: 14rem;
+    line-height: 1.2;
+}
+
+.header-welcome-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
 /* Sin menú hamburguesa ni overlay (patrón SIE) */
@@ -189,12 +198,51 @@ body {
         margin-top: 0.35rem;
     }
 
+    .header-pro > .flex.items-center {
+        min-width: 0;
+        flex-shrink: 1;
+    }
+
+    .header-pro .flex.items-center.gap-3 {
+        min-width: 0;
+        gap: 0.4rem !important;
+    }
+
     .header-welcome {
-        display: none !important;
+        display: inline-flex !important;
+        flex-direction: column;
+        align-items: flex-end;
+        font-size: 0.65rem !important;
+        max-width: 5.5rem;
+        line-height: 1.15;
+    }
+
+    .header-welcome-prefix {
+        font-size: 0.58rem !important;
+        font-weight: 600;
+        opacity: 0.95;
+        white-space: nowrap;
+    }
+
+    .header-welcome-name {
+        font-size: 0.7rem !important;
+        font-weight: 700;
+        max-width: 100%;
+    }
+
+    .header-pro .w-10.h-10 {
+        width: 2.15rem !important;
+        height: 2.15rem !important;
+        flex-shrink: 0;
+    }
+
+    .header-pro .w-10.h-10 i {
+        font-size: 0.85rem !important;
     }
 
     .header-pro .fa-bell {
         font-size: 1.15rem !important;
+        flex-shrink: 0;
     }
 }
 
@@ -274,29 +322,48 @@ body {
     }
 
     .logo-custom {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
         letter-spacing: -0.02em;
+        flex-shrink: 0;
+    }
+
+    .header-welcome {
+        max-width: 4.75rem;
+    }
+
+    .header-welcome-prefix {
+        font-size: 0.55rem !important;
+    }
+
+    .header-welcome-name {
+        font-size: 0.65rem !important;
     }
 
     .layout-dashboard {
-        grid-template-columns: 3.75rem minmax(0, 1fr);
+        grid-template-columns: 3.25rem minmax(0, 1fr);
         grid-template-rows: minmax(calc(100svh - 56px), auto);
         min-height: calc(100svh - 56px) !important;
     }
 
     .sidebar {
-        padding: 0.35rem 0.15rem !important;
+        padding: 0.35rem 0.1rem !important;
     }
 
+    /* Solo iconos en móvil: evita textos achocados (N/A, INACTIVA, etc. en menú) */
     .sidebar .nav-item,
     .sidebar nav a {
-        font-size: 0.4375rem !important;
-        padding: 0.35rem 0.1rem !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        padding: 0.5rem 0.15rem !important;
+        min-height: 2.5rem !important;
+        word-break: normal !important;
+        hyphens: none !important;
     }
 
     .sidebar .nav-item i,
     .sidebar nav a i {
-        font-size: 1rem !important;
+        font-size: 1.15rem !important;
+        line-height: 1 !important;
     }
 
     .dashboard-main {
@@ -332,16 +399,96 @@ body {
         box-sizing: border-box;
     }
 
+    .dashboard-main h2.text-2xl,
     .dashboard-main h2.text-3xl,
+    .dashboard-main h2.text-4xl,
     .dashboard-main h2.text-5xl {
-        font-size: 1.15rem !important;
+        font-size: 1.05rem !important;
         line-height: 1.3 !important;
         letter-spacing: -0.01em !important;
         word-break: break-word;
     }
 
-    .dashboard-main .text-center.mb-10 {
+    .dashboard-main h2.mb-8,
+    .dashboard-main h2.mb-10,
+    .dashboard-main h2.mb-12 {
+        margin-bottom: 0.65rem !important;
+    }
+
+    .dashboard-main h3.text-2xl,
+    .dashboard-main h3.text-xl {
+        font-size: 0.95rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .dashboard-main .text-3xl {
+        font-size: 1.2rem !important;
+    }
+
+    .dashboard-main .text-4xl {
+        font-size: 1.35rem !important;
+    }
+
+    .dashboard-main .text-lg {
+        font-size: 0.85rem !important;
+    }
+
+    .dashboard-main .text-xl {
+        font-size: 0.9rem !important;
+    }
+
+    .dashboard-main .text-center.mb-10,
+    .dashboard-main .mb-10 {
+        margin-bottom: 0.75rem !important;
+    }
+
+    .dashboard-main .mb-12 {
         margin-bottom: 0.85rem !important;
+    }
+
+    .dashboard-main .gap-12 {
+        gap: 0.75rem !important;
+    }
+
+    /* Tarjetas del panel (botones enormes) */
+    .dashboard-main .min-h-\[280px\] {
+        min-height: auto !important;
+    }
+
+    .dashboard-main .bg-white.p-10.rounded-xl,
+    .dashboard-main .bg-white.p-10.rounded-2xl,
+    .dashboard-main .rounded-3xl.p-10 {
+        padding: 0.85rem !important;
+        border-radius: 0.85rem !important;
+    }
+
+    .dashboard-main a.py-6,
+    .dashboard-main button.py-6 {
+        padding-top: 0.7rem !important;
+        padding-bottom: 0.7rem !important;
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+    }
+
+    .dashboard-main a.py-6 .fas.text-4xl,
+    .dashboard-main a.py-6 .fa.text-4xl {
+        font-size: 1.35rem !important;
+    }
+
+    .dashboard-main a.py-6 span.text-lg {
+        font-size: 0.75rem !important;
+        line-height: 1.25 !important;
+    }
+
+    /* Resumen asistencias: números grandes */
+    .dashboard-main .grid .text-3xl.font-black {
+        font-size: 1.15rem !important;
+        margin-top: 0.15rem !important;
+    }
+
+    .dashboard-main .grid.gap-4 > div,
+    .dashboard-main .grid.gap-6 > div {
+        padding: 0.65rem !important;
     }
 
     .dashboard-main .bg-gray-50.p-6,
@@ -438,7 +585,13 @@ body {
 
     .dashboard-main .table-scroll table,
     .dashboard-main .table-container table {
-        min-width: 520px;
+        min-width: 680px;
+    }
+
+    .dashboard-main .table-scroll,
+    .dashboard-main .table-container.table-scroll {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* Títulos de sección con botón a la derecha (ej. horario semanal) */
@@ -588,16 +741,88 @@ body {
         white-space: nowrap;
     }
 
-    .dashboard-main tbody td,
-    .dashboard-main tbody th {
-        padding: 0.55rem 0.45rem !important;
-        font-size: 0.78rem !important;
-        line-height: 1.35 !important;
-        word-break: break-word;
+    .dashboard-main thead th,
+    .dashboard-main .table-head th {
+        padding: 0.5rem 0.55rem !important;
+        font-size: 0.65rem !important;
+        white-space: nowrap !important;
+        word-break: keep-all !important;
     }
 
-    .dashboard-main .table-head th {
-        padding: 0.55rem 0.4rem !important;
+    /* Celdas cortas (U1, NA, 70.0): no partir letras */
+    .dashboard-main tbody td {
+        padding: 0.5rem 0.55rem !important;
+        font-size: 0.78rem !important;
+        line-height: 1.2 !important;
+        word-break: normal !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+    }
+
+    .dashboard-main tbody td:first-child {
+        white-space: normal !important;
+        word-break: break-word !important;
+        min-width: 6.5rem;
+        max-width: 9rem;
+    }
+
+    .dashboard-main tbody td .grade-badge,
+    .dashboard-main tbody td .promedio-badge {
+        white-space: nowrap !important;
+        display: inline-block;
+    }
+
+    .dashboard-main tbody td .rounded-full,
+    .dashboard-main tbody td span.inline-flex,
+    .dashboard-main span.rounded-full.font-black,
+    .dashboard-main span.rounded-full.font-bold {
+        white-space: nowrap !important;
+        font-size: 0.58rem !important;
+        padding: 0.2rem 0.4rem !important;
+        letter-spacing: 0.03em !important;
+        line-height: 1.2 !important;
+        display: inline-block !important;
+        max-width: none !important;
+    }
+
+    /* Botones de acción en tablas */
+    .dashboard-main tbody td .inline-flex.shadow-sm button,
+    .dashboard-main tbody td .inline-flex.shadow-sm a {
+        padding: 0.35rem 0.45rem !important;
+        flex-shrink: 0;
+    }
+
+    /* Botones verdes/azules muy altos en toolbars */
+    .dashboard-main a.px-6.py-2\.5,
+    .dashboard-main button.px-6.py-2\.5,
+    .dashboard-main a.px-10.py-3,
+    .dashboard-main button.px-10.py-3,
+    .dashboard-main a.px-10.py-4,
+    .dashboard-main button.px-10.py-4 {
+        padding: 0.55rem 0.85rem !important;
         font-size: 0.68rem !important;
+    }
+
+    .dashboard-main a.px-10.py-4 i,
+    .dashboard-main button.px-10.py-4 i {
+        font-size: 1rem !important;
+    }
+
+    /* Pie asistencias (exportar) */
+    .dashboard-main .mt-8.flex.justify-between.items-center {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+        text-align: center;
+    }
+
+    .dashboard-main .mt-8.flex.justify-between.items-center > * {
+        width: 100% !important;
+        justify-content: center !important;
+        font-size: 0.8rem !important;
+    }
+
+    .dashboard-main .mt-8.flex.justify-between.items-center button {
+        padding: 0.65rem 1rem !important;
     }
 }

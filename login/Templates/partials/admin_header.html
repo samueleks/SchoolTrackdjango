@@ -2,7 +2,7 @@
     <h1 class="logo-custom tracking-tight">SchoolTrack</h1>
     <div class="flex items-center gap-4 md:gap-8">
         <div class="flex items-center gap-3">
-            <span class="header-welcome text-xl font-medium">Bienvenido, {{ perfil.nombre_completo|default:'Cargando Admin...' }}</span>
+            <span class="header-welcome text-xl font-medium"><span class="header-welcome-prefix">Bienvenido, </span><span class="header-welcome-name">{{ perfil.nombre_completo|default:'Cargando Admin...' }}</span></span>
             <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center bg-white/10">
                 <i class="fas fa-user-shield text-lg"></i>
             </div>
