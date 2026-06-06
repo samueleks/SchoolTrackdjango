@@ -141,7 +141,12 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+_media_root = os.environ.get('MEDIA_ROOT', '').strip()
+MEDIA_ROOT = Path(_media_root) if _media_root else BASE_DIR / 'media'
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+
+# En Railway/producción con DEBUG=False, activar SERVE_MEDIA=1 para mostrar fotos subidas.
+SERVE_MEDIA = _env_bool('SERVE_MEDIA', default=False)
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
@@ -164,7 +169,8 @@ SESSION_SAVE_EVERY_REQUEST = False
 MINIMO_APROBATORIO_CALIFICACION = 70
 
 # Configuración de respaldos de base de datos
-BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
+_backup_dir = os.environ.get('BACKUP_DIR', '').strip()
+BACKUP_DIR = _backup_dir if _backup_dir else str(BASE_DIR / 'backups')
 os.makedirs(BACKUP_DIR, exist_ok=True)
 PG_DUMP_PATH = os.environ.get('PG_DUMP_PATH', '').strip() or None
 
