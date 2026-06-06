@@ -166,6 +166,7 @@ MINIMO_APROBATORIO_CALIFICACION = 70
 # Configuración de respaldos de base de datos
 BACKUP_DIR = os.path.join(BASE_DIR, 'backups')
 os.makedirs(BACKUP_DIR, exist_ok=True)
+PG_DUMP_PATH = os.environ.get('PG_DUMP_PATH', '').strip() or None
 
 
 # Producción detrás de HTTPS: DJANGO_SECURE_COOKIES=1 y opcional DJANGO_SECURE_SSL_REDIRECT=1

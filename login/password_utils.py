@@ -22,8 +22,8 @@ _CONTRASENAS_COMUNES = frozenset({
 
 def generar_contrasena_temporal(longitud=_LONGITUD_TEMPORAL):
     """
-    Genera una contraseña temporal criptográficamente segura.
-
+    Usado en CREATE (agregar_usuario) y restablecer_contrasena.
+    Genera contraseña temporal criptográficamente segura.
     Garantiza mayúsculas, minúsculas, dígitos y símbolos, mezclados al azar.
     """
     if longitud < 12:

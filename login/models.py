@@ -59,20 +59,21 @@ class Usuarios(models.Model):
             raise ValidationError(errors)
     
     def save(self, *args, **kwargs):
-        self.full_clean()  # Ejecuta las validaciones antes de guardar
+        # Se ejecuta en CREATE (agregar_usuario) y UPDATE (editar_usuario, restablecer_contrasena)
+        self.full_clean()  # Ejecuta clean() → valida nombre/apellido
         
-        # La matrícula se genera automáticamente solo si es un registro nuevo
+        # CREATE: si es registro nuevo (sin pk), genera matrícula automática
         if not self.pk and not self.matricula:
             self.matricula = self.generar_matricula()
         
-        # Encriptar contraseña si no está encriptada
+        # Encripta contraseña si llega en texto plano (make_password de Django)
         if self.contrasena and not self.contrasena.startswith('pbkdf2_sha256$'):
             self.contrasena = make_password(self.contrasena)
         
-        super().save(*args, **kwargs)
+        super().save(*args, **kwargs)  # INSERT o UPDATE en tabla 'usuarios'
     
     def generar_matricula(self):
-        """Genera matrícula automática según rol y año actual"""
+        """Genera matrícula automática según rol y año actual — llamado desde save() en CREATE"""
         año_actual = timezone.now().year
         
         # Definir prefijos por rol

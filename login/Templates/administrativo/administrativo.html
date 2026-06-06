@@ -21,20 +21,7 @@
                     </a>
                 </div>
 
-                <div class="bg-white p-10 rounded-xl border-2 border-gray-200 shadow-sm">
-                    <h3 class="font-bold text-2xl mb-6 text-gray-700">Avisos Importantes</h3>
-                    <ul class="space-y-4 text-xl text-gray-600 font-medium">
-                        <li>• Fin de semestre: <span class="text-gray-800">{{ avisos.fin_semestre|default:'---' }}</span></li>
-                    </ul>
-                </div>
-
-                <div class="bg-white p-10 rounded-xl border-2 border-gray-200 shadow-sm">
-                    <h3 class="font-bold text-2xl mb-8 text-gray-700">Periodo Actual</h3>
-                    <div class="flex items-center gap-6">
-                        <span class="text-xl font-semibold text-gray-600">Semestre:</span>
-                        <input type="text" value="{{ config.periodo|default:'' }}" placeholder="----" class="p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-center font-bold text-gray-800 text-xl w-24 sm:w-40" readonly>
-                    </div>
-                </div>
+                {% include 'partials/dashboard_ciclo_cards.html' %}
 
             </div>
 {% endblock %}

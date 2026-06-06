@@ -20,8 +20,67 @@
         
         
         .user-avatar {
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 3.5rem;
+            height: 4.375rem;
+            object-fit: cover;
+            object-position: center 22%;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+            background-color: #f9fafb;
+        }
+        .user-avatar-placeholder {
+            width: 3.5rem;
+            height: 4.375rem;
+            border-radius: 0.5rem;
+            flex-shrink: 0;
+        }
+        .user-avatar--modal,
+        .user-avatar-placeholder--modal {
+            border-radius: 0.75rem;
+        }
+        .detalle-seccion-titulo {
+            font-size: 0.625rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin-bottom: 0.75rem;
+        }
+        .detalle-fila {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.875rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .detalle-fila:last-child {
+            border-bottom: none;
+        }
+        .detalle-etiqueta {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #9ca3af;
+            flex-shrink: 0;
+        }
+        .detalle-valor {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: #1f2937;
+            text-align: right;
+            line-height: 1.35;
+        }
+        .user-avatar--clickeable {
+            cursor: zoom-in;
+            transition: opacity 0.15s ease, box-shadow 0.15s ease;
+        }
+        .user-avatar--clickeable:hover {
+            opacity: 0.92;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         }
         .bell-icon {
             animation: subtle-pulse 2s infinite;
@@ -58,17 +117,15 @@
         </div>
     </div>
 
-    <!-- Modal de Éxito Matrícula/Contraseña (Para nuevo usuario) -->
-    <div id="modalExitoNuevoUsuario" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoNuevoUsuario()">
-        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-md text-center transform transition-all" onclick="event.stopPropagation()">
-            <div class="w-20 h-20 border-4 border-blue-100 rounded-full flex items-center justify-center mb-6">
-                <i class="fas fa-user-check text-4xl text-blue-500"></i>
-            </div>
-            <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-2">¡Usuario Creado!</h3>
-            <div id="contenidoNuevoUsuario" class="space-y-4 w-full">
+    <!-- Modal de credenciales temporales -->
+    <div id="modalExitoNuevoUsuario" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoNuevoUsuario()">
+        <div class="bg-white p-6 rounded-lg shadow-xl flex flex-col max-w-md w-full mx-4 text-left" onclick="event.stopPropagation()">
+            <h3 id="tituloModalCredenciales" class="text-lg font-semibold text-gray-800 mb-1">Usuario creado</h3>
+            <p id="subtituloModalCredenciales" class="text-sm text-gray-500 mb-5">Copia los datos y compártelos con el usuario.</p>
+            <div id="contenidoNuevoUsuario" class="w-full">
                 <!-- Se llena por JS -->
             </div>
-            <button onclick="cerrarModalExitoNuevoUsuario()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
+            <button onclick="cerrarModalExitoNuevoUsuario()" class="mt-5 w-full py-2.5 text-sm font-medium border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition">
                 Entendido
             </button>
         </div>
@@ -79,57 +136,88 @@
             document.getElementById('modalExitoSistema').classList.add('hidden');
         }
 
+        function mostrarExitoSistema(mensaje) {
+            document.getElementById('textoExitoSistema').textContent = mensaje;
+            document.getElementById('modalExitoSistema').classList.remove('hidden');
+            setTimeout(cerrarModalExitoSistema, 3000);
+        }
+
+        function limpiarParametroExito() {
+            const params = new URLSearchParams(window.location.search);
+            params.delete('exito');
+            const qs = params.toString();
+            window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+        }
+
         function cerrarModalExitoNuevoUsuario() {
             document.getElementById('modalExitoNuevoUsuario').classList.add('hidden');
         }
 
+        function mostrarModalCredencialesTemporales(tipo, matricula, nombre, contrasena) {
+            const esNuevo = tipo === 'nuevo';
+            const titulo = document.getElementById('tituloModalCredenciales');
+            const subtitulo = document.getElementById('subtituloModalCredenciales');
+
+            if (titulo) {
+                titulo.textContent = esNuevo ? 'Usuario creado' : 'Contraseña restablecida';
+            }
+            if (subtitulo) {
+                subtitulo.textContent = esNuevo
+                    ? 'El registro se completó correctamente. Copia los datos de acceso.'
+                    : 'Se generó una nueva contraseña temporal. Copia los datos de acceso.';
+            }
+
+            const html = `
+                <dl class="border border-gray-200 rounded-md divide-y divide-gray-100 bg-white">
+                    <div class="px-4 py-3">
+                        <dt class="text-xs text-gray-500 mb-0.5">Usuario</dt>
+                        <dd class="text-sm text-gray-900">${nombre}</dd>
+                    </div>
+                    <div class="px-4 py-3">
+                        <dt class="text-xs text-gray-500 mb-0.5">Matrícula</dt>
+                        <dd class="text-sm font-medium text-gray-900">${matricula}</dd>
+                    </div>
+                    <div class="px-4 py-3">
+                        <dt class="text-xs text-gray-500 mb-0.5">Contraseña temporal</dt>
+                        <dd class="text-sm font-mono text-gray-900 break-all">${contrasena}</dd>
+                    </div>
+                </dl>
+                <p class="text-xs text-gray-500 mt-4 leading-relaxed">
+                    Esta información solo se muestra una vez. Guárdala antes de cerrar este cuadro.
+                </p>
+            `;
+
+            document.getElementById('contenidoNuevoUsuario').innerHTML = html;
+            document.getElementById('modalExitoNuevoUsuario').classList.remove('hidden');
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('exito') === 'eliminar') {
+                const mensaje = sessionStorage.getItem('exitoEliminarUsuario')
+                    || 'Se eliminó el usuario de manera correcta en la base de datos';
+                sessionStorage.removeItem('exitoEliminarUsuario');
+                mostrarExitoSistema(mensaje);
+                limpiarParametroExito();
+                return;
+            }
+
             {% if messages %}
                 {% for message in messages %}
                     {% if message.tags == 'success' %}
-                        const msg = "{{ message|safe }}";
-                        
-                        // Si el mensaje contiene información de nuevo usuario (Matrícula y Contraseña)
-                        if (msg.includes('|')) {
-                            const partes = msg.split('|');
-                            const matricula = partes[0].replace('¡Usuario creado!', '').trim();
-                            const pass = partes[1].replace('Contraseña Temporal:', '').trim();
-                            
-                            const html = `
-                                <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-100 text-center mb-6">
-                                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200">
-                                        <i class="fas fa-check text-2xl text-white"></i>
-                                    </div>
-                                    <h4 class="text-green-800 font-black uppercase tracking-widest text-sm mb-1">Registro Exitoso</h4>
-                                    <p class="text-green-700 font-bold">El usuario ha sido añadido correctamente</p>
-                                </div>
+                        const msg = "{{ message|escapejs }}";
 
-                                <div class="bg-gray-50 p-5 rounded-2xl border-2 border-gray-100 text-left">
-                                    <div class="mb-4">
-                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Matrícula Asignada</p>
-                                        <p class="text-2xl font-black text-gray-900 tracking-tight">${matricula}</p>
-                                    </div>
-                                    
-                                    <div>
-                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Contraseña Temporal</p>
-                                        <p class="text-2xl font-black text-gray-900 tracking-tight">${pass}</p>
-                                    </div>
-                                </div>
-                                <div class="mt-6 p-3 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
-                                    <i class="fas fa-exclamation-circle text-amber-500"></i>
-                                    <p class="text-[11px] text-amber-700 font-bold leading-tight text-left">
-                                        IMPORTANTE: Copia estos datos ahora. Por seguridad, no podrán ser visualizados nuevamente.
-                                    </p>
-                                </div>
-                            `;
-                            document.getElementById('contenidoNuevoUsuario').innerHTML = html;
-                            document.getElementById('modalExitoNuevoUsuario').classList.remove('hidden');
-                        } 
-                        // Mensaje de éxito común (edición, restablecer, etc)
-                        else {
-                            document.getElementById('textoExitoSistema').textContent = msg;
-                            document.getElementById('modalExitoSistema').classList.remove('hidden');
-                            setTimeout(cerrarModalExitoSistema, 3000);
+                        if (msg.startsWith('TEMP_CRED|')) {
+                            const partes = msg.split('|');
+                            if (partes.length >= 5) {
+                                const tipo = partes[1];
+                                const matricula = partes[2];
+                                const nombre = partes[3];
+                                const contrasena = partes.slice(4).join('|');
+                                mostrarModalCredencialesTemporales(tipo, matricula, nombre, contrasena);
+                            }
+                        } else {
+                            mostrarExitoSistema(msg);
                         }
                     {% endif %}
                 {% endfor %}
@@ -139,15 +227,22 @@
 {% endblock %}
 
 {% block content %}
+<!-- ================================================================== -->
+<!-- PANTALLA READ: GestionUsuarios.html                                -->
+<!-- Vista Python: admin_views.gestion_usuarios                         -->
+<!-- Variables: usuarios (paginado), busqueda, rol_filtro, total_usuarios -->
+<!-- ================================================================== -->
 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
                 <h2 class="page-title text-4xl font-bold text-gray-700">Gestionar Usuarios</h2>
                 <div class="flex flex-wrap gap-3 btn-stack-mobile">
-                    <a href="{% url 'exportar_usuarios' %}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                    <!-- Exportar = Read + descarga (no modifica BD) -->
+                    <a href="{% url 'exportar_usuarios' %}{{ query_lista }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
                         <i class="fas fa-file-excel mr-2"></i> Exportar Excel
                     </a>
-                    <a href="{% url 'exportar_usuarios_pdf' %}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
+                    <a href="{% url 'exportar_usuarios_pdf' %}{{ query_lista }}" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
                         <i class="fas fa-file-pdf mr-2"></i> Exportar PDF
                     </a>
+                    <!-- CREATE — enlace a agregar_usuario -->
                     <a href="{% url 'agregar_usuario' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg btn-hover">
                         <i class="fas fa-user-plus mr-2"></i> Agregar Usuario
                     </a>
@@ -168,10 +263,12 @@
                             </span>
                         </div>
                         <div class="flex items-center gap-3">
+                            <!-- GET ?q= → gestion_usuarios filtra en Python -->
                             <form id="formBusquedaUsuarios" method="GET" action="{% url 'gestion_usuarios' %}" class="relative">
                                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                                 <input type="text" id="buscadorUsuarios" name="q" value="{{ busqueda }}" placeholder="Buscar usuario..." onkeydown="manejarEnterBusquedaUsuarios(event)" class="pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none w-full sm:w-64" maxlength="100">
                             </form>
+                            <!-- GET ?rol= → filtro por tipo de usuario -->
                             <select id="filtroRol" name="rol" onchange="aplicarFiltroRol()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
                                 <option value="">Todos los roles</option>
                                 <option value="alumno" {% if rol_filtro == 'alumno' %}selected{% endif %}>Alumnos</option>
@@ -189,7 +286,7 @@
             </div>
             <div id="resultadoUsuarios">
                 {% if usuarios and usuarios|length > 0 %}
-                <!-- Vista de Tabla -->
+                <!-- ===== TABLA: for usuario in usuarios — datos vienen de usuarios_data en Python ===== -->
                 <div id="vistaTabla" class="table-container table-scroll show bg-white mt-6 border border-gray-200 rounded-md overflow-hidden">
                     <table id="tablaUsuarios" class="w-full text-left border-collapse">
                         <thead class="bg-[#f8fafc] text-gray-700">
@@ -221,15 +318,19 @@
                                     {% endif %}
                                 </td>
                                 <td class="p-4 flex justify-center gap-3 border-b border-gray-100">
-                                    <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-1" title="Ver Detalles">
+                                    <!-- Ver detalles: solo JS/modal, no toca BD -->
+                                    <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}', '{{ usuario.foto_url|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-1" title="Ver Detalles">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
+                                    <!-- UPDATE — GET a editar_usuario -->
+                                    <a href="{% url 'editar_usuario' usuario.id_usuario %}{{ query_lista }}" class="text-blue-600 hover:text-blue-800 p-1" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                    <!-- UPDATE parcial — POST a restablecer_contrasena (modal + form dinámico) -->
                                     <button type="button" onclick="confirmarRestablecer('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-1 action-btn" title="Restablecer Contraseña">
                                         <i class="fas fa-key"></i>
                                     </button>
+                                    <!-- DELETE — modal + fetch POST a eliminar_usuario (AJAX) -->
                                     <button onclick="eliminarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -246,15 +347,24 @@
                         {% for usuario in usuarios %}
                         <div class="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition">
                             <div class="flex items-start justify-between mb-4">
-                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-user text-blue-600 text-xl"></i>
-                                </div>
-                                <span class="text-xs font-bold uppercase px-2 py-1 rounded-full
-                                    {% if usuario.rol == 'alumno' %}bg-purple-100 text-purple-700
-                                    {% elif usuario.rol == 'maestro' %}bg-green-100 text-green-700
-                                    {% elif usuario.rol == 'administrativo' %}bg-orange-100 text-orange-700
-                                    {% else %}bg-red-100 text-red-700{% endif %}">
-                                    {{ usuario.rol }}
+                                {% if usuario.foto_url %}
+                                    <img src="{{ usuario.foto_url }}" alt="Foto de {{ usuario.nombre }} {{ usuario.apellido }}" class="user-avatar" loading="lazy" decoding="async">
+                                {% else %}
+                                    <div class="user-avatar-placeholder bg-slate-100 flex items-center justify-center">
+                                        <i class="fas fa-user text-slate-500 text-xl"></i>
+                                    </div>
+                                {% endif %}
+                                <span class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-slate-50 text-slate-600 border border-slate-200">
+                                    <span class="w-1.5 h-1.5 rounded-full shrink-0
+                                        {% if usuario.rol == 'alumno' %}bg-slate-500
+                                        {% elif usuario.rol == 'maestro' %}bg-blue-600
+                                        {% elif usuario.rol == 'administrativo' %}bg-teal-600
+                                        {% else %}bg-indigo-700{% endif %}"></span>
+                                    {% if usuario.rol == 'alumno' %}Alumno
+                                    {% elif usuario.rol == 'maestro' %}Maestro
+                                    {% elif usuario.rol == 'administrativo' %}Administrativo
+                                    {% elif usuario.rol == 'admin' %}Administrador
+                                    {% else %}{{ usuario.rol }}{% endif %}
                                 </span>
                             </div>
                             <h4 class="font-bold text-lg text-gray-800 mb-1">{{ usuario.nombre|default:'-' }} {{ usuario.apellido|default:'-' }}</h4>
@@ -276,10 +386,10 @@
                                 </div>
                             {% endif %}
                             <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
-                                <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-2" title="Ver Detalles">
+                                <button onclick="verDetalles('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }}', '{{ usuario.apellido|escapejs }}', '{{ usuario.rol|escapejs }}', '{{ usuario.matricula|escapejs }}', '{{ usuario.carrera|escapejs }}', '{{ usuario.semestre|escapejs }}', '{{ usuario.estatus|escapejs }}', '{{ usuario.departamento|escapejs }}', '{{ usuario.puesto|escapejs }}', '{{ usuario.grado_academico|escapejs }}', '{{ usuario.foto_url|escapejs }}')" class="text-gray-600 hover:text-gray-800 p-2" title="Ver Detalles">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <a href="{% url 'editar_usuario' usuario.id_usuario %}" class="text-blue-600 hover:text-blue-800 p-2" title="Editar">
+                                <a href="{% url 'editar_usuario' usuario.id_usuario %}{{ query_lista }}" class="text-blue-600 hover:text-blue-800 p-2" title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <button type="button" onclick="confirmarRestablecer('{{ usuario.id_usuario }}', '{{ usuario.nombre|escapejs }} {{ usuario.apellido|escapejs }}')" class="text-amber-500 hover:text-amber-700 p-2" title="Restablecer Contraseña">
@@ -295,6 +405,7 @@
                 </div>
 
                 {% if usuarios.has_other_pages %}
+                <!-- Paginación: ?page=N conserva ?q= y ?rol= en los links -->
                 <div class="flex items-center justify-between mt-6 px-2 pagination-usuarios">
                     <div class="text-sm text-gray-600 font-semibold">
                         Página {{ usuarios.number }} de {{ usuarios.paginator.num_pages }}
@@ -368,52 +479,24 @@
 <!-- CSRF Token oculto para JavaScript -->
     <div class="hidden">{% csrf_token %}</div>
 
-    <!-- Modal de Éxito -->
-    <div id="modalExito" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExito()">
-        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
-            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
-                <i class="fas fa-check text-4xl text-green-500"></i>
-            </div>
-            <p class="text-gray-700 text-xl font-bold leading-tight">
-                Se actualizó el usuario de manera correcta en la base de datos
-            </p>
-            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
-                Toca en cualquier parte para continuar
-            </p>
-        </div>
-    </div>
-
-    <!-- Modal Eliminación Exitosa -->
-    <div id="modalEliminacionExitosa" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalEliminacionExitosa()">
-        <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
-            <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
-                <i class="fas fa-check text-4xl text-green-500"></i>
-            </div>
-            <p class="text-gray-700 text-xl font-bold leading-tight">
-                Se eliminó el usuario de la manera correcta en la base de datos
-            </p>
-            <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
-                Toca en cualquier parte para continuar
-            </p>
-        </div>
-    </div>
-
     <!-- Modal Ver Detalles -->
-    <div id="modalDetalles" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalDetalles()">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 transform transition-all" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-gray-800">Detalles del Usuario</h3>
-                <button onclick="cerrarModalDetalles()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            <div id="contenidoDetalles" class="space-y-4">
+    <div id="modalDetalles" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[120] hidden p-4" onclick="cerrarModalDetalles()" role="dialog" aria-modal="true" aria-labelledby="tituloDetallesUsuario">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+            <div id="contenidoDetalles" class="overflow-y-auto max-h-[90vh]">
                 <!-- Se llena por JavaScript -->
             </div>
         </div>
     </div>
 
-<!-- Modal Confirmar Restablecer Contraseña -->
+    <!-- Lightbox foto de perfil -->
+    <div id="modalFotoPerfil" class="fixed inset-0 bg-black/85 hidden z-[130] flex items-center justify-center p-4" onclick="cerrarFotoPerfil()" role="dialog" aria-modal="true" aria-label="Foto de perfil ampliada">
+        <button type="button" onclick="cerrarFotoPerfil()" class="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition" aria-label="Cerrar foto">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <img id="fotoPerfilAmpliada" src="" alt="Foto de perfil ampliada" class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" onclick="event.stopPropagation()">
+    </div>
+
+<!-- Modal UPDATE parcial: ejecutarRestablecer() → POST restablecer_contrasena -->
 <div id="modalRestablecer" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true" aria-labelledby="tituloModalRestablecer">
     <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
         <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
@@ -434,7 +517,7 @@
     </div>
 </div>
 
-<!-- Modal Confirmar Eliminación -->
+<!-- Modal DELETE: confirmarBorrado() → fetch POST eliminar_usuario -->
 <div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true" aria-labelledby="tituloModalEliminar">
     <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
         <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
@@ -583,19 +666,28 @@
                     // Restaurar vista después de actualizar
                     restaurarVista();
 
-                    const nuevaUrl = new URL(window.location.href);
+                    const nuevaUrl = construirUrlBusqueda(window.location.href);
+                    const rol = (document.getElementById('filtroRol')?.value || '').trim();
+
                     if (texto === '' && !tienePaginaEnUrlBase) {
                         nuevaUrl.searchParams.delete('q');
                         const paginaParaRestaurar = ultimaPaginaSinFiltro || '1';
-                        if (paginaParaRestaurar) {
+                        if (paginaParaRestaurar && paginaParaRestaurar !== '1') {
                             nuevaUrl.searchParams.set('page', paginaParaRestaurar);
                         } else {
                             nuevaUrl.searchParams.delete('page');
                         }
-                    } else {
+                    } else if (texto !== '') {
                         nuevaUrl.searchParams.set('q', texto);
                         nuevaUrl.searchParams.delete('page');
                     }
+
+                    if (rol === '') {
+                        nuevaUrl.searchParams.delete('rol');
+                    } else {
+                        nuevaUrl.searchParams.set('rol', rol);
+                    }
+
                     window.history.replaceState({}, '', nuevaUrl.toString());
                 })
                 .catch(error => {
@@ -643,9 +735,21 @@
 <script>
         let usuarioIdEliminar = null;
         let usuarioIdRestablecer = null;
+        let fotoPerfilDetalleUrl = '';
+        let fotoPerfilDetalleAlt = '';
 
         // Modal de ver detalles
-        function verDetalles(id, nombre, apellido, rol, matricula, carrera, semestre, estatus, departamento, puesto, grado_academico) {
+        function filaDetalleUsuario(etiqueta, valor) {
+            const texto = valor || '—';
+            return `
+                <div class="detalle-fila">
+                    <span class="detalle-etiqueta">${etiqueta}</span>
+                    <span class="detalle-valor">${texto}</span>
+                </div>
+            `;
+        }
+
+        function verDetalles(id, nombre, apellido, rol, matricula, carrera, semestre, estatus, departamento, puesto, grado_academico, fotoUrl) {
             const rolDisplay = {
                 'alumno': 'Alumno',
                 'maestro': 'Maestro',
@@ -653,83 +757,90 @@
                 'admin': 'Administrador'
             }[rol] || rol;
 
-            let html = `
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">ID</p>
-                        <p class="text-lg font-bold text-gray-800">${id}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Matrícula</p>
-                        <p class="text-lg font-bold text-gray-800">${matricula || '---'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Nombre</p>
-                        <p class="text-lg font-bold text-gray-800">${nombre}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Apellido</p>
-                        <p class="text-lg font-bold text-gray-800">${apellido}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Rol</p>
-                        <p class="text-lg font-bold text-gray-800">${rolDisplay}</p>
-                    </div>
-            `;
+            const rolDot = {
+                'alumno': 'bg-slate-500',
+                'maestro': 'bg-blue-600',
+                'administrativo': 'bg-teal-600',
+                'admin': 'bg-indigo-700'
+            }[rol] || 'bg-gray-400';
 
+            const nombreCompleto = `${nombre} ${apellido}`.trim();
+            fotoPerfilDetalleUrl = fotoUrl || '';
+            fotoPerfilDetalleAlt = `Foto de ${nombreCompleto}`;
+            const avatarHtml = fotoUrl
+                ? `<button type="button" onclick="abrirFotoPerfil()" class="p-0 border-0 bg-transparent shrink-0" title="Ver foto ampliada" aria-label="Ver foto ampliada">
+                       <img src="${fotoUrl}" alt="Foto de ${nombreCompleto}" class="user-avatar user-avatar--modal user-avatar--clickeable">
+                   </button>`
+                : `<div class="user-avatar-placeholder user-avatar-placeholder--modal bg-slate-100 flex items-center justify-center"><i class="fas fa-user text-slate-400 text-lg"></i></div>`;
+
+            let filasRol = '';
             if (rol === 'alumno') {
-                html += `
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Carrera</p>
-                        <p class="text-lg font-bold text-gray-800">${carrera || '---'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Semestre</p>
-                        <p class="text-lg font-bold text-gray-800">${semestre || '---'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Estatus</p>
-                        <p class="text-lg font-bold text-gray-800">${estatus || '---'}</p>
-                    </div>
-                `;
+                filasRol += filaDetalleUsuario('Carrera', carrera);
+                filasRol += filaDetalleUsuario('Semestre', semestre);
+                filasRol += filaDetalleUsuario('Estatus', estatus);
             } else if (rol === 'maestro') {
-                html += `
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Departamento</p>
-                        <p class="text-lg font-bold text-gray-800">${departamento || '---'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Grado Académico</p>
-                        <p class="text-lg font-bold text-gray-800">${grado_academico || '---'}</p>
-                    </div>
-                `;
+                filasRol += filaDetalleUsuario('Departamento', departamento);
+                filasRol += filaDetalleUsuario('Grado académico', grado_academico);
             } else if (rol === 'administrativo') {
-                html += `
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Departamento</p>
-                        <p class="text-lg font-bold text-gray-800">${departamento || '---'}</p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Puesto</p>
-                        <p class="text-lg font-bold text-gray-800">${puesto || '---'}</p>
-                    </div>
-                `;
+                filasRol += filaDetalleUsuario('Departamento', departamento);
+                filasRol += filaDetalleUsuario('Puesto', puesto);
             } else if (rol === 'admin') {
-                html += `
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Puesto</p>
-                        <p class="text-lg font-bold text-gray-800">${puesto || '---'}</p>
-                    </div>
-                `;
+                filasRol += filaDetalleUsuario('Puesto', puesto);
             }
 
-            html += `</div>`;
+            const html = `
+                <div class="px-6 pt-6 pb-5 border-b border-gray-100">
+                    <div class="flex items-start gap-4">
+                        ${avatarHtml}
+                        <div class="min-w-0 flex-1">
+                            <h3 id="tituloDetallesUsuario" class="text-xl font-bold text-gray-900 leading-tight">${nombreCompleto}</h3>
+                            <span class="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
+                                <span class="w-1.5 h-1.5 rounded-full shrink-0 ${rolDot}"></span>
+                                ${rolDisplay}
+                            </span>
+                        </div>
+                        <button type="button" onclick="cerrarModalDetalles()" class="text-gray-400 hover:text-gray-600 p-1.5 shrink-0 rounded-lg hover:bg-gray-100 transition" aria-label="Cerrar">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="px-6 pt-5 pb-2">
+                    <p class="detalle-seccion-titulo">Información general</p>
+                    ${filaDetalleUsuario('ID', id)}
+                    ${filaDetalleUsuario('Matrícula', matricula)}
+                </div>
+                ${filasRol ? `
+                <div class="px-6 pt-2 pb-6">
+                    <p class="detalle-seccion-titulo">Datos del rol</p>
+                    ${filasRol}
+                </div>` : '<div class="pb-6"></div>'}
+            `;
+
             document.getElementById('contenidoDetalles').innerHTML = html;
             document.getElementById('modalDetalles').classList.remove('hidden');
         }
 
         function cerrarModalDetalles() {
+            cerrarFotoPerfil();
             document.getElementById('modalDetalles').classList.add('hidden');
+        }
+
+        function abrirFotoPerfil() {
+            if (!fotoPerfilDetalleUrl) return;
+            const img = document.getElementById('fotoPerfilAmpliada');
+            img.src = fotoPerfilDetalleUrl;
+            img.alt = fotoPerfilDetalleAlt;
+            document.getElementById('modalFotoPerfil').classList.remove('hidden');
+        }
+
+        function cerrarFotoPerfil() {
+            const modal = document.getElementById('modalFotoPerfil');
+            const img = document.getElementById('fotoPerfilAmpliada');
+            if (modal) modal.classList.add('hidden');
+            if (img) {
+                img.src = '';
+                img.alt = '';
+            }
         }
 
         // Modal de confirmación para restablecer contraseña
@@ -744,6 +855,20 @@
             usuarioIdRestablecer = null;
         }
 
+        // --- UPDATE parcial: crea form POST oculto hacia restablecer_contrasena ---
+        function obtenerFiltrosListaActuales() {
+            const filtros = {};
+            const rol = (document.getElementById('filtroRol')?.value || '').trim();
+            const q = (document.getElementById('buscadorUsuarios')?.value || '').trim();
+            const page = new URL(window.location.href).searchParams.get('page') || '';
+
+            if (rol) filtros.rol = rol;
+            if (q) filtros.q = q;
+            if (page && page !== '1') filtros.page = page;
+
+            return filtros;
+        }
+
         function ejecutarRestablecer() {
             if (usuarioIdRestablecer) {
                 const form = document.createElement('form');
@@ -754,12 +879,19 @@
                 csrf.name = 'csrfmiddlewaretoken';
                 csrf.value = '{{ csrf_token }}';
                 form.appendChild(csrf);
+                Object.entries(obtenerFiltrosListaActuales()).forEach(([clave, valor]) => {
+                    const campo = document.createElement('input');
+                    campo.type = 'hidden';
+                    campo.name = clave;
+                    campo.value = valor;
+                    form.appendChild(campo);
+                });
                 document.body.appendChild(form);
                 form.submit();
             }
         }
 
-        // Modal de confirmación para eliminar
+        // --- DELETE: abre modal; confirmarBorrado() hace fetch POST a eliminar_usuario ---
         function eliminarUsuario(id, nombre) {
             console.log('Eliminar usuario ID:', id, 'Nombre:', nombre);
             usuarioIdEliminar = id;
@@ -802,6 +934,7 @@
                 btnEliminar.textContent = 'Procesando...';
             }
             
+            // POST AJAX → admin_views.eliminar_usuario → JsonResponse {success, message|error}
             fetch("{% url 'eliminar_usuario' 0 %}".replace('0', usuarioIdEliminar), {
                 method: 'POST',
                 headers: {
@@ -814,13 +947,18 @@
                 body: data
             }))).then(({status, body}) => {
                 if (!body.success) {
-                    // Si hay error, mostrar el mensaje pero NO cerrar el modal
                     alert(body.error || 'Error al eliminar usuario');
                 } else {
-                    // Éxito - mostrar mensaje y redirigir
                     cerrarModalEliminar();
-                    alert(body.message || 'Usuario eliminado exitosamente');
-                    window.location.href = '{% url "gestion_usuarios" %}';
+                    sessionStorage.setItem(
+                        'exitoEliminarUsuario',
+                        body.message || 'Se eliminó el usuario de manera correcta en la base de datos'
+                    );
+                    const params = new URLSearchParams({ exito: 'eliminar' });
+                    Object.entries(obtenerFiltrosListaActuales()).forEach(([clave, valor]) => {
+                        params.set(clave, valor);
+                    });
+                    window.location.href = '{% url "gestion_usuarios" %}?' + params.toString();
                 }
             }).catch(error => {
                 console.error('Error:', error);
@@ -835,47 +973,5 @@
             });
         }
         
-        function mostrarModalExito() {
-            const modal = document.getElementById('modalExito');
-            modal.classList.remove('hidden');
-            
-            // Cerrar automáticamente después de 3 segundos
-            setTimeout(() => {
-                cerrarModalExito();
-            }, 3000);
-        }
-        
-        function cerrarModalExito() {
-            const modal = document.getElementById('modalExito');
-            modal.classList.add('hidden');
-        }
-        
-        function cerrarModalEliminacionExitosa() {
-            const modal = document.getElementById('modalEliminacionExitosa');
-            modal.classList.add('hidden');
-        }
-        
-        // Modal de éxito para eliminación
-        function mostrarAvisoEliminado() {
-            const modal = document.getElementById('modalEliminacionExitosa');
-            modal.classList.remove('hidden');
-            
-            // Cerrar automáticamente después de 3 segundos
-            setTimeout(() => {
-                cerrarModalEliminacionExitosa();
-            }, 3000);
-        }
-        
-        // Mostrar modal de éxito si viene de edición exitosa
-        // NOTA: Los modales de éxito ahora se muestran desde Django messages, no desde parámetros URL
-        document.addEventListener('DOMContentLoaded', function() {
-            // Limpiar parámetros de URL para evitar manipulación
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('exito')) {
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, '', newUrl);
-            }
-        });
-
     </script>
 {% endblock %}

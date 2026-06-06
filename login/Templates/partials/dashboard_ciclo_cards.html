@@ -1,0 +1,116 @@
+{# Requiere: avisos, config (desde _contexto_dashboard_ciclo en views.py) #}
+
+<section class="md:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Periodo actual</p>
+            <p class="text-2xl sm:text-3xl font-bold text-gray-800 tracking-tight mt-1">{{ config.periodo|default:'—' }}</p>
+            {% if config.periodo_descripcion %}
+                <p class="text-sm text-gray-500 mt-1">{{ config.periodo_descripcion }}</p>
+            {% endif %}
+        </div>
+        {% if config.estado_ciclo %}
+            <span class="self-start sm:self-auto inline-flex items-center gap-2 text-xs font-medium rounded-lg px-3 py-1.5 border
+                {% if config.estado_ciclo.codigo == 'en_curso' %}text-emerald-800 bg-emerald-50 border-emerald-200
+                {% elif config.estado_ciclo.codigo == 'pendiente' %}text-blue-800 bg-blue-50 border-blue-200
+                {% else %}text-gray-600 bg-gray-50 border-gray-200{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full
+                    {% if config.estado_ciclo.codigo == 'en_curso' %}bg-emerald-500
+                    {% elif config.estado_ciclo.codigo == 'pendiente' %}bg-blue-500
+                    {% else %}bg-gray-400{% endif %}"></span>
+                {{ config.estado_ciclo.etiqueta }}
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="px-5 py-5 sm:px-6 sm:py-6">
+        {% if avisos.tiene_ciclo and config.fecha_inicio and config.fecha_fin %}
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
+                <div class="lg:col-span-3 space-y-5">
+                    <div class="grid grid-cols-2 gap-4 sm:gap-6">
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">Inicio</p>
+                            <p class="text-base font-semibold text-gray-800">{{ config.fecha_inicio }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wider text-gray-400 mb-1">Fin de semestre</p>
+                            <p class="text-base font-semibold text-gray-800">{{ config.fecha_fin }}</p>
+                        </div>
+                    </div>
+
+                    {% if config.progreso is not None %}
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+                                <span>Avance del ciclo</span>
+                                <span class="font-semibold text-gray-700">{{ config.progreso }}%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-gray-700 rounded-full" style="width: {{ config.progreso }}%"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="lg:col-span-2 lg:border-l lg:border-gray-100 lg:pl-8">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Avisos importantes</p>
+
+                    {% if config.estado_ciclo.codigo == 'pendiente' or avisos.dias_restantes is not None and avisos.dias_restantes <= 30 %}
+                        <ul class="space-y-4" role="list">
+                            {% if config.estado_ciclo.codigo == 'pendiente' %}
+                                <li class="flex items-start gap-3 border-l-4 border-blue-500 pl-3 py-0.5">
+                                    <i class="fas fa-calendar-plus text-blue-500 mt-0.5 shrink-0" aria-hidden="true"></i>
+                                    <p class="text-sm font-medium text-blue-900 leading-relaxed">
+                                        El semestre inicia el <span class="font-semibold">{{ config.fecha_inicio }}</span>.
+                                    </p>
+                                </li>
+                            {% endif %}
+
+                            {% if avisos.dias_restantes is not None and avisos.dias_restantes <= 30 %}
+                                <li class="flex items-start gap-3 border-l-4 pl-3 py-0.5
+                                    {% if avisos.dias_restantes < 0 %}border-gray-400
+                                    {% elif avisos.dias_restantes <= 7 %}border-red-500
+                                    {% else %}border-amber-500{% endif %}">
+                                    <i class="fas mt-0.5 shrink-0
+                                        {% if avisos.dias_restantes < 0 %}fa-circle-info text-gray-500
+                                        {% elif avisos.dias_restantes <= 7 %}fa-circle-exclamation text-red-500
+                                        {% else %}fa-triangle-exclamation text-amber-500{% endif %}"
+                                       aria-hidden="true"></i>
+                                    <p class="text-sm font-medium leading-relaxed
+                                        {% if avisos.dias_restantes < 0 %}text-gray-600
+                                        {% elif avisos.dias_restantes <= 7 %}text-red-800
+                                        {% else %}text-amber-900{% endif %}">
+                                        {% if avisos.dias_restantes < 0 %}
+                                            El ciclo escolar registrado ya concluyó.
+                                        {% elif avisos.dias_restantes == 0 %}
+                                            Hoy concluye el semestre.
+                                        {% elif avisos.dias_restantes == 1 %}
+                                            Queda 1 día para el cierre del semestre.
+                                        {% else %}
+                                            Quedan {{ avisos.dias_restantes }} días para el cierre del semestre.
+                                        {% endif %}
+                                    </p>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    {% else %}
+                        <div class="flex items-center gap-2.5 text-sm text-gray-500">
+                            <i class="fas fa-check-circle text-gray-400 shrink-0" aria-hidden="true"></i>
+                            <span>No hay avisos pendientes.</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-start gap-3 border-l-4 border-amber-500 pl-4 py-1" role="alert">
+                <i class="fas fa-triangle-exclamation text-amber-600 mt-0.5 shrink-0" aria-hidden="true"></i>
+                <div>
+                    <p class="text-sm font-semibold text-amber-900">Ciclo escolar sin configurar</p>
+                    <p class="text-sm text-amber-800 leading-relaxed mt-1">
+                        El sistema detecta el periodo <span class="font-semibold">{{ config.periodo }}</span>, pero no hay fechas registradas en la base de datos.
+                        Configura el ciclo para habilitar el seguimiento del semestre.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>

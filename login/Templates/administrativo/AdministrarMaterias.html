@@ -2,6 +2,18 @@
 
 {% block title %}SchoolTrack - Gestión de Materias{% endblock %}
 
+{% block extra_css %}
+<style>
+    @keyframes parpadeo-campo-error {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+        50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.2); }
+    }
+    .campo-parpadeo-error {
+        animation: parpadeo-campo-error 0.45s ease-in-out 2;
+    }
+</style>
+{% endblock %}
+
 {% block modals %}
 <!-- Modal de Éxito Genérico (Mensajes de Sistema) -->
     <div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
@@ -39,21 +51,6 @@
                         <button type="button" onclick="cerrarModal()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
                             Entendido
                         </button>
-                    </div>
-                </div>
-
-                <!-- Modal de Error -->
-                <div id="modalError" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] hidden" onclick="cerrarModalError()">
-                    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
-                        <div class="w-20 h-20 border-4 border-red-100 rounded-full flex items-center justify-center mb-6">
-                            <i class="fas fa-times text-4xl text-red-500"></i>
-                        </div>
-                        <p id="mensajeError" class="text-gray-700 text-xl font-bold leading-tight">
-                            Error al registrar la materia
-                        </p>
-                        <p class="text-gray-400 text-xs mt-4 uppercase tracking-widest font-black">
-                            Toca en cualquier parte para cerrar
-                        </p>
                     </div>
                 </div>
 
@@ -173,16 +170,16 @@
     <div id="modalCrear" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
             <h3 class="text-2xl font-black text-gray-700 mb-6 uppercase tracking-tighter">Crear Materia</h3>
-            <form method="post" action="{% url 'crear_materia' %}">
+            <form method="post" id="formCrear" action="{% url 'crear_materia' %}">
                 {% csrf_token %}
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código *</label>
-                        <input type="text" name="codigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. MAT101">
+                        <input type="text" name="codigo" id="crearCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. MAT101">
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase mb-1">Nombre *</label>
-                        <input type="text" name="nombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. Matemáticas I">
+                        <input type="text" name="nombre" id="crearNombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. Matemáticas I">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -342,54 +339,231 @@
             document.getElementById('modalExitoSistema').classList.add('hidden');
         }
 
+        function limpiarErroresModal(modalId) {
+            document.querySelectorAll(`#${modalId} .campo-error, #${modalId} .codigo-error, #${modalId} .nombre-error`).forEach(el => el.remove());
+            document.querySelectorAll(`#${modalId} input, #${modalId} select`).forEach(el => {
+                el.classList.remove('border-red-500', 'campo-parpadeo-error');
+                el.classList.add('border-gray-300');
+            });
+        }
+
+        function parpadearCampo(inputEl) {
+            if (!inputEl) return;
+            inputEl.classList.remove('campo-parpadeo-error');
+            void inputEl.offsetWidth;
+            inputEl.classList.add('campo-parpadeo-error');
+            inputEl.addEventListener('animationend', () => {
+                inputEl.classList.remove('campo-parpadeo-error');
+            }, { once: true });
+        }
+
+        function mostrarErrorBajoCampo(inputEl, mensaje, claseError = 'campo-error') {
+            if (!inputEl) return;
+            const contenedor = inputEl.parentElement;
+            const existente = contenedor.querySelector(`.${claseError}`);
+            if (existente && existente.dataset.mensaje === mensaje) {
+                inputEl.classList.remove('border-gray-300');
+                inputEl.classList.add('border-red-500');
+                parpadearCampo(inputEl);
+                return;
+            }
+            contenedor.querySelectorAll('.campo-error, .codigo-error, .nombre-error').forEach(el => el.remove());
+            inputEl.classList.remove('border-gray-300');
+            inputEl.classList.add('border-red-500');
+            const errorDiv = document.createElement('p');
+            errorDiv.className = `${claseError} text-red-500 text-xs mt-1 flex items-center gap-1`;
+            errorDiv.dataset.mensaje = mensaje;
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${mensaje}`;
+            contenedor.appendChild(errorDiv);
+            parpadearCampo(inputEl);
+        }
+
+        function mostrarErrorEnModalMateria(modalId, mensaje) {
+            const errorLower = mensaje.toLowerCase();
+            let input = null;
+            let clase = 'campo-error';
+
+            if (errorLower.includes('nombre')) {
+                input = document.querySelector(`#${modalId} [name="nombre"]`);
+                clase = 'nombre-error';
+            } else {
+                input = document.querySelector(`#${modalId} [name="codigo"]`);
+                clase = 'codigo-error';
+            }
+            mostrarErrorBajoCampo(input, mensaje, clase);
+        }
+
+        function mostrarExitoSistema(mensaje) {
+            document.getElementById('textoExitoSistema').textContent = mensaje;
+            document.getElementById('modalExitoSistema').classList.remove('hidden');
+            setTimeout(cerrarModalExitoSistema, 3000);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             {% if messages %}
                 {% for message in messages %}
                     {% if message.tags == 'success' %}
-                        const msg = "{{ message|safe }}";
-                        document.getElementById('textoExitoSistema').textContent = msg;
-                        document.getElementById('modalExitoSistema').classList.remove('hidden');
-                        setTimeout(cerrarModalExitoSistema, 3000);
+                        mostrarExitoSistema("{{ message|escapejs }}");
                     {% endif %}
                 {% endfor %}
             {% endif %}
+
+            function validarCodigoMateria(codigo, materiaId = null) {
+                const codigoNorm = codigo.trim().toUpperCase();
+                if (!codigoNorm) return { valida: true };
+
+                for (const [id, materia] of Object.entries(materiasData)) {
+                    if (materiaId && String(id) === String(materiaId)) continue;
+                    if (materia.codigo.toUpperCase() === codigoNorm) {
+                        return { valida: false, mensaje: 'Ya existe una materia con ese código' };
+                    }
+                }
+                return { valida: true };
+            }
+
+            function validarCodigoEnCampo(inputEl, materiaId = null) {
+                const codigo = inputEl.value.trim();
+                inputEl.parentElement.querySelectorAll('.codigo-error').forEach(el => el.remove());
+                inputEl.classList.remove('border-red-500', 'campo-parpadeo-error');
+                inputEl.classList.add('border-gray-300');
+
+                const resultado = validarCodigoMateria(codigo, materiaId);
+                if (!resultado.valida) {
+                    mostrarErrorBajoCampo(inputEl, resultado.mensaje, 'codigo-error');
+                }
+            }
+
+            function limpiarErrorCampoCodigo(inputEl) {
+                inputEl.parentElement.querySelectorAll('.codigo-error').forEach(el => el.remove());
+                inputEl.classList.remove('border-red-500', 'campo-parpadeo-error');
+                inputEl.classList.add('border-gray-300');
+            }
+
+            const crearCodigoInput = document.getElementById('crearCodigo');
+            if (crearCodigoInput) {
+                crearCodigoInput.addEventListener('input', function() {
+                    limpiarErrorCampoCodigo(this);
+                });
+                crearCodigoInput.addEventListener('blur', function() {
+                    validarCodigoEnCampo(this);
+                });
+            }
+
+            const editarCodigoInput = document.getElementById('editarCodigo');
+            if (editarCodigoInput) {
+                editarCodigoInput.addEventListener('blur', function() {
+                    const materiaId = document.getElementById('editarId').value;
+                    validarCodigoEnCampo(this, materiaId);
+                });
+            }
+
+            const formCrear = document.getElementById('formCrear');
+            if (formCrear) {
+                formCrear.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const codigoErrorExistente = document.querySelector('#modalCrear .codigo-error');
+                    if (codigoErrorExistente) {
+                        parpadearCampo(document.getElementById('crearCodigo'));
+                        codigoErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+
+                    document.querySelectorAll('#modalCrear .nombre-error').forEach(el => el.remove());
+
+                    const formData = new FormData(this);
+                    try {
+                        const response = await fetch("{% url 'crear_materia' %}", {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            credentials: 'same-origin',
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            cerrarModalCrear();
+                            mostrarExitoSistema(data.message || 'Materia creada correctamente');
+                            setTimeout(() => window.location.reload(), 1200);
+                        } else {
+                            mostrarErrorEnModalMateria('modalCrear', data.error || 'Error al crear la materia');
+                        }
+                    } catch (error) {
+                        console.error('Error al crear materia:', error);
+                        mostrarErrorEnModalMateria('modalCrear', 'Error al procesar la solicitud');
+                    }
+                });
+            }
+
+            const formEditar = document.getElementById('formEditar');
+            if (formEditar) {
+                formEditar.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const codigoErrorExistente = document.querySelector('#modalEditar .codigo-error');
+                    if (codigoErrorExistente) {
+                        parpadearCampo(document.getElementById('editarCodigo'));
+                        codigoErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+
+                    document.querySelectorAll('#modalEditar .nombre-error').forEach(el => el.remove());
+
+                    const formData = new FormData(this);
+                    const url = this.action;
+                    if (!url) return;
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            credentials: 'same-origin',
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            cerrarModalEditar();
+                            mostrarExitoSistema(data.message || 'Materia actualizada correctamente');
+                            setTimeout(() => window.location.reload(), 1200);
+                        } else {
+                            mostrarErrorEnModalMateria('modalEditar', data.error || 'Error al actualizar la materia');
+                        }
+                    } catch (error) {
+                        console.error('Error al editar materia:', error);
+                        mostrarErrorEnModalMateria('modalEditar', 'Error al procesar la solicitud');
+                    }
+                });
+            }
         });
 
         let materiaIdEliminar = null;
 
+        function resetFormularioCrear() {
+            const form = document.getElementById('formCrear');
+            if (form) form.reset();
+            const activa = document.getElementById('activa');
+            if (activa) activa.checked = true;
+        }
+
         function mostrarFormularioCrear() {
+            limpiarErroresModal('modalCrear');
+            resetFormularioCrear();
             document.getElementById('modalCrear').classList.remove('hidden');
             document.getElementById('modalCrear').classList.add('flex');
         }
         
         function cerrarModalCrear() {
+            limpiarErroresModal('modalCrear');
+            resetFormularioCrear();
             document.getElementById('modalCrear').classList.add('hidden');
             document.getElementById('modalCrear').classList.remove('flex');
-        }
-        
-        // Modal de éxito
-        function mostrarRegistroExitoso() {
-            const modal = document.getElementById('modalConfirmacion');
-            modal.classList.remove('hidden');
-        }
-        
-        function cerrarModal() {
-            const modal = document.getElementById('modalConfirmacion');
-            modal.classList.add('hidden');
-        }
-        
-        // Modal de error
-        function mostrarError(mensaje) {
-            const modal = document.getElementById('modalError');
-            if (mensaje) {
-                document.getElementById('mensajeError').textContent = mensaje;
-            }
-            modal.classList.remove('hidden');
-        }
-        
-        function cerrarModalError() {
-            const modal = document.getElementById('modalError');
-            modal.classList.add('hidden');
         }
         
         // Datos de materias desde Django
@@ -426,6 +600,7 @@
         }
         
         function editarMateria(id) {
+            limpiarErroresModal('modalEditar');
             const materia = materiasData[id];
             if (materia) {
                 document.getElementById('editarId').value = id;
@@ -442,6 +617,7 @@
         }
         
         function cerrarModalEditar() {
+            limpiarErroresModal('modalEditar');
             document.getElementById('modalEditar').classList.add('hidden');
             document.getElementById('modalEditar').classList.remove('flex');
         }

@@ -42,18 +42,25 @@ urlpatterns = [
     path('administrativo/horarios/editar/', views.editar_horario, name='editar_horario'),
     path('administrativo/horarios/eliminar/', views.eliminar_horario, name='eliminar_horario'),
     path('administrativo/horarios/semanales/', views.get_horarios_semanales, name='get_horarios_semanales'),
+    # READ — listar usuarios (admin_views.gestion_usuarios + GestionUsuarios.html)
     path('administrador/usuarios/', admin_views.gestion_usuarios, name='gestion_usuarios'),
+    # READ extendido — exportar lista a Excel/PDF (misma consulta, sin modificar BD)
     path('administrador/usuarios/exportar/', admin_views.exportar_usuarios, name='exportar_usuarios'),
     path('administrador/usuarios/exportar-pdf/', admin_views.exportar_usuarios_pdf, name='exportar_usuarios_pdf'),
+    # CREATE — alta de usuario (admin_views.agregar_usuario + AgregarUsuario.html)
     path('administrador/usuarios/agregar/', admin_views.agregar_usuario, name='agregar_usuario'),
+    # UPDATE — editar usuario (admin_views.editar_usuario + EditarUsuario.html)
     path('administrador/usuarios/editar/<int:usuario_id>/', admin_views.editar_usuario, name='editar_usuario'),
+    # DELETE — eliminar usuario (admin_views.eliminar_usuario; AJAX desde GestionUsuarios.html)
     path('administrador/usuarios/eliminar/<int:usuario_id>/', admin_views.eliminar_usuario, name='eliminar_usuario'),
+    # UPDATE parcial — restablecer contraseña temporal
     path('administrador/usuarios/restablecer/<int:usuario_id>/', admin_views.restablecer_contrasena, name='restablecer_contrasena'),
     path('administrador/carreras/', admin_views.gestion_carreras, name='gestion_carreras'),
     path('administrador/carreras/agregar/', admin_views.agregar_carrera, name='agregar_carrera'),
     path('administrador/carreras/editar/<int:carrera_id>/', admin_views.editar_carrera, name='editar_carrera'),
     path('administrador/carreras/eliminar/<int:carrera_id>/', admin_views.eliminar_carrera, name='eliminar_carrera'),
     path('administrador/carreras/verificar-clave/', admin_views.verificar_clave_carrera, name='verificar_clave_carrera'),
+    path('administrador/carreras/verificar-nombre/', admin_views.verificar_nombre_carrera, name='verificar_nombre_carrera'),
     path('administrador/seguridad/', admin_views.gestion_seguridad, name='gestion_seguridad'),
     path('administrador/seguridad/desbloquear/<int:usuario_id>/', admin_views.desbloquear_cuenta, name='desbloquear_cuenta'),
     path('administrador/respaldo/', admin_views.respaldo_bdd, name='respaldo_bdd'),

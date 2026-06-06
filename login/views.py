@@ -14,6 +14,7 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse, HttpResponseNotAllowed, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.db import transaction, models
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -176,6 +177,55 @@ def _periodo_actual() -> str:
     else:
         periodo = 'A'
     return f"{hoy.year}-{periodo}"
+
+
+def _contexto_dashboard_ciclo() -> dict:
+    """Datos del ciclo escolar para paneles administrador y administrativo."""
+    periodo_actual = _periodo_actual()
+    ciclo_actual = CicloEscolar.objects.filter(nombre_ciclo=periodo_actual).first()
+    periodo_letra = periodo_actual.rsplit('-', 1)[-1] if '-' in periodo_actual else ''
+    periodo_descripcion = {
+        'A': 'Enero – Junio',
+        'B': 'Agosto – Diciembre',
+    }.get(periodo_letra, '')
+
+    hoy = timezone.now().date()
+    fecha_inicio = ciclo_actual.fecha_inicio if ciclo_actual else None
+    fecha_fin = ciclo_actual.fecha_fin if ciclo_actual else None
+
+    dias_restantes = None
+    progreso = None
+    estado_ciclo = None
+    if fecha_inicio and fecha_fin:
+        dias_restantes = (fecha_fin - hoy).days
+        total_dias = (fecha_fin - fecha_inicio).days
+        if total_dias > 0:
+            transcurrido = max(0, (hoy - fecha_inicio).days)
+            progreso = min(100, round(transcurrido / total_dias * 100))
+        if hoy < fecha_inicio:
+            estado_ciclo = {'codigo': 'pendiente', 'etiqueta': 'Por iniciar'}
+        elif hoy > fecha_fin:
+            estado_ciclo = {'codigo': 'finalizado', 'etiqueta': 'Finalizado'}
+        else:
+            estado_ciclo = {'codigo': 'en_curso', 'etiqueta': 'En curso'}
+
+    return {
+        'avisos': {
+            'fin_semestre': fecha_fin.strftime('%d/%m/%Y') if fecha_fin else None,
+            'inicio_semestre': fecha_inicio.strftime('%d/%m/%Y') if fecha_inicio else None,
+            'dias_restantes': dias_restantes,
+            'tiene_ciclo': ciclo_actual is not None,
+        },
+        'config': {
+            'periodo': periodo_actual,
+            'periodo_letra': periodo_letra,
+            'periodo_descripcion': periodo_descripcion,
+            'progreso': progreso,
+            'fecha_inicio': fecha_inicio.strftime('%d/%m/%Y') if fecha_inicio else None,
+            'fecha_fin': fecha_fin.strftime('%d/%m/%Y') if fecha_fin else None,
+            'estado_ciclo': estado_ciclo,
+        },
+    }
 
 
 def _serializar_horario(horario: Horario) -> dict:
@@ -1607,27 +1657,12 @@ def dashboard_administrativo(request):
     if not sesion_roles_permitidas(request, ('administrativo',)):
         return redirect('selector_rol')
 
-    # Obtener el periodo actual
-    periodo_actual = _periodo_actual()
-    
-    # Obtener el ciclo escolar actual basado en el periodo actual
-    from .models import CicloEscolar
-    ciclo_actual = CicloEscolar.objects.filter(
-        nombre_ciclo=periodo_actual
-    ).first()
-    
-    fecha_fin_curso = ciclo_actual.fecha_fin if ciclo_actual else None
-    
+    contexto_ciclo = _contexto_dashboard_ciclo()
     context = {
         'perfil': _perfil_administrativo(request),
-        'avisos': {
-            'fin_semestre': fecha_fin_curso.strftime('%d/%m/%Y') if fecha_fin_curso else '---'
-        },
-        'config': {
-            'periodo': periodo_actual
-        }
+        **contexto_ciclo,
     }
-    
+
     return render(request, 'administrativo/administrativo.html', context)
 
 
@@ -1918,11 +1953,14 @@ def exportar_materias_pdf(request):
 
 def crear_materia(request):
     if not sesion_roles_permitidas(request, ('administrativo',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
         return redirect('selector_rol')
 
     if request.method != 'POST':
         return redirect('admin_materias')
 
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     codigo = request.POST.get('codigo', '').strip()
     nombre = request.POST.get('nombre', '').strip()
     semestre = request.POST.get('semestre', '1').strip()
@@ -1930,30 +1968,51 @@ def crear_materia(request):
     activa = request.POST.get('activa') == 'on'
 
     if not codigo or not nombre:
-        messages.error(request, 'El código y el nombre de la materia son obligatorios')
-        return redirect('admin_materias')
+        error_msg = 'El código y el nombre de la materia son obligatorios'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect(f"{reverse('admin_materias')}?abrir_crear=1")
 
-    Materia.objects.update_or_create(
-        clave=codigo,
-        defaults={
-            'nombre': nombre,
-            'semestre': int(semestre) if semestre.isdigit() else 1,
-            'creditos': int(creditos) if creditos.isdigit() else 0,
-            'activo': activa,
-        }
-    )
+    if Materia.objects.filter(clave__iexact=codigo).exists():
+        error_msg = 'Ya existe una materia con ese código'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect(f"{reverse('admin_materias')}?abrir_crear=1")
 
-    messages.success(request, 'Materia creada correctamente')
+    try:
+        Materia.objects.create(
+            clave=codigo,
+            nombre=nombre,
+            semestre=int(semestre) if semestre.isdigit() else 1,
+            creditos=int(creditos) if creditos.isdigit() else 0,
+            activo=activa,
+        )
+    except Exception as e:
+        error_msg = f'Error al crear la materia: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect(f"{reverse('admin_materias')}?abrir_crear=1")
+
+    success_msg = 'Materia creada correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
     return redirect('admin_materias')
 
 
 def editar_materia(request, materia_id):
     if not sesion_roles_permitidas(request, ('administrativo',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
         return redirect('selector_rol')
 
     if request.method != 'POST':
         return redirect('admin_materias')
 
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     materia = get_object_or_404(Materia, pk=materia_id)
     codigo = request.POST.get('codigo', '').strip()
     nombre = request.POST.get('nombre', '').strip()
@@ -1962,17 +2021,30 @@ def editar_materia(request, materia_id):
     activa = request.POST.get('activa') == 'on'
 
     if not codigo or not nombre:
-        messages.error(request, 'El código y el nombre de la materia son obligatorios')
+        error_msg = 'El código y el nombre de la materia son obligatorios'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
         return redirect('admin_materias')
 
-    materia.clave = codigo
     materia.nombre = nombre
     materia.semestre = int(semestre) if semestre.isdigit() else 1
     materia.creditos = int(creditos) if creditos.isdigit() else 0
     materia.activo = activa
-    materia.save()
 
-    messages.success(request, 'Materia actualizada correctamente')
+    try:
+        materia.save()
+    except Exception as e:
+        error_msg = f'Error al actualizar la materia: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_materias')
+
+    success_msg = 'Materia actualizada correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
     return redirect('admin_materias')
 
 
@@ -2380,25 +2452,10 @@ def dashboard_administrador(request):
             'matricula': request.session.get('usuario_matricula', 'N/A')
         }
     
-    # Obtener el periodo actual
-    periodo_actual = _periodo_actual()
-    
-    # Obtener el ciclo escolar actual basado en el periodo actual
-    from .models import CicloEscolar
-    ciclo_actual = CicloEscolar.objects.filter(
-        nombre_ciclo=periodo_actual
-    ).first()
-    
-    fecha_fin_curso = ciclo_actual.fecha_fin if ciclo_actual else None
-    
+    contexto_ciclo = _contexto_dashboard_ciclo()
     context = {
         'perfil': perfil,
-        'avisos': {
-            'fin_semestre': fecha_fin_curso.strftime('%d/%m/%Y') if fecha_fin_curso else '---'
-        },
-        'config': {
-            'periodo': periodo_actual
-        }
+        **contexto_ciclo,
     }
-    
+
     return render(request, 'administrador/administrador.html', context)

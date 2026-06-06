@@ -1,4 +1,5 @@
 {% extends 'base/dashboard_administrador.html' %}
+{% load static %}
 
 {% block title %}SchoolTrack - Editar Usuario{% endblock %}
 {% block body_class %}bg-gray-100{% endblock %}
@@ -52,8 +53,15 @@
 {% endblock %}
 
 {% block content %}
+<!-- ================================================================== -->
+<!-- PANTALLA UPDATE: EditarUsuario.html                                -->
+<!-- Vista Python: admin_views.editar_usuario                           -->
+<!-- URL POST: {% url 'editar_usuario' usuario.id_usuario %}            -->
+<!-- Variables: usuario, datos_especificos, datos_personales,         -->
+<!--   alumno_data / maestro_data / ..., carreras, errores_campos       -->
+<!-- ================================================================== -->
 <div class="flex items-center gap-4 mb-8">
-                <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
+                <a href="{{ url_lista_usuarios }}" class="text-blue-600 hover:text-blue-800 transition">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
                 <h2 class="page-title text-4xl font-bold text-gray-700">Editar Usuario</h2>
@@ -67,9 +75,15 @@
                 {% endfor %}
             {% endif %}
             
+            <!-- enctype multipart: necesario para subir foto (request.FILES en Python) -->
             <form method="POST" action="{% url 'editar_usuario' usuario.id_usuario %}" enctype="multipart/form-data" class="max-w-4xl mx-auto bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
                 {% csrf_token %}
+                <input type="hidden" name="quitar_foto" id="quitar_foto" value="">
+                {% for clave, valor in retorno_filtros.items %}
+                    <input type="hidden" name="{{ clave }}" value="{{ valor }}">
+                {% endfor %}
                 
+                <!-- ===== SECCIÓN 1: campos bloqueados (no se editan; no van en POST como input) ===== -->
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información de Sistema</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -102,9 +116,9 @@
                     </div>
                 </div>
                 
+                <!-- ===== SECCIÓN 2: nombre/apellido + foto (name= → request.POST / request.FILES) ===== -->
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información Personal</h3>
 
-                {% if usuario.rol == 'alumno' or usuario.rol == 'maestro' %}
                 <div class="mb-8">
                     <label class="block text-sm font-bold text-gray-700 mb-2">Foto de Perfil</label>
                     <div class="flex items-start gap-6">
@@ -123,10 +137,15 @@
                             {% if errores_campos.foto %}
                                 <p class="mt-1 text-xs text-red-600">{{ errores_campos.foto }}</p>
                             {% endif %}
+                            {% if usuario.foto %}
+                                <button type="button" onclick="confirmarQuitarFoto()" class="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Quitar foto actual
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                {% endif %}
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
@@ -141,6 +160,7 @@
                     </div>
                 </div>
                 
+                <!-- ===== SECCIÓN 3: campos del rol (solo uno visible según usuario.rol) ===== -->
                 {% if usuario.rol == 'alumno' %}
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos del Alumno</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -254,6 +274,7 @@
                 </div>
                 {% endif %}
                 
+                <!-- ===== SECCIÓN 4: datos_personales → construir_direccion() en Python ===== -->
                 <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos Personales</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
@@ -329,8 +350,9 @@
                     {% endif %}
                 </div>
                 
+                <!-- type="button": abre modal; POST real con ejecutarGuardar() -->
                 <div class="flex justify-end gap-4">
-                    <a href="{% url 'gestion_usuarios' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-xl transition">
+                    <a href="{{ url_lista_usuarios }}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-xl transition">
                         Cancelar
                     </a>
                     <button type="button" onclick="confirmarGuardarCambios()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl transition">
@@ -341,7 +363,7 @@
 {% endblock %}
 
 {% block page_modals %}
-<!-- Modal Confirmar Guardar Cambios -->
+<!-- Modal: confirmación antes del POST → editar_usuario -->
 <div id="modalGuardar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalGuardar">
     <div class="flex items-center justify-center min-h-[calc(100svh-90px)] p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
@@ -387,6 +409,33 @@
         </div>
     </div>
 </div>
+
+<!-- Modal: confirmar eliminación de foto de perfil -->
+<div id="modalQuitarFoto" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalQuitarFoto">
+    <div class="flex items-center justify-center min-h-[calc(100svh-90px)] p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-t-2xl p-6 text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                    <i class="fas fa-image text-3xl text-white"></i>
+                </div>
+                <h3 id="tituloModalQuitarFoto" class="text-white text-xl font-bold">Quitar foto de perfil</h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 text-center mb-6 leading-relaxed">
+                    ¿Desea eliminar la foto de perfil de este usuario? Esta acción no se puede deshacer.
+                </p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="cerrarModalQuitarFoto()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="ejecutarQuitarFoto()" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition">
+                        Quitar foto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -397,24 +446,81 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script src="{% static 'js/fecha-nacimiento.js' %}"></script>
 
 <script>
+        // Validación en navegador antes del POST (complementa editar_usuario en Python)
         document.addEventListener('DOMContentLoaded', function() {
             const fechaNacimiento = document.querySelector('[data-datepicker="fecha_nacimiento"]');
-            if (fechaNacimiento) {
-                const instance = flatpickr(fechaNacimiento, {
-                    locale: 'es',
-                    dateFormat: 'Y-m-d',
-                    altFormat: 'd/m/Y',
-                    altInput: true,
-                    showMonths: 1,
-                    enableTime: false,
-                    disableMobile: true,
-                    allowInput: true
-                });
-                
-                // Registrar eventos del altInput directamente después de inicializar flatpickr
-                const altInput = instance.altInput;
+            if (fechaNacimiento && window.SchoolTrackFechaNacimiento) {
+                SchoolTrackFechaNacimiento.inicializar(fechaNacimiento);
+            }
+
+            const erroresServidor = {
+                {% for clave, valor in errores_campos.items %}
+                "{{ clave|escapejs }}": "{{ valor|escapejs }}",
+                {% endfor %}
+            };
+            const primerCampoError = "{{ primer_campo_error|default:''|escapejs }}";
+
+            function obtenerCampoEnfocable(campoEl) {
+                if (!campoEl) return null;
+                if (campoEl.name === 'fecha_nacimiento') {
+                    const altInput = campoEl.nextElementSibling;
+                    if (altInput && altInput.classList.contains('flatpickr-alt-input')) {
+                        return altInput;
+                    }
+                }
+                return campoEl;
+            }
+
+            function marcarErrorServidor(campo) {
+                const campoEl = document.querySelector(`[name="${campo}"]`);
+                if (!campoEl || !erroresServidor[campo]) return null;
+
+                campoEl.classList.remove('border-gray-200', 'focus:border-blue-500');
+                campoEl.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+
+                if (campo === 'fecha_nacimiento') {
+                    const altInput = campoEl.nextElementSibling;
+                    if (altInput && altInput.classList.contains('flatpickr-alt-input')) {
+                        altInput.classList.remove('border-gray-200', 'focus:border-blue-500');
+                        altInput.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                    }
+                }
+
+                const contenedor = campoEl.closest('div');
+                if (contenedor && !contenedor.querySelector('p.text-red-600')) {
+                    const mensaje = document.createElement('p');
+                    mensaje.className = 'mt-1 text-xs text-red-600';
+                    mensaje.textContent = erroresServidor[campo];
+                    contenedor.appendChild(mensaje);
+                }
+
+                return campoEl;
+            }
+
+            function aplicarErroresServidor() {
+                Object.keys(erroresServidor).forEach(marcarErrorServidor);
+            }
+
+            function irAlCampo(campoEl) {
+                if (!campoEl) return;
+                const enfocable = obtenerCampoEnfocable(campoEl);
+                enfocable.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => enfocable.focus({ preventScroll: true }), 300);
+            }
+
+            function irAlPrimerErrorServidor() {
+                if (!primerCampoError) return;
+                const campoEl = marcarErrorServidor(primerCampoError);
+                if (!campoEl) return;
+                irAlCampo(campoEl);
+            }
+
+            if (primerCampoError) {
+                aplicarErroresServidor();
+                requestAnimationFrame(() => irAlPrimerErrorServidor());
             }
 
             document.querySelector('form').addEventListener('submit', function(e) {
@@ -475,6 +581,11 @@
 
                 if (tieneErrores) {
                     e.preventDefault();
+                    if (!nombre.value.trim()) {
+                        irAlCampo(nombre);
+                    } else if (!apellido.value.trim()) {
+                        irAlCampo(apellido);
+                    }
                     return false;
                 }
 
@@ -527,6 +638,9 @@
 
                 if (fechaInvalida) {
                     e.preventDefault();
+                    if (fechaNacimientoInput) {
+                        irAlCampo(fechaNacimientoInput);
+                    }
                     alert(fechaMensaje);
                     return false;
                 }
@@ -535,6 +649,7 @@
     </script>
 
 <script>
+    // Paso 1: abrir modal de confirmación
     function confirmarGuardarCambios() {
         document.getElementById('modalGuardar').classList.remove('hidden');
     }
@@ -543,7 +658,22 @@
         document.getElementById('modalGuardar').classList.add('hidden');
     }
 
+    // Paso 2: POST real → admin_views.editar_usuario(request, usuario_id)
     function ejecutarGuardar() {
+        document.getElementById('quitar_foto').value = '';
+        document.querySelector('form').submit();
+    }
+
+    function confirmarQuitarFoto() {
+        document.getElementById('modalQuitarFoto').classList.remove('hidden');
+    }
+
+    function cerrarModalQuitarFoto() {
+        document.getElementById('modalQuitarFoto').classList.add('hidden');
+    }
+
+    function ejecutarQuitarFoto() {
+        document.getElementById('quitar_foto').value = '1';
         document.querySelector('form').submit();
     }
 </script>

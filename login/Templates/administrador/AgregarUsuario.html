@@ -1,5 +1,5 @@
 {% extends 'base/dashboard_administrador.html' %}
-{% load custom_filters %}
+{% load custom_filters static %}
 
 {% block title %}SchoolTrack - Agregar Usuario{% endblock %}
 {% block body_class %}bg-gray-100{% endblock %}
@@ -36,6 +36,12 @@
 {% endblock %}
 
 {% block content %}
+<!-- ================================================================== -->
+<!-- PANTALLA CREATE: AgregarUsuario.html                               -->
+<!-- Conectada a admin_views.agregar_usuario vía POST (misma URL)       -->
+<!-- Variables que manda Django: proximo_id, carreras, form_data,       -->
+<!--   errores_campos, periodo_actual, ciclos_escolares, perfil         -->
+<!-- ================================================================== -->
 <div class="max-w-4xl mx-auto">
                 <div class="flex items-center gap-4 mb-8">
                     <a href="{% url 'gestion_usuarios' %}" class="text-blue-600 hover:text-blue-800 transition">
@@ -77,48 +83,75 @@
                 - datos_personales (si se proporcionan)
                 -->
                 
-                <form method="POST" id="formAgregarUsuario" class="bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
+                <!-- FORMULARIO POST → agregar_usuario() en admin_views.py -->
+                <!-- csrf_token: obligatorio; Django rechaza POST sin este token -->
+                <form method="POST" id="formAgregarUsuario" enctype="multipart/form-data" class="bg-white p-8 rounded-2xl border-2 border-gray-200 shadow-sm">
                     {% csrf_token %}
                     
+                    <!-- ===== SECCIÓN 1: datos básicos (siempre visibles) ===== -->
                     <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Información Básica</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Solo informativo; coincide con la secuencia de PostgreSQL (no reutiliza IDs borrados) -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">ID Usuario</label>
                             <div class="py-3 text-gray-800 font-bold text-lg">
                                 {{ proximo_id }}
                             </div>
+                            <p class="text-xs text-gray-400">Se asignará automáticamente al guardar</p>
                         </div>
                         
+                        <!-- name="rol" → request.POST.get('rol') en Python -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Rol *</label>
-                            <select name="rol" id="rol_select" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]">
+                            <select name="rol" id="rol_select" required class="w-full p-3 border-2 {% if errores_campos.rol %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]">
                                 <option value="" disabled selected>Seleccionar rol...</option>
                                 <option value="alumno" {% if form_data.rol == 'alumno' %}selected{% endif %}>Alumno</option>
                                 <option value="maestro" {% if form_data.rol == 'maestro' %}selected{% endif %}>Maestro</option>
                                 <option value="administrativo" {% if form_data.rol == 'administrativo' %}selected{% endif %}>Administrativo</option>
                                 <option value="admin" {% if form_data.rol == 'admin' %}selected{% endif %}>Administrador</option>
                             </select>
+                            {% if errores_campos.rol %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.rol }}</p>
+                            {% endif %}
                         </div>
 
+                        <!-- name="nombre" / name="apellido" → validados en admin_views líneas ~978+ -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Nombre *</label>
                             <input type="text" name="nombre" required
                                    value="{{ form_data.nombre|default:'' }}"
-                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   class="w-full p-3 border-2 {% if errores_campos.nombre %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
                                    placeholder="" autocomplete="off">
+                            {% if errores_campos.nombre %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.nombre }}</p>
+                            {% endif %}
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Apellido *</label>
                             <input type="text" name="apellido" required
                                    value="{{ form_data.apellido|default:'' }}"
-                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   class="w-full p-3 border-2 {% if errores_campos.apellido %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
                                    placeholder="" autocomplete="off">
+                            {% if errores_campos.apellido %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.apellido }}</p>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Campos dinámicos según el rol -->
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Foto de Perfil</label>
+                        <input type="file" name="foto" accept="image/*"
+                               class="w-full p-3 border-2 {% if errores_campos.foto %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 bg-white">
+                        <p class="text-xs text-gray-500 mt-2">Opcional. Formato recomendado: 480x640 píxeles. Tamaño máximo: 5MB.</p>
+                        {% if errores_campos.foto %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.foto }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- ===== SECCIÓN 2: campos del rol (JS los genera al cambiar #rol_select) ===== -->
+                    <!-- Los name= (carrera_id, semestre, departamento...) los lee request.POST en Python -->
                     <div id="dynamic_fields" class="mb-8 hidden">
                         <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2 uppercase tracking-wide">Datos Complementarios del Rol</h3>
                         <div id="fields_container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -126,15 +159,25 @@
                         </div>
                     </div>
 
+                    <!-- Opciones de carrera generadas en servidor; JS las copia al select de alumno -->
                     <div id="carrerasOptions" class="hidden">
                         {% for carrera in carreras %}
                             <option value="{{ carrera.id }}">{{ carrera.clave }} - {{ carrera.nombre }}</option>
                         {% endfor %}
                     </div>
+
+                    <!-- Opciones de departamento (maestro); mismo origen que en EditarUsuario -->
+                    <div id="departamentosOptions" class="hidden">
+                        {% for carrera in carreras %}
+                            <option value="{{ carrera.nombre }}">{{ carrera.clave }} - {{ carrera.nombre }}</option>
+                        {% endfor %}
+                    </div>
                     
+                    <!-- ===== SECCIÓN 3: datos personales (opcionales) → tabla datos_personales ===== -->
                     <h3 class="text-xl font-bold text-gray-700 mb-6 border-b pb-2">Datos Personales (Opcional)</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Si errores_campos.correo_inst existe, borde rojo + mensaje abajo -->
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Correo Institucional</label>
                             <input type="email" name="correo_inst"
@@ -167,7 +210,7 @@
                         </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Fecha de Nacimiento</label>
-                        <input type="text" name="fecha_nacimiento" data-datepicker="fecha_nacimiento" placeholder="YYYY-MM-DD"
+                        <input type="text" name="fecha_nacimiento" data-datepicker="fecha_nacimiento" placeholder="DD/MM/YYYY"
                                value="{{ form_data.fecha_nacimiento|default:'' }}"
                                class="w-full p-3 border-2 {% if errores_campos.fecha_nacimiento %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
                         {% if errores_campos.fecha_nacimiento %}
@@ -176,14 +219,19 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Género</label>
-                        <select name="genero" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                        <select name="genero" class="w-full p-3 border-2 {% if errores_campos.genero %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
                             <option value="" {% if not form_data.genero %}selected{% endif %}>No especificar</option>
                             <option value="M" {% if form_data.genero == 'M' %}selected{% endif %}>Masculino</option>
                             <option value="F" {% if form_data.genero == 'F' %}selected{% endif %}>Femenino</option>
                             <option value="otro" {% if form_data.genero == 'otro' %}selected{% endif %}>Otro</option>
                         </select>
-                        <p class="text-xs text-gray-400 mt-1">Opcional</p>
+                        {% if errores_campos.genero %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.genero }}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-400 mt-1">Opcional</p>
+                        {% endif %}
                     </div>
+                        <!-- Dirección: varios inputs → construir_direccion() los une en un solo texto -->
                         <div class="md:col-span-2">
                             <p class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Dirección</p>
                             <p class="text-xs text-gray-500 mb-4">Estos campos se guardan juntos en un solo dato de dirección.</p>
@@ -239,6 +287,7 @@
                         </div>
                     </div>
                     
+                    <!-- type="button": NO envía el form aún; abre modal de confirmación -->
                     <div class="flex justify-end gap-4">
                         <a href="{% url 'gestion_usuarios' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-xl transition">
                             <i class="fas fa-times mr-2"></i> Cancelar
@@ -252,7 +301,7 @@
 {% endblock %}
 
 {% block page_modals %}
-<!-- Modal Confirmar Agregar Usuario -->
+<!-- Modal: confirmación antes del POST real. ejecutarAgregar() hace form.submit() -->
 <div id="modalAgregar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[110] animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalAgregar">
     <div class="flex items-center justify-center min-h-[calc(100svh-90px)] p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all scale-100 animate-slide-up">
@@ -308,24 +357,14 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script src="{% static 'js/fecha-nacimiento.js' %}"></script>
 
 <script>
+        // --- JS: comportamiento del formulario (no guarda en BD; eso lo hace Python) ---
         document.addEventListener('DOMContentLoaded', function() {
             const fechaNacimiento = document.querySelector('[data-datepicker="fecha_nacimiento"]');
-            if (fechaNacimiento) {
-                const instance = flatpickr(fechaNacimiento, {
-                    locale: 'es',
-                    dateFormat: 'Y-m-d',
-                    altFormat: 'd/m/Y',
-                    altInput: true,
-                    showMonths: 1,
-                    enableTime: false,
-                    disableMobile: true,
-                    allowInput: true
-                });
-                
-                // Registrar eventos del altInput directamente después de inicializar flatpickr
-                const altInput = instance.altInput;
+            if (fechaNacimiento && window.SchoolTrackFechaNacimiento) {
+                SchoolTrackFechaNacimiento.inicializar(fechaNacimiento);
             }
 
             const form = document.querySelector('form');
@@ -333,8 +372,58 @@
             const dynamicFields = document.getElementById('dynamic_fields');
             const fieldsContainer = document.getElementById('fields_container');
             const carrerasOptions = document.getElementById('carrerasOptions').innerHTML;
+            const departamentosOptions = document.getElementById('departamentosOptions').innerHTML;
+            const erroresServidor = {
+                {% for clave, valor in errores_campos.items %}
+                "{{ clave|escapejs }}": "{{ valor|escapejs }}",
+                {% endfor %}
+            };
+            const primerCampoError = "{{ primer_campo_error|default:''|escapejs }}";
 
-            // Datos del formulario para mantener valores cuando hay error
+            function obtenerCampoEnfocable(campoEl) {
+                if (!campoEl) return null;
+                if (campoEl.name === 'fecha_nacimiento') {
+                    const altInput = campoEl.nextElementSibling;
+                    if (altInput && altInput.classList.contains('flatpickr-alt-input')) {
+                        return altInput;
+                    }
+                }
+                return campoEl;
+            }
+
+            function marcarErrorServidor(campo) {
+                const campoEl = document.querySelector(`[name="${campo}"]`);
+                if (!campoEl || !erroresServidor[campo]) return null;
+
+                campoEl.classList.remove('border-gray-200', 'focus:border-blue-500');
+                campoEl.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+
+                const contenedor = campoEl.closest('div');
+                if (contenedor && !contenedor.querySelector('p.text-red-600')) {
+                    const mensaje = document.createElement('p');
+                    mensaje.className = 'mt-1 text-xs text-red-600';
+                    mensaje.textContent = erroresServidor[campo];
+                    contenedor.appendChild(mensaje);
+                }
+
+                return campoEl;
+            }
+
+            function aplicarErroresServidor() {
+                Object.keys(erroresServidor).forEach(marcarErrorServidor);
+            }
+
+            function irAlPrimerErrorServidor() {
+                if (!primerCampoError) return;
+                const campoEl = marcarErrorServidor(primerCampoError);
+                if (!campoEl) return;
+
+                const enfocable = obtenerCampoEnfocable(campoEl);
+                enfocable.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => enfocable.focus({ preventScroll: true }), 300);
+            }
+
+            // Valores previos si hubo error de validación en el servidor (form_data desde Django)
             const formData = {
                 {% if form_data %}
                     periodo_ingreso: "{{ form_data.periodo_ingreso|default:'' }}",
@@ -361,6 +450,7 @@
                 {% endif %}
             };
 
+            // Inserta en #fields_container los inputs según rol (alumno, maestro, etc.)
             function renderCamposRol(rol) {
                 fieldsContainer.innerHTML = '';
 
@@ -406,7 +496,12 @@
                     fieldsContainer.innerHTML = `
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Departamento *</label>
-                            <input type="text" name="departamento" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]" placeholder="" value="${formData.departamento}">
+                            <select name="departamento" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px] bg-white">
+                                <option value="" ${!formData.departamento ? 'selected' : ''} disabled>Seleccionar departamento...</option>
+                                ${departamentosOptions.replace(/value="([^"]+)"/g, (match, value) => {
+                                    return `value="${value}" ${formData.departamento === value ? 'selected' : ''}`;
+                                })}
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Cubículo</label>
@@ -462,14 +557,19 @@
             }
 
             rolSelect.addEventListener('change', function() {
-                renderCamposRol(this.value);
+                renderCamposRol(this.value);  // al cambiar rol, regenera campos dinámicos
             });
 
             if (rolSelect.value) {
-                renderCamposRol(rolSelect.value);
+                renderCamposRol(rolSelect.value);  // si volvió con error, restaura campos del rol
             }
 
-            // Validar fecha de nacimiento al submit
+            if (primerCampoError) {
+                aplicarErroresServidor();
+                requestAnimationFrame(() => irAlPrimerErrorServidor());
+            }
+
+            // Validación en navegador antes de enviar (complementa validación en admin_views.py)
             document.querySelector('form').addEventListener('submit', function(e) {
                 // Convertir fecha de DD/MM/YYYY o YYYY/MM/DD a YYYY-MM-DD antes de enviar
                 const fechaInput = document.querySelector('input[name="fecha_nacimiento"]');
@@ -538,8 +638,9 @@
                 if (hasError) {
                     e.preventDefault();
                     if (erroresMarcar.length > 0) {
-                        erroresMarcar[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        erroresMarcar[0].focus();
+                        const enfocable = obtenerCampoEnfocable(erroresMarcar[0]);
+                        enfocable.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => enfocable.focus({ preventScroll: true }), 300);
                     }
                 }
             });
@@ -548,6 +649,7 @@
 </script>
 
 <script>
+    // Paso 1: validar y abrir modal (aún no hay POST)
     function confirmarAgregarUsuario() {
         // Validar campos antes de mostrar el modal
         const nombre = document.querySelector('input[name="nombre"]');
@@ -599,6 +701,7 @@
         document.getElementById('modalAgregar').classList.add('hidden');
     }
 
+    // Paso 2: POST real → dispara agregar_usuario() en el servidor
     function ejecutarAgregar() {
         cerrarModalAgregar();
         document.getElementById('formAgregarUsuario').submit();

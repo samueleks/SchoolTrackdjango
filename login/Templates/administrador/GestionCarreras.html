@@ -28,6 +28,13 @@
             border: none;
             color: white;
         }
+        @keyframes parpadeo-campo-error {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+            50% { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.2); }
+        }
+        .campo-parpadeo-error {
+            animation: parpadeo-campo-error 0.45s ease-in-out 2;
+        }
         .btn-delete {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             border: none;
@@ -49,19 +56,6 @@
                     <h2 class="page-title text-4xl font-bold text-gray-700">Gestión de Carreras</h2>
                 </div>
 
-                {% if messages %}
-                    {% for message in messages %}
-                        {% if message.tags != 'success' %}
-                            <div class="mb-6 p-4 rounded-lg bg-red-100 text-red-800 text-center">
-                                <div class="flex items-center justify-center gap-3">
-                                    <i class="fas fa-exclamation-circle text-2xl"></i>
-                                    <span class="text-lg font-semibold">{{ message }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-
                 <div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
                     <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
                         <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
@@ -76,21 +70,6 @@
                     </div>
                 </div>
 
-                <div id="modalEliminacionExitosa" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalEliminacionExitosa()">
-                    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
-                        <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
-                            <i class="fas fa-check text-4xl text-green-500"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-gray-800 uppercase tracking-tighter mb-2">¡Carrera eliminada!</h3>
-                        <p class="text-gray-700 text-xl font-bold leading-tight">
-                            Se eliminó la carrera de la manera correcta en la base de datos
-                        </p>
-                        <button type="button" onclick="cerrarModalEliminacionExitosa()" class="mt-8 bg-gray-800 text-white w-full py-3 rounded-xl font-bold hover:bg-black transition">
-                            Entendido
-                        </button>
-                    </div>
-                </div>
-                
                 <!-- Careers List -->
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-200">
@@ -154,19 +133,19 @@
                 </button>
             </div>
             
-            <form method="POST" action="{% url 'agregar_carrera' %}">
+            <form method="POST" id="addForm" action="{% url 'agregar_carrera' %}">
                 {% csrf_token %}
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Carrera *</label>
-                        <input type="text" name="nombre" required maxlength="100" 
+                        <input type="text" name="nombre" id="addNombre" required maxlength="100" 
                                class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                placeholder="Ej: Ingeniería en Sistemas">
                     </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Clave *</label>
-                        <input type="text" name="clave" required minlength="3" maxlength="10"
+                        <input type="text" name="clave" id="addClave" required minlength="3" maxlength="10"
                                class="form-control w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
                                placeholder="Ej: IEM001" style="text-transform: uppercase;">
                         <p class="text-xs text-gray-500 mt-1">Formato: 3-10 caracteres alfanuméricos (ej: IEM001, LCC01, ADM)</p>
@@ -257,26 +236,84 @@
     let carreraIdEliminar = null;
     const eliminarCarreraUrl = '{% url "eliminar_carrera" 0 %}'.replace('/0/', '/');
     const verificarClaveUrl = '{% url "verificar_clave_carrera" %}';
+    const verificarNombreUrl = '{% url "verificar_nombre_carrera" %}';
 
     // Modal functions
+    function limpiarErroresModal(modalId) {
+        document.querySelectorAll(`#${modalId} .campo-error, #${modalId} .clave-error, #${modalId} .nombre-error`).forEach(el => el.remove());
+        document.querySelectorAll(`#${modalId} input`).forEach(el => {
+            el.classList.remove('border-red-500', 'campo-parpadeo-error');
+        });
+    }
+
+    function parpadearCampo(inputEl) {
+        if (!inputEl) return;
+        inputEl.classList.remove('campo-parpadeo-error');
+        void inputEl.offsetWidth;
+        inputEl.classList.add('campo-parpadeo-error');
+        inputEl.addEventListener('animationend', () => {
+            inputEl.classList.remove('campo-parpadeo-error');
+        }, { once: true });
+    }
+
+    function mostrarErrorBajoCampo(inputEl, mensaje, claseError = 'campo-error') {
+        if (!inputEl) return;
+        const contenedor = inputEl.parentElement;
+        const existente = contenedor.querySelector(`.${claseError}`);
+        if (existente && existente.dataset.mensaje === mensaje) {
+            inputEl.classList.add('border-red-500');
+            parpadearCampo(inputEl);
+            return;
+        }
+        contenedor.querySelectorAll('.campo-error, .clave-error, .nombre-error').forEach(el => el.remove());
+        inputEl.classList.add('border-red-500');
+        const errorDiv = document.createElement('p');
+        errorDiv.className = `${claseError} text-red-500 text-xs mt-1 flex items-center gap-1`;
+        errorDiv.dataset.mensaje = mensaje;
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${mensaje}`;
+        contenedor.appendChild(errorDiv);
+        parpadearCampo(inputEl);
+    }
+
+    function mostrarErrorEnModalCarrera(modalId, mensaje) {
+        const errorLower = mensaje.toLowerCase();
+        let input = null;
+        let clase = 'campo-error';
+
+        if (errorLower.includes('nombre')) {
+            input = document.querySelector(`#${modalId} [name="nombre"]`);
+            clase = 'nombre-error';
+        } else {
+            input = document.querySelector(`#${modalId} [name="clave"]`);
+            clase = 'clave-error';
+        }
+        mostrarErrorBajoCampo(input, mensaje, clase);
+    }
+
+    function resetAddForm() {
+        const form = document.getElementById('addForm');
+        if (form) form.reset();
+    }
+
     function showAddModal() {
+        limpiarErroresModal('addModal');
+        resetAddForm();
         document.getElementById('addModal').classList.remove('hidden');
     }
 
     function hideAddModal() {
+        limpiarErroresModal('addModal');
+        resetAddForm();
         document.getElementById('addModal').classList.add('hidden');
     }
 
     function showEditModal(id, nombre, clave) {
+        limpiarErroresModal('editModal');
         document.getElementById('editCarreraId').value = id;
         document.getElementById('editNombre').value = nombre;
         document.getElementById('editClave').value = clave;
         document.getElementById('editForm').action = `/administrador/carreras/editar/${id}/`;
         document.getElementById('editModal').classList.remove('hidden');
-
-        // Limpiar TODOS los errores anteriores del modal
-        document.querySelectorAll('#editModal .clave-error').forEach(el => el.remove());
-        document.querySelectorAll('#editModal .nombre-error').forEach(el => el.remove());
     }
 
     async function validarClave(clave, carreraId = null) {
@@ -299,44 +336,145 @@
         }
     }
 
+    async function validarNombre(nombre, carreraId = null) {
+        if (!nombre || !nombre.trim()) return { valida: true };
+
+        try {
+            const params = new URLSearchParams({ nombre: nombre.trim() });
+            if (carreraId) params.append('carrera_id', carreraId);
+
+            const response = await fetch(`${verificarNombreUrl}?${params}`);
+            const data = await response.json();
+
+            if (data.existe) {
+                return {
+                    valida: false,
+                    mensaje: data.mensaje || 'Ya existe una carrera con ese nombre.',
+                };
+            }
+            return { valida: true };
+        } catch (error) {
+            console.error('Error al validar nombre:', error);
+            return { valida: true };
+        }
+    }
+
     // Agregar validación en tiempo real para el formulario de agregar
     document.addEventListener('DOMContentLoaded', function() {
+        const addNombreInput = document.getElementById('addNombre');
+        const editNombreInput = document.getElementById('editNombre');
         const addClaveInput = document.querySelector('#addModal input[name="clave"]');
         const editClaveInput = document.querySelector('#editModal input[name="clave"]');
+        const addForm = document.getElementById('addForm');
         const editForm = document.getElementById('editForm');
 
-        if (addClaveInput) {
-            addClaveInput.addEventListener('blur', async function() {
-                const clave = this.value.toUpperCase();
-                const resultado = await validarClave(clave);
+        if (addForm) {
+            addForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
 
-                // Eliminar TODOS los errores anteriores de este campo
-                this.parentElement.querySelectorAll('.clave-error').forEach(el => el.remove());
+                const claveErrorExistente = document.querySelector('#addModal .clave-error');
+                if (claveErrorExistente) {
+                    parpadearCampo(document.querySelector('#addModal input[name="clave"]'));
+                    claveErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
 
-                if (!resultado.valida) {
-                    const error = document.createElement('p');
-                    error.className = 'clave-error text-red-500 text-xs mt-1';
-                    error.textContent = resultado.mensaje;
-                    this.parentElement.appendChild(error);
+                const nombreErrorExistente = document.querySelector('#addModal .nombre-error');
+                if (nombreErrorExistente) {
+                    parpadearCampo(document.getElementById('addNombre'));
+                    nombreErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const formData = new FormData(this);
+                try {
+                    const response = await fetch("{% url 'agregar_carrera' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        credentials: 'same-origin',
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        hideAddModal();
+                        sessionStorage.setItem('exitoCarreraMensaje', data.message || 'Carrera agregada correctamente');
+                        window.location.href = '{% url "gestion_carreras" %}?exito=agregar';
+                    } else {
+                        mostrarErrorEnModalCarrera('addModal', data.error || 'Error al agregar carrera');
+                    }
+                } catch (error) {
+                    console.error('Error al agregar carrera:', error);
+                    mostrarErrorEnModalCarrera('addModal', 'Error al procesar la solicitud');
                 }
             });
         }
 
-        if (editClaveInput) {
-            editClaveInput.addEventListener('blur', async function() {
-                const clave = this.value.toUpperCase();
+        async function validarClaveEnCampo(inputEl, carreraId = null) {
+            const clave = inputEl.value.trim().toUpperCase();
+            inputEl.parentElement.querySelectorAll('.clave-error').forEach(el => el.remove());
+            inputEl.classList.remove('border-red-500', 'campo-parpadeo-error');
+
+            const resultado = await validarClave(clave, carreraId);
+            if (!resultado.valida) {
+                mostrarErrorBajoCampo(inputEl, resultado.mensaje, 'clave-error');
+            }
+        }
+
+        async function validarNombreEnCampo(inputEl, carreraId = null) {
+            const nombre = inputEl.value.trim();
+            inputEl.parentElement.querySelectorAll('.nombre-error').forEach(el => el.remove());
+            inputEl.classList.remove('border-red-500', 'campo-parpadeo-error');
+
+            const resultado = await validarNombre(nombre, carreraId);
+            if (!resultado.valida) {
+                mostrarErrorBajoCampo(inputEl, resultado.mensaje, 'nombre-error');
+            }
+        }
+
+        function limpiarErrorEnCampo(inputEl, claseError) {
+            inputEl.parentElement.querySelectorAll(`.${claseError}`).forEach(el => el.remove());
+            inputEl.classList.remove('border-red-500', 'campo-parpadeo-error');
+        }
+
+        if (addNombreInput) {
+            addNombreInput.addEventListener('input', function() {
+                limpiarErrorEnCampo(this, 'nombre-error');
+            });
+            addNombreInput.addEventListener('blur', function() {
+                validarNombreEnCampo(this);
+            });
+        }
+
+        if (editNombreInput) {
+            editNombreInput.addEventListener('input', function() {
+                limpiarErrorEnCampo(this, 'nombre-error');
+            });
+            editNombreInput.addEventListener('blur', function() {
                 const carreraId = document.getElementById('editCarreraId').value;
-                const resultado = await validarClave(clave, carreraId);
+                validarNombreEnCampo(this, carreraId);
+            });
+        }
 
-                // Eliminar TODOS los errores anteriores de este campo
-                this.parentElement.querySelectorAll('.clave-error').forEach(el => el.remove());
+        if (addClaveInput) {
+            addClaveInput.addEventListener('input', function() {
+                limpiarErrorEnCampo(this, 'clave-error');
+            });
+            addClaveInput.addEventListener('blur', function() {
+                validarClaveEnCampo(this);
+            });
+        }
 
-                if (!resultado.valida) {
-                    const error = document.createElement('p');
-                    error.className = 'clave-error text-red-500 text-xs mt-1';
-                    error.textContent = resultado.mensaje;
-                    this.parentElement.appendChild(error);
-                }
+        if (editClaveInput) {
+            editClaveInput.addEventListener('input', function() {
+                limpiarErrorEnCampo(this, 'clave-error');
+            });
+            editClaveInput.addEventListener('blur', function() {
+                const carreraId = document.getElementById('editCarreraId').value;
+                validarClaveEnCampo(this, carreraId);
             });
         }
 
@@ -348,17 +486,21 @@
                 // Verificar si ya hay un error de clave visible
                 const claveErrorExistente = document.querySelector('#editModal .clave-error');
                 if (claveErrorExistente) {
-                    // Ya hay error, no enviar
+                    parpadearCampo(document.getElementById('editClave'));
                     claveErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                const nombreErrorExistente = document.querySelector('#editModal .nombre-error');
+                if (nombreErrorExistente) {
+                    parpadearCampo(document.getElementById('editNombre'));
+                    nombreErrorExistente.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
 
                 const formData = new FormData(this);
                 const carreraId = document.getElementById('editCarreraId').value;
                 const url = `/administrador/carreras/editar/${carreraId}/`;
-
-                // Eliminar TODOS los errores anteriores del modal
-                document.querySelectorAll('#editModal .nombre-error').forEach(el => el.remove());
 
                 try {
                     const response = await fetch(url, {
@@ -374,49 +516,30 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // Cerrar modal y recargar página
                         hideEditModal();
-                        window.location.href = '{% url "gestion_carreras" %}';
+                        sessionStorage.setItem(
+                            'exitoCarreraMensaje',
+                            data.message || 'Carrera actualizada correctamente'
+                        );
+                        window.location.href = '{% url "gestion_carreras" %}?exito=editar';
                     } else {
-                        // Mostrar error específico debajo del campo correspondiente (solo si no es de clave)
-                        if (!data.error.toLowerCase().includes('clave')) {
-                            const errorDiv = document.createElement('p');
-                            errorDiv.className = 'text-red-500 text-xs mt-1 flex items-center gap-1';
-
-                            if (data.error.toLowerCase().includes('nombre')) {
-                                errorDiv.classList.add('nombre-error');
-                                const nombreInput = document.getElementById('editNombre');
-                                nombreInput.parentElement.appendChild(errorDiv);
-                            } else {
-                                // Error general, mostrar debajo de clave por defecto
-                                errorDiv.classList.add('clave-error');
-                                const claveInput = document.getElementById('editClave');
-                                claveInput.parentElement.appendChild(errorDiv);
-                            }
-
-                            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${data.error}`;
-                        }
+                        mostrarErrorEnModalCarrera('editModal', data.error || 'Error al editar carrera');
                     }
                 } catch (error) {
                     console.error('Error al enviar formulario:', error);
-                    const errorDiv = document.createElement('p');
-                    errorDiv.className = 'text-red-500 text-xs mt-1 flex items-center gap-1 clave-error';
-                    errorDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error al procesar la solicitud';
-                    const claveInput = document.getElementById('editClave');
-                    claveInput.parentElement.appendChild(errorDiv);
+                    mostrarErrorBajoCampo(
+                        document.getElementById('editClave'),
+                        'Error al procesar la solicitud',
+                        'clave-error'
+                    );
                 }
             });
         }
     });
 
     function hideEditModal() {
+        limpiarErroresModal('editModal');
         document.getElementById('editModal').classList.add('hidden');
-        // Limpiar errores al cerrar
-        const claveError = document.querySelector('#editModal .clave-error');
-        if (claveError) claveError.remove();
-        const nombreError = document.querySelector('#editModal .nombre-error');
-        if (nombreError) nombreError.remove();
-        // Limpiar validación del browser
         const claveInput = document.getElementById('editClave');
         if (claveInput) claveInput.setCustomValidity('');
         const nombreInput = document.getElementById('editNombre');
@@ -433,12 +556,21 @@
         carreraIdEliminar = null;
     }
 
-    function cerrarModalEliminacionExitosa() {
-        document.getElementById('modalEliminacionExitosa').classList.add('hidden');
-    }
-
     function cerrarModalExitoSistema() {
         document.getElementById('modalExitoSistema').classList.add('hidden');
+    }
+
+    function mostrarExitoSistema(mensaje) {
+        document.getElementById('textoExitoSistema').textContent = mensaje;
+        document.getElementById('modalExitoSistema').classList.remove('hidden');
+        setTimeout(cerrarModalExitoSistema, 3000);
+    }
+
+    function limpiarParametroExito() {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('exito');
+        const qs = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
     }
 
     function getCookie(name) {
@@ -479,6 +611,10 @@
             } else {
                 // Éxito - cerrar modal y redirigir
                 cerrarModalEliminar();
+                sessionStorage.setItem(
+                    'exitoCarreraMensaje',
+                    body.message || 'Se eliminó la carrera de manera correcta en la base de datos'
+                );
                 window.location.href = '{% url "gestion_carreras" %}?exito=eliminar';
             }
         }).catch(error => {
@@ -488,11 +624,10 @@
     }
 
     function mostrarAvisoEliminado() {
-        const modal = document.getElementById('modalEliminacionExitosa');
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            cerrarModalEliminacionExitosa();
-        }, 2000);
+        const mensaje = sessionStorage.getItem('exitoCarreraMensaje')
+            || 'Se eliminó la carrera de manera correcta en la base de datos';
+        sessionStorage.removeItem('exitoCarreraMensaje');
+        mostrarExitoSistema(mensaje);
     }
 
     // Close modals when clicking outside
@@ -502,23 +637,38 @@
         }
     }
 
-    // Mostrar modal de éxito si hay mensajes de Django
     document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         const exito = urlParams.get('exito');
 
         if (exito === 'eliminar') {
             mostrarAvisoEliminado();
-            window.history.replaceState({}, '', window.location.pathname);
+            limpiarParametroExito();
+            return;
+        }
+
+        if (exito === 'agregar') {
+            const mensaje = sessionStorage.getItem('exitoCarreraMensaje')
+                || 'Carrera agregada correctamente';
+            sessionStorage.removeItem('exitoCarreraMensaje');
+            mostrarExitoSistema(mensaje);
+            limpiarParametroExito();
+            return;
+        }
+
+        if (exito === 'editar') {
+            const mensaje = sessionStorage.getItem('exitoCarreraMensaje')
+                || 'Carrera actualizada correctamente';
+            sessionStorage.removeItem('exitoCarreraMensaje');
+            mostrarExitoSistema(mensaje);
+            limpiarParametroExito();
             return;
         }
 
         {% if messages %}
             {% for message in messages %}
                 {% if message.tags == 'success' %}
-                    const msg = "{{ message|safe }}";
-                    document.getElementById('textoExitoSistema').textContent = msg;
-                    document.getElementById('modalExitoSistema').classList.remove('hidden');
+                    mostrarExitoSistema("{{ message|escapejs }}");
                 {% endif %}
             {% endfor %}
         {% endif %}
