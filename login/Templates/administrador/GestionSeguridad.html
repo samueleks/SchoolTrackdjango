@@ -111,20 +111,20 @@
                             <ul class="space-y-3 max-h-80 overflow-y-auto">
                                 {% if cuentas_bloqueadas %}
                                     {% for cuenta in cuentas_bloqueadas %}
-                                    <li class="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition">
-                                        <div class="flex items-center gap-3 flex-1">
-                                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                    <li class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition">
+                                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
                                                 <i class="fas fa-user-slash text-red-600"></i>
                                             </div>
-                                            <div class="flex-1">
-                                                <p class="font-semibold text-gray-800 text-sm">{{ cuenta.nombre }} {{ cuenta.apellido }}</p>
-                                                <p class="text-xs text-gray-500">{{ cuenta.matricula }}</p>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="font-semibold text-gray-800 text-sm break-words">{{ cuenta.nombre }} {{ cuenta.apellido }}</p>
+                                                <p class="text-xs text-gray-500 break-all">{{ cuenta.matricula }}</p>
                                                 <p class="text-xs text-red-600 font-medium mt-1">Bloqueada: {{ cuenta.fecha_bloqueo|date:"d/m/Y H:i" }}</p>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs bg-red-200 text-red-800 px-3 py-1 rounded-full font-bold">{{ cuenta.intentos_fallidos_login }} intentos</span>
-                                            <button type="button" onclick="confirmarDesbloquear({{ cuenta.id_usuario }}, '{{ cuenta.nombre }} {{ cuenta.apellido }}')" class="text-xs bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full font-bold transition">
+                                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
+                                            <span class="text-xs bg-red-200 text-red-800 px-3 py-1.5 rounded-full font-bold text-center whitespace-nowrap">{{ cuenta.intentos_fallidos_login }} intentos</span>
+                                            <button type="button" onclick="confirmarDesbloquear({{ cuenta.id_usuario }}, '{{ cuenta.nombre|escapejs }} {{ cuenta.apellido|escapejs }}')" class="text-xs bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full font-bold transition text-center whitespace-nowrap">
                                                 <i class="fas fa-unlock"></i> Desbloquear
                                             </button>
                                         </div>
@@ -229,5 +229,86 @@
 <form id="formDesbloquear" method="POST" class="hidden">
     {% csrf_token %}
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let usuarioIdDesbloquear = null;
+
+    function cerrarModalExitoSistema() {
+        document.getElementById('modalExitoSistema').classList.add('hidden');
+    }
+
+    function mostrarModalExitoSistema(mensaje) {
+        const texto = document.getElementById('textoExitoSistema');
+        if (texto) {
+            texto.textContent = mensaje || 'Acción realizada correctamente';
+        }
+        document.getElementById('modalExitoSistema').classList.remove('hidden');
+        setTimeout(cerrarModalExitoSistema, 3000);
+    }
+
+    function confirmarDesbloquear(id, nombre) {
+        usuarioIdDesbloquear = id;
+        document.getElementById('nombreUsuarioDesbloquear').textContent = nombre;
+        document.getElementById('modalDesbloquear').classList.remove('hidden');
+    }
+
+    function cerrarModalDesbloquear() {
+        document.getElementById('modalDesbloquear').classList.add('hidden');
+        usuarioIdDesbloquear = null;
+    }
+
+    function ejecutarDesbloquear() {
+        if (!usuarioIdDesbloquear) {
+            cerrarModalDesbloquear();
+            return;
+        }
+
+        const csrfToken = document.querySelector('#formDesbloquear [name=csrfmiddlewaretoken]')?.value;
+        const btn = document.querySelector('#modalDesbloquear button[onclick="ejecutarDesbloquear()"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+        }
+
+        fetch("{% url 'desbloquear_cuenta' 0 %}".replace('0', usuarioIdDesbloquear), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            cerrarModalDesbloquear();
+            if (ok && data.success) {
+                mostrarModalExitoSistema(data.message || 'Cuenta desbloqueada correctamente');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alert(data.error || data.message || 'No se pudo desbloquear la cuenta');
+            }
+        })
+        .catch(() => {
+            cerrarModalDesbloquear();
+            alert('Error al desbloquear la cuenta. Intenta nuevamente.');
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Desbloquear';
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const mensajeExito = sessionStorage.getItem('exitoDesbloquearCuenta');
+        if (mensajeExito) {
+            sessionStorage.removeItem('exitoDesbloquearCuenta');
+            mostrarModalExitoSistema(mensajeExito);
+        }
+    });
+</script>
 {% endblock %}
 
