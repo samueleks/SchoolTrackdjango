@@ -142,6 +142,9 @@ def _enviar_via_resend_api(
         headers={
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            # Resend/Cloudflare rechaza peticiones sin User-Agent (error 1010).
+            'User-Agent': 'SchoolTrack/1.0 (Django; password-recovery)',
         },
         method='POST',
     )
