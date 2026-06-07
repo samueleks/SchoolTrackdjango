@@ -5,8 +5,11 @@ Flujo: matrícula + correo registrado → token de un solo uso → enlace por em
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import secrets
+import urllib.error
+import urllib.request
 from datetime import timedelta
 
 from django.conf import settings
@@ -53,7 +56,15 @@ def email_esta_configurado() -> bool:
     backend = getattr(settings, 'EMAIL_BACKEND', '')
     if 'console' in backend:
         return True
+    if _debe_usar_resend_api():
+        return True
     return bool(getattr(settings, 'EMAIL_HOST', ''))
+
+
+def _debe_usar_resend_api() -> bool:
+    host = (getattr(settings, 'EMAIL_HOST', '') or '').strip().lower()
+    api_key = (getattr(settings, 'EMAIL_HOST_PASSWORD', '') or '').strip()
+    return 'resend.com' in host and api_key.startswith('re_')
 
 
 def _clave_limite_ip(ip: str) -> str:
@@ -85,9 +96,8 @@ def buscar_usuario_por_matricula_y_correo(matricula: str, correo: str) -> Usuari
     if not matricula_limpia or not correo_limpio:
         return None
 
-    try:
-        usuario = Usuarios.objects.get(matricula=matricula_limpia)
-    except Usuarios.DoesNotExist:
+    usuario = Usuarios.objects.filter(matricula__iexact=matricula_limpia).first()
+    if not usuario:
         return None
 
     try:
@@ -109,6 +119,43 @@ def _construir_url_recuperacion(request, token_plano: str) -> str:
     if base:
         return f'{base.rstrip("/")}{ruta}'
     return request.build_absolute_uri(ruta)
+
+
+def _enviar_via_resend_api(
+    *,
+    destinatario: str,
+    asunto: str,
+    texto: str,
+    html: str,
+) -> None:
+    api_key = settings.EMAIL_HOST_PASSWORD.strip()
+    payload = json.dumps({
+        'from': settings.DEFAULT_FROM_EMAIL,
+        'to': [destinatario],
+        'subject': asunto,
+        'html': html,
+        'text': texto,
+    }).encode('utf-8')
+    solicitud = urllib.request.Request(
+        'https://api.resend.com/emails',
+        data=payload,
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        },
+        method='POST',
+    )
+    timeout = int(getattr(settings, 'EMAIL_TIMEOUT', 15))
+    try:
+        with urllib.request.urlopen(solicitud, timeout=timeout) as respuesta:
+            respuesta.read()
+    except urllib.error.HTTPError as exc:
+        cuerpo = exc.read().decode('utf-8', errors='replace')
+        logger.error('Resend API HTTP %s: %s', exc.code, cuerpo)
+        raise RuntimeError(f'Resend rechazó el envío ({exc.code})') from exc
+    except urllib.error.URLError as exc:
+        logger.error('Resend API sin conexión: %s', exc)
+        raise RuntimeError('No se pudo conectar con Resend') from exc
 
 
 def _enviar_correo_recuperacion(
@@ -152,6 +199,15 @@ Si no solicitaste este cambio, ignora este correo. Tu contraseña actual seguir�
   <p style="font-size:11px;color:#9ca3af;">Si el botón no funciona, copia y pega esta URL en tu navegador:<br>{enlace}</p>
 </body>
 </html>"""
+
+    if _debe_usar_resend_api():
+        _enviar_via_resend_api(
+            destinatario=destinatario,
+            asunto=asunto,
+            texto=texto,
+            html=html,
+        )
+        return
 
     mensaje = EmailMultiAlternatives(
         subject=asunto,

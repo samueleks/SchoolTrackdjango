@@ -22,14 +22,14 @@
 
             {% if messages %}
                 {% for message in messages %}
-                <div class="w-14 h-14 mx-auto mb-5 rounded-full flex items-center justify-center {% if message.tags == 'warning' %}bg-amber-100{% else %}bg-green-100{% endif %}">
-                    <i class="fas {% if message.tags == 'warning' %}fa-triangle-exclamation text-amber-600{% else %}fa-envelope-open-text text-green-600{% endif %} text-2xl"></i>
+                <div class="w-14 h-14 mx-auto mb-5 rounded-full flex items-center justify-center {% if 'warning' in message.tags or 'error' in message.tags %}bg-amber-100{% else %}bg-green-100{% endif %}">
+                    <i class="fas {% if 'warning' in message.tags or 'error' in message.tags %}fa-triangle-exclamation text-amber-600{% else %}fa-envelope-open-text text-green-600{% endif %} text-2xl"></i>
                 </div>
                 <h3 class="text-lg font-bold text-gray-800 mb-3">
-                    {% if message.tags == 'warning' %}No se pudo enviar el correo{% else %}Revisa tu correo{% endif %}
+                    {% if 'warning' in message.tags or 'error' in message.tags %}No se pudo enviar el correo{% else %}Revisa tu correo{% endif %}
                 </h3>
                 <p class="text-gray-600 text-sm leading-relaxed mb-4">{{ message }}</p>
-                {% if message.tags != 'warning' %}
+                {% if 'warning' not in message.tags and 'error' not in message.tags %}
                 <p class="text-xs text-gray-400 mb-2">El enlace expira en 1 hora por seguridad.</p>
                 {% endif %}
                 {% endfor %}

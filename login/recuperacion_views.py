@@ -63,14 +63,13 @@ def recuperar_contrasena_solicitud(request):
                     'Intenta más tarde o contacta al administrador.'
                 )
             else:
-                if enviado:
+                if enviado or mensaje == MENSAJE_SOLICITUD_GENERICO:
                     messages.success(request, mensaje)
-                else:
-                    messages.warning(request, mensaje)
-                destino = reverse('recuperar_contrasena_enviado')
-                if rol:
-                    destino = f'{destino}?rol={rol}'
-                return redirect(destino)
+                    destino = reverse('recuperar_contrasena_enviado')
+                    if rol:
+                        destino = f'{destino}?rol={rol}'
+                    return redirect(destino)
+                error_msg = mensaje
 
     context = {
         **_contexto_rol(rol),
