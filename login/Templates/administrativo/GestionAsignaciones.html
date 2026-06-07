@@ -164,22 +164,47 @@
 <script>
 const materiasCatalogoFiltro = [
     {% for materia in materias %}
-    { id: '{{ materia.id_materia }}', texto: '{{ materia.clave|escapejs }} — {{ materia.nombre|escapejs }}' },
+    {
+        id: '{{ materia.id_materia }}',
+        texto: '{{ materia.clave|escapejs }} — {{ materia.nombre|escapejs }}',
+        carreraId: '{{ materia.id_carrera_id }}',
+    },
     {% endfor %}
 ];
 
 const maestrosCatalogoFiltro = [
     {% for maestro in maestros %}
-    { id: '{{ maestro.id_usuario_id }}', texto: '{{ maestro.id_usuario.nombre|escapejs }} {{ maestro.id_usuario.apellido|escapejs }}' },
+    { id: '{{ maestro.id_usuario_id }}', texto: '{{ maestro.id_usuario.matricula|escapejs }} — {{ maestro.id_usuario.nombre|escapejs }} {{ maestro.id_usuario.apellido|escapejs }}' },
     {% endfor %}
 ];
+
+const gruposCatalogoAsignacion = [
+    {% for grupo in grupos %}
+    {
+        id: '{{ grupo.id_grupo }}',
+        texto: '{{ grupo.clave|escapejs }} — {{ grupo.nombre|escapejs }}',
+        carreraId: '{{ grupo.id_carrera_id }}',
+        cicloId: '{{ grupo.id_ciclo_escolar_id }}',
+    },
+    {% endfor %}
+];
+
+const catalogosAsignacionForm = {
+    materia: materiasCatalogoFiltro,
+    maestro: maestrosCatalogoFiltro,
+    grupo: gruposCatalogoAsignacion,
+};
 
 function quitarAcentos(texto) {
     return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function normalizarBusquedaFiltro(texto) {
-    return quitarAcentos(texto).toLowerCase().trim();
+    return quitarAcentos(texto)
+        .toLowerCase()
+        .replace(/[,.\-—_/\\|]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 function escaparHtml(texto) {
@@ -355,16 +380,205 @@ function aplicarFiltrosAsignaciones(resetGrupo) {
     window.location.href = urlGestionAsignaciones(!resetGrupo);
 }
 
-function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function getCatalogoGrupoFormulario(form) {
+    const carreraId = form.querySelector('.filtro-carrera-asignacion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    return gruposCatalogoAsignacion.filter(grupo => {
+        if (carreraId && String(grupo.carreraId) !== String(carreraId)) return false;
+        if (cicloId && String(grupo.cicloId) !== String(cicloId)) return false;
+        return true;
+    });
+}
+
+function getCatalogoMateriaFormulario(form) {
+    const carreraId = form.querySelector('.filtro-carrera-asignacion')?.value || '';
+    return materiasCatalogoFiltro.filter(materia => {
+        if (carreraId && String(materia.carreraId) !== String(carreraId)) return false;
+        return true;
+    });
+}
+
+function getCatalogoCampoAsignacion(form, campo) {
+    if (campo === 'grupo') return getCatalogoGrupoFormulario(form);
+    if (campo === 'materia') return getCatalogoMateriaFormulario(form);
+    return catalogosAsignacionForm[campo] || [];
+}
+
+function actualizarEstadoGrupoFormulario(form) {
+    const wrapper = form.querySelector('.campo-buscador-asignacion[data-campo="grupo"]');
+    if (!wrapper) return;
+    const carreraId = form.querySelector('.filtro-carrera-asignacion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    const listo = Boolean(carreraId && cicloId);
+    const input = wrapper.querySelector('.buscador-asignacion-input');
+    if (input) {
+        input.disabled = !listo;
+        input.placeholder = listo ? 'Buscar grupo...' : 'Elige carrera y ciclo primero';
+    }
+}
+
+function actualizarEstadoMateriaFormulario(form) {
+    const wrapper = form.querySelector('.campo-buscador-asignacion[data-campo="materia"]');
+    if (!wrapper) return;
+    const carreraId = form.querySelector('.filtro-carrera-asignacion')?.value || '';
+    const listo = Boolean(carreraId);
+    const input = wrapper.querySelector('.buscador-asignacion-input');
+    if (input) {
+        input.disabled = !listo;
+        input.placeholder = listo ? 'Buscar materia...' : 'Elige carrera primero';
+    }
+}
+
+function onFiltrosGrupoAsignacionChange(form) {
+    const wrapperGrupo = form.querySelector('.campo-buscador-asignacion[data-campo="grupo"]');
+    if (wrapperGrupo) limpiarBuscadorAsignacion(wrapperGrupo);
+    const wrapperMateria = form.querySelector('.campo-buscador-asignacion[data-campo="materia"]');
+    if (wrapperMateria) limpiarBuscadorAsignacion(wrapperMateria);
+    actualizarEstadoGrupoFormulario(form);
+    actualizarEstadoMateriaFormulario(form);
+}
+
+function initFiltrosGrupoAsignacion(form) {
+    form.querySelector('.filtro-carrera-asignacion')?.addEventListener('change', () => onFiltrosGrupoAsignacionChange(form));
+    form.querySelector('[name="ciclo_id"]')?.addEventListener('change', () => onFiltrosGrupoAsignacionChange(form));
+    actualizarEstadoGrupoFormulario(form);
+    actualizarEstadoMateriaFormulario(form);
+}
+
+function abrirModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+    if (id === 'modalCrear') {
+        const form = document.getElementById('formCrear');
+        form.reset();
+        limpiarBuscadoresFormularioAsignacion(form);
+        actualizarEstadoGrupoFormulario(form);
+        actualizarEstadoMateriaFormulario(form);
+    }
+}
 function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function renderListaBuscadorAsignacion(wrapper, catalogo, query) {
+    const lista = wrapper.querySelector('.lista-buscador-asignacion');
+    if (!lista) return;
+
+    const q = normalizarBusquedaFiltro(query);
+    const coincidencias = q
+        ? catalogo.filter(item => normalizarBusquedaFiltro(item.texto).includes(q))
+        : catalogo.slice(0, 30);
+
+    if (!coincidencias.length) {
+        lista.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Sin coincidencias</p>';
+        lista.classList.remove('hidden');
+        return;
+    }
+
+    lista.innerHTML = coincidencias.map(item =>
+        `<button type="button" class="opcion-buscador-asignacion w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0" data-id="${item.id}">${escaparHtml(item.texto)}</button>`
+    ).join('');
+    lista.classList.remove('hidden');
+}
+
+function seleccionarBuscadorAsignacion(wrapper, id, texto) {
+    const hidden = wrapper.querySelector('.buscador-asignacion-hidden');
+    const input = wrapper.querySelector('.buscador-asignacion-input');
+    const lista = wrapper.querySelector('.lista-buscador-asignacion');
+    const btnLimpiar = wrapper.querySelector('.limpiar-buscador-asignacion');
+    if (hidden) hidden.value = id;
+    if (input) input.value = texto;
+    if (lista) lista.classList.add('hidden');
+    if (btnLimpiar) btnLimpiar.classList.toggle('hidden', !id);
+}
+
+function limpiarBuscadorAsignacion(wrapper) {
+    const hidden = wrapper.querySelector('.buscador-asignacion-hidden');
+    const input = wrapper.querySelector('.buscador-asignacion-input');
+    const lista = wrapper.querySelector('.lista-buscador-asignacion');
+    const btnLimpiar = wrapper.querySelector('.limpiar-buscador-asignacion');
+    if (hidden) hidden.value = '';
+    if (input) input.value = '';
+    if (lista) {
+        lista.innerHTML = '';
+        lista.classList.add('hidden');
+    }
+    if (btnLimpiar) btnLimpiar.classList.add('hidden');
+}
+
+function limpiarBuscadoresFormularioAsignacion(form) {
+    form.querySelectorAll('.campo-buscador-asignacion').forEach(limpiarBuscadorAsignacion);
+}
+
+function setCampoBuscadorAsignacion(form, campo, id) {
+    const wrapper = form.querySelector(`.campo-buscador-asignacion[data-campo="${campo}"]`);
+    if (!wrapper) return;
+    const catalogo = getCatalogoCampoAsignacion(form, campo);
+    const item = catalogo.find(c => String(c.id) === String(id));
+    seleccionarBuscadorAsignacion(wrapper, id, item ? item.texto : '');
+}
+
+function initBuscadoresFormularioAsignacion(form) {
+    form.querySelectorAll('.campo-buscador-asignacion').forEach(wrapper => {
+        const campo = wrapper.dataset.campo;
+        const input = wrapper.querySelector('.buscador-asignacion-input');
+        const lista = wrapper.querySelector('.lista-buscador-asignacion');
+        const btnLimpiar = wrapper.querySelector('.limpiar-buscador-asignacion');
+        if (!input) return;
+
+        const obtenerCatalogo = () => getCatalogoCampoAsignacion(form, campo);
+
+        input.addEventListener('input', () => {
+            if (!input.value.trim()) {
+                limpiarBuscadorAsignacion(wrapper);
+            }
+            renderListaBuscadorAsignacion(wrapper, obtenerCatalogo(), input.value);
+        });
+
+        input.addEventListener('focus', () => {
+            if ((campo === 'grupo' || campo === 'materia') && input.disabled) return;
+            renderListaBuscadorAsignacion(wrapper, obtenerCatalogo(), input.value);
+        });
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                lista?.classList.add('hidden');
+                return;
+            }
+            if (e.key !== 'Enter' || input.disabled) return;
+            e.preventDefault();
+            const catalogo = obtenerCatalogo();
+            const q = normalizarBusquedaFiltro(input.value);
+            if (!q) {
+                limpiarBuscadorAsignacion(wrapper);
+                return;
+            }
+            const coincidencia = catalogo.find(item => normalizarBusquedaFiltro(item.texto).includes(q));
+            if (coincidencia) {
+                seleccionarBuscadorAsignacion(wrapper, coincidencia.id, coincidencia.texto);
+            }
+        });
+
+        lista?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.opcion-buscador-asignacion');
+            if (!btn) return;
+            seleccionarBuscadorAsignacion(wrapper, btn.dataset.id, btn.textContent.trim());
+        });
+
+        btnLimpiar?.addEventListener('click', () => limpiarBuscadorAsignacion(wrapper));
+    });
+}
 
 function editarAsignacion(id, materiaId, maestroId, grupoId, cicloId, estatus) {
     const form = document.getElementById('formEditar');
     form.action = `/administrativo/asignaciones/editar/${id}/`;
-    form.materia_id.value = materiaId;
-    form.maestro_id.value = maestroId;
-    form.grupo_id.value = grupoId;
+    const grupo = gruposCatalogoAsignacion.find(g => String(g.id) === String(grupoId));
+    if (grupo) {
+        form.querySelector('.filtro-carrera-asignacion').value = grupo.carreraId;
+    }
     form.ciclo_id.value = cicloId;
+    actualizarEstadoGrupoFormulario(form);
+    actualizarEstadoMateriaFormulario(form);
+    setCampoBuscadorAsignacion(form, 'materia', materiaId);
+    setCampoBuscadorAsignacion(form, 'maestro', maestroId);
+    setCampoBuscadorAsignacion(form, 'grupo', grupoId);
     form.estatus.value = estatus;
     abrirModal('modalEditar');
 }
@@ -395,6 +609,13 @@ function eliminarRegistro(url, etiqueta) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    const formCrear = document.getElementById('formCrear');
+    const formEditar = document.getElementById('formEditar');
+    initBuscadoresFormularioAsignacion(formCrear);
+    initBuscadoresFormularioAsignacion(formEditar);
+    initFiltrosGrupoAsignacion(formCrear);
+    initFiltrosGrupoAsignacion(formEditar);
+
     initBuscadorCatalogoFiltro({
         catalogo: materiasCatalogoFiltro,
         inputId: 'buscar-materia-filtro',
@@ -423,6 +644,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (!e.target.closest('#buscar-maestro-filtro') && !e.target.closest('#lista-maestros-filtro')) {
             document.getElementById('lista-maestros-filtro')?.classList.add('hidden');
+        }
+        if (!e.target.closest('.campo-buscador-asignacion')) {
+            document.querySelectorAll('.lista-buscador-asignacion').forEach(lista => lista.classList.add('hidden'));
         }
     });
 });

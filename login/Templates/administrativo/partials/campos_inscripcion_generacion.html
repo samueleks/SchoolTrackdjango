@@ -1,0 +1,58 @@
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Carrera *</label>
+    <select class="filtro-carrera-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" required>
+        <option value="">Seleccionar carrera</option>
+        {% for carrera in carreras %}
+        <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
+    <select name="ciclo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for ciclo in ciclos %}
+        <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
+    <select name="grupo_id" required class="select-grupo-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" disabled>
+        <option value="">Elige carrera y ciclo primero</option>
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Generación (periodo de ingreso) *</label>
+    <select name="periodo_ingreso" required class="select-generacion-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" disabled>
+        <option value="">Elige carrera primero</option>
+    </select>
+    <p class="mt-1 text-xs text-gray-500">Alumnos con el mismo periodo de ingreso en la carrera seleccionada.</p>
+</div>
+<div id="panelCandidatosGeneracion" class="hidden border-2 border-gray-100 rounded-lg p-3 bg-gray-50 space-y-3">
+    <div class="flex flex-wrap justify-between items-center gap-2">
+        <p class="text-sm font-bold text-gray-700">
+            Elegibles: <span id="contadorElegibles" class="text-blue-600">0</span>
+        </p>
+        <label class="flex items-center gap-2 text-sm font-bold text-gray-600 cursor-pointer">
+            <input type="checkbox" id="seleccionarTodosElegibles" class="rounded" checked>
+            Seleccionar todos
+        </label>
+    </div>
+    <div id="listaElegiblesGeneracion" class="max-h-40 overflow-y-auto space-y-1 bg-white border border-gray-200 rounded-lg p-2"></div>
+    <div id="bloqueExcluidosGeneracion" class="hidden">
+        <p class="text-sm font-bold text-amber-700 mb-1">
+            Excluidos (atrasados u otros): <span id="contadorExcluidos">0</span>
+        </p>
+        <p class="text-xs text-gray-500 mb-2">No se inscribirán automáticamente. Inscríbelos de forma individual al grupo de su semestre.</p>
+        <div id="listaExcluidosGeneracion" class="max-h-32 overflow-y-auto space-y-1 bg-amber-50 border border-amber-200 rounded-lg p-2 text-sm text-gray-600"></div>
+    </div>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Estatus *</label>
+    <select name="estatus" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="Activa">Activa</option>
+        <option value="Baja">Baja</option>
+        <option value="Reinscripcion">Reinscripción</option>
+    </select>
+</div>

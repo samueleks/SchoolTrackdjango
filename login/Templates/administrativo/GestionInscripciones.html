@@ -25,9 +25,14 @@
             <h2 class="text-2xl sm:text-3xl font-black text-gray-700 uppercase tracking-tight">Inscripciones</h2>
             <p class="text-blue-600 font-bold text-sm uppercase tracking-widest">Alumno a grupo por ciclo</p>
         </div>
-        <button onclick="abrirModal('modalCrear')" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700">
-            <i class="fas fa-plus mr-2"></i> Nueva inscripción
-        </button>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button onclick="abrirModalCrearInscripcion()" class="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700">
+                <i class="fas fa-user-plus mr-2"></i> Nueva inscripción
+            </button>
+            <button onclick="abrirModalGeneracionInscripcion()" class="flex-1 sm:flex-none bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700">
+                <i class="fas fa-users mr-2"></i> Inscribir generación
+            </button>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
@@ -137,6 +142,21 @@
     </div>
 </div>
 
+<div id="modalGeneracion" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-8 pb-8 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-6 mx-4 my-auto">
+        <h3 class="text-xl font-bold mb-1">Inscribir generación</h3>
+        <p class="text-sm text-gray-500 mb-4">Inscribe a todos los alumnos de un mismo periodo de ingreso. Los atrasados (otro semestre) se excluyen automáticamente.</p>
+        <form id="formGeneracion" method="POST" action="{% url 'crear_inscripcion_generacion' %}" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_inscripcion_generacion.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalGeneracion')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" id="btnGuardarGeneracion" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold" disabled>Inscribir seleccionados</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="modalEditar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
     <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4">
         <h3 class="text-xl font-bold mb-4">Editar inscripción</h3>
@@ -176,6 +196,331 @@
 <script>
 let inscripcionIdEliminar = null;
 const eliminarInscripcionUrl = '{% url "eliminar_inscripcion" 0 %}'.replace('/0/', '/');
+
+const alumnosCatalogoInscripcion = [
+    {% for alumno in alumnos %}
+    {
+        id: '{{ alumno.id_usuario_id }}',
+        texto: '{{ alumno.id_usuario.matricula|escapejs }} — {{ alumno.id_usuario.nombre|escapejs }} {{ alumno.id_usuario.apellido|escapejs }}',
+        carreraId: '{{ alumno.id_carrera_id|default:"" }}',
+        periodoIngreso: '{{ alumno.periodo_ingreso|escapejs }}',
+        semestre: {{ alumno.semestre }},
+        estatus: '{{ alumno.estatus|escapejs }}',
+    },
+    {% endfor %}
+];
+
+const gruposCatalogoInscripcion = [
+    {% for grupo in grupos %}
+    {
+        id: '{{ grupo.id_grupo }}',
+        texto: '{{ grupo.clave|escapejs }} — {{ grupo.nombre|escapejs }} (Sem. {{ grupo.semestre }})',
+        carreraId: '{{ grupo.id_carrera_id }}',
+        cicloId: '{{ grupo.id_ciclo_escolar_id }}',
+        semestre: {{ grupo.semestre }},
+    },
+    {% endfor %}
+];
+
+const inscripcionesExistentes = new Set([
+    {% for ins in inscripciones_activas %}
+    '{{ ins.id_alumno_id }}-{{ ins.id_grupo_id }}-{{ ins.id_ciclo_escolar_id }}',
+    {% endfor %}
+]);
+
+function claveInscripcion(alumnoId, grupoId, cicloId) {
+    return `${alumnoId}-${grupoId}-${cicloId}`;
+}
+
+function yaInscrito(alumnoId, grupoId, cicloId) {
+    return inscripcionesExistentes.has(claveInscripcion(alumnoId, grupoId, cicloId));
+}
+
+function getCatalogoAlumnosInscripcion(form) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    return alumnosCatalogoInscripcion.filter(alumno => {
+        if (!carreraId) return false;
+        if (alumno.carreraId && String(alumno.carreraId) !== String(carreraId)) return false;
+        return true;
+    });
+}
+
+function getCatalogoGruposInscripcion(form) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    return gruposCatalogoInscripcion.filter(grupo => {
+        if (carreraId && String(grupo.carreraId) !== String(carreraId)) return false;
+        if (cicloId && String(grupo.cicloId) !== String(cicloId)) return false;
+        return true;
+    });
+}
+
+function repoblarSelectInscripcion(selectEl, catalogo, placeholder, valorActual) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    const opcionVacia = document.createElement('option');
+    opcionVacia.value = '';
+    opcionVacia.textContent = placeholder;
+    selectEl.appendChild(opcionVacia);
+    catalogo.forEach(item => {
+        const opcion = document.createElement('option');
+        opcion.value = item.id;
+        opcion.textContent = item.texto;
+        selectEl.appendChild(opcion);
+    });
+    if (valorActual) {
+        selectEl.value = String(valorActual);
+        if (selectEl.value !== String(valorActual)) {
+            selectEl.value = '';
+        }
+    }
+}
+
+function actualizarCamposInscripcion(form, valores = {}) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    const selectAlumno = form.querySelector('.select-alumno-inscripcion');
+    const selectGrupo = form.querySelector('.select-grupo-inscripcion');
+
+    const listoAlumno = Boolean(carreraId);
+    const listoGrupo = Boolean(carreraId && cicloId);
+
+    if (selectAlumno) {
+        selectAlumno.disabled = !listoAlumno;
+        repoblarSelectInscripcion(
+            selectAlumno,
+            listoAlumno ? getCatalogoAlumnosInscripcion(form) : [],
+            listoAlumno ? 'Seleccionar alumno' : 'Elige carrera primero',
+            valores.alumnoId,
+        );
+    }
+
+    if (selectGrupo) {
+        selectGrupo.disabled = !listoGrupo;
+        repoblarSelectInscripcion(
+            selectGrupo,
+            listoGrupo ? getCatalogoGruposInscripcion(form) : [],
+            listoGrupo ? 'Seleccionar grupo' : 'Elige carrera y ciclo primero',
+            valores.grupoId,
+        );
+    }
+}
+
+function onFiltrosInscripcionChange(form) {
+    actualizarCamposInscripcion(form);
+}
+
+function initFiltrosInscripcion(form) {
+    form.querySelector('.filtro-carrera-inscripcion')?.addEventListener('change', () => onFiltrosInscripcionChange(form));
+    form.querySelector('[name="ciclo_id"]')?.addEventListener('change', () => onFiltrosInscripcionChange(form));
+    actualizarCamposInscripcion(form);
+}
+
+function abrirModalCrearInscripcion() {
+    const form = document.getElementById('formCrear');
+    form.reset();
+    actualizarCamposInscripcion(form);
+    abrirModal('modalCrear');
+}
+
+function getPeriodosIngresoCarrera(carreraId) {
+    const periodos = new Set();
+    alumnosCatalogoInscripcion.forEach(alumno => {
+        if (!carreraId) return;
+        if (alumno.carreraId && String(alumno.carreraId) !== String(carreraId)) return;
+        if (alumno.periodoIngreso) periodos.add(alumno.periodoIngreso);
+    });
+    return Array.from(periodos).sort().reverse();
+}
+
+function repoblarSelectGeneracion(form, valorActual) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    const select = form.querySelector('.select-generacion-inscripcion');
+    if (!select) return;
+
+    select.innerHTML = '';
+    const vacia = document.createElement('option');
+    vacia.value = '';
+    vacia.textContent = carreraId ? 'Seleccionar generación' : 'Elige carrera primero';
+    select.appendChild(vacia);
+
+    if (carreraId) {
+        getPeriodosIngresoCarrera(carreraId).forEach(periodo => {
+            const opcion = document.createElement('option');
+            opcion.value = periodo;
+            opcion.textContent = periodo;
+            select.appendChild(opcion);
+        });
+        select.disabled = false;
+    } else {
+        select.disabled = true;
+    }
+
+    if (valorActual) {
+        select.value = valorActual;
+    }
+}
+
+function getCandidatosGeneracion(form) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    const grupoId = form.querySelector('[name="grupo_id"]')?.value || '';
+    const periodoIngreso = form.querySelector('[name="periodo_ingreso"]')?.value || '';
+    const grupo = gruposCatalogoInscripcion.find(g => String(g.id) === String(grupoId));
+
+    const elegibles = [];
+    const excluidos = [];
+
+    if (!carreraId || !periodoIngreso || !grupo || !cicloId) {
+        return { elegibles, excluidos };
+    }
+
+    alumnosCatalogoInscripcion.forEach(alumno => {
+        if (alumno.carreraId && String(alumno.carreraId) !== String(carreraId)) return;
+        if (alumno.periodoIngreso !== periodoIngreso) return;
+
+        if (alumno.estatus !== 'Activo') {
+            excluidos.push({ ...alumno, motivo: `Estatus: ${alumno.estatus}` });
+            return;
+        }
+        if (Number(alumno.semestre) !== Number(grupo.semestre)) {
+            excluidos.push({
+                ...alumno,
+                motivo: `Atrasado — semestre ${alumno.semestre} (grupo es sem. ${grupo.semestre})`,
+            });
+            return;
+        }
+        if (yaInscrito(alumno.id, grupoId, cicloId)) {
+            excluidos.push({ ...alumno, motivo: 'Ya inscrito en este grupo y ciclo' });
+            return;
+        }
+        elegibles.push(alumno);
+    });
+
+    return { elegibles, excluidos };
+}
+
+function renderCandidatosGeneracion(form) {
+    const panel = form.querySelector('#panelCandidatosGeneracion');
+    const listaElegibles = form.querySelector('#listaElegiblesGeneracion');
+    const listaExcluidos = form.querySelector('#listaExcluidosGeneracion');
+    const bloqueExcluidos = form.querySelector('#bloqueExcluidosGeneracion');
+    const btnGuardar = document.getElementById('btnGuardarGeneracion');
+    const chkTodos = form.querySelector('#seleccionarTodosElegibles');
+
+    if (!panel || !listaElegibles) return;
+
+    const { elegibles, excluidos } = getCandidatosGeneracion(form);
+    const listo = elegibles.length > 0 || excluidos.length > 0;
+
+    panel.classList.toggle('hidden', !listo);
+    form.querySelector('#contadorElegibles').textContent = String(elegibles.length);
+    form.querySelector('#contadorExcluidos').textContent = String(excluidos.length);
+
+    if (elegibles.length) {
+        listaElegibles.innerHTML = elegibles.map(alumno => `
+            <label class="flex items-center gap-2 p-1.5 rounded hover:bg-blue-50 cursor-pointer text-sm">
+                <input type="checkbox" name="alumno_ids" value="${alumno.id}" class="chk-alumno-generacion rounded" checked>
+                <span>${alumno.texto}</span>
+            </label>
+        `).join('');
+        if (chkTodos) chkTodos.checked = true;
+    } else {
+        listaElegibles.innerHTML = '<p class="text-sm text-gray-500 p-2">No hay alumnos elegibles para este grupo y generación.</p>';
+    }
+
+    if (excluidos.length && bloqueExcluidos && listaExcluidos) {
+        bloqueExcluidos.classList.remove('hidden');
+        listaExcluidos.innerHTML = excluidos.map(alumno => `
+            <div class="p-1.5 border-b border-amber-100 last:border-0">
+                <span class="font-medium">${alumno.texto}</span>
+                <span class="block text-xs text-amber-800">${alumno.motivo}</span>
+            </div>
+        `).join('');
+    } else if (bloqueExcluidos) {
+        bloqueExcluidos.classList.add('hidden');
+        if (listaExcluidos) listaExcluidos.innerHTML = '';
+    }
+
+    if (btnGuardar) {
+        btnGuardar.disabled = elegibles.length === 0;
+        btnGuardar.textContent = elegibles.length
+            ? `Inscribir seleccionados (${elegibles.length})`
+            : 'Inscribir seleccionados';
+    }
+}
+
+function actualizarCamposGeneracion(form, valores = {}) {
+    const carreraId = form.querySelector('.filtro-carrera-inscripcion')?.value || '';
+    const cicloId = form.querySelector('[name="ciclo_id"]')?.value || '';
+    const selectGrupo = form.querySelector('.select-grupo-inscripcion');
+    const listoGrupo = Boolean(carreraId && cicloId);
+
+    if (selectGrupo) {
+        selectGrupo.disabled = !listoGrupo;
+        repoblarSelectInscripcion(
+            selectGrupo,
+            listoGrupo ? getCatalogoGruposInscripcion(form) : [],
+            listoGrupo ? 'Seleccionar grupo' : 'Elige carrera y ciclo primero',
+            valores.grupoId,
+        );
+    }
+
+    repoblarSelectGeneracion(form, valores.periodoIngreso);
+    renderCandidatosGeneracion(form);
+}
+
+function onFiltrosGeneracionChange(form) {
+    actualizarCamposGeneracion(form);
+}
+
+function initFiltrosGeneracion(form) {
+    form.querySelector('.filtro-carrera-inscripcion')?.addEventListener('change', () => onFiltrosGeneracionChange(form));
+    form.querySelector('[name="ciclo_id"]')?.addEventListener('change', () => onFiltrosGeneracionChange(form));
+    form.querySelector('.select-grupo-inscripcion')?.addEventListener('change', () => renderCandidatosGeneracion(form));
+    form.querySelector('.select-generacion-inscripcion')?.addEventListener('change', () => renderCandidatosGeneracion(form));
+
+    const chkTodos = form.querySelector('#seleccionarTodosElegibles');
+    chkTodos?.addEventListener('change', function() {
+        form.querySelectorAll('.chk-alumno-generacion').forEach(chk => {
+            chk.checked = this.checked;
+        });
+        const btnGuardar = document.getElementById('btnGuardarGeneracion');
+        if (btnGuardar) {
+            const marcados = form.querySelectorAll('.chk-alumno-generacion:checked').length;
+            btnGuardar.disabled = marcados === 0;
+            btnGuardar.textContent = marcados
+                ? `Inscribir seleccionados (${marcados})`
+                : 'Inscribir seleccionados';
+        }
+    });
+
+    form.addEventListener('change', (e) => {
+        if (e.target.classList.contains('chk-alumno-generacion')) {
+            const total = form.querySelectorAll('.chk-alumno-generacion').length;
+            const marcados = form.querySelectorAll('.chk-alumno-generacion:checked').length;
+            if (chkTodos) chkTodos.checked = total > 0 && marcados === total;
+            const btnGuardar = document.getElementById('btnGuardarGeneracion');
+            if (btnGuardar) {
+                btnGuardar.disabled = marcados === 0;
+                btnGuardar.textContent = marcados
+                    ? `Inscribir seleccionados (${marcados})`
+                    : 'Inscribir seleccionados';
+            }
+        }
+    });
+
+    actualizarCamposGeneracion(form);
+}
+
+function abrirModalGeneracionInscripcion() {
+    const form = document.getElementById('formGeneracion');
+    form.reset();
+    const panel = form.querySelector('#panelCandidatosGeneracion');
+    if (panel) panel.classList.add('hidden');
+    actualizarCamposGeneracion(form);
+    abrirModal('modalGeneracion');
+}
 
 function queryFiltrosInscripciones(incluirGrupo, extra) {
     const params = new URLSearchParams();
@@ -221,9 +566,12 @@ function limpiarParametroExito() {
 function editarInscripcion(id, alumnoId, grupoId, cicloId, estatus) {
     const form = document.getElementById('formEditar');
     form.action = `/administrativo/inscripciones/editar/${id}/`;
-    form.alumno_id.value = alumnoId;
-    form.grupo_id.value = grupoId;
+    const grupo = gruposCatalogoInscripcion.find(g => String(g.id) === String(grupoId));
+    if (grupo) {
+        form.querySelector('.filtro-carrera-inscripcion').value = grupo.carreraId;
+    }
     form.ciclo_id.value = cicloId;
+    actualizarCamposInscripcion(form, { alumnoId, grupoId });
     form.estatus.value = estatus;
     abrirModal('modalEditar');
 }
@@ -271,6 +619,16 @@ document.getElementById('formCrear').addEventListener('submit', function(e) {
 document.getElementById('formEditar').addEventListener('submit', function(e) {
     e.preventDefault();
     enviarAjax(e.target, () => cerrarModal('modalEditar'));
+});
+
+document.getElementById('formGeneracion').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const marcados = this.querySelectorAll('.chk-alumno-generacion:checked').length;
+    if (!marcados) {
+        alert('Selecciona al menos un alumno elegible');
+        return;
+    }
+    enviarAjax(e.target, () => cerrarModal('modalGeneracion'));
 });
 
 function eliminarInscripcion(id, nombreAlumno) {
@@ -331,6 +689,10 @@ function confirmarBorrado() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    initFiltrosInscripcion(document.getElementById('formCrear'));
+    initFiltrosInscripcion(document.getElementById('formEditar'));
+    initFiltrosGeneracion(document.getElementById('formGeneracion'));
+
     const urlParams = new URLSearchParams(window.location.search);
     const tipoExito = urlParams.get('exito');
     if (tipoExito === 'eliminar' || tipoExito === 'guardar') {

@@ -1,29 +1,12 @@
 <div>
-    <label class="block text-sm font-bold text-gray-600 mb-1">Materia *</label>
-    <select name="materia_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-        <option value="">Seleccionar</option>
-        {% for materia in materias %}
-        <option value="{{ materia.id_materia }}">{{ materia.clave }} — {{ materia.nombre }}</option>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Carrera *</label>
+    <select class="filtro-carrera-asignacion w-full border-2 border-gray-200 rounded-lg px-3 py-2" required>
+        <option value="">Seleccionar carrera</option>
+        {% for carrera in carreras %}
+        <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
         {% endfor %}
     </select>
-</div>
-<div>
-    <label class="block text-sm font-bold text-gray-600 mb-1">Maestro *</label>
-    <select name="maestro_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-        <option value="">Seleccionar</option>
-        {% for maestro in maestros %}
-        <option value="{{ maestro.id_usuario_id }}">{{ maestro.id_usuario.matricula }} — {{ maestro.id_usuario.nombre }} {{ maestro.id_usuario.apellido }}</option>
-        {% endfor %}
-    </select>
-</div>
-<div>
-    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
-    <select name="grupo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-        <option value="">Seleccionar</option>
-        {% for grupo in grupos %}
-        <option value="{{ grupo.id_grupo }}">{{ grupo.clave }} — {{ grupo.nombre }}</option>
-        {% endfor %}
-    </select>
+    <p class="mt-1 text-xs text-gray-500">Filtra los grupos disponibles para la asignación.</p>
 </div>
 <div>
     <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
@@ -33,6 +16,42 @@
         <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
         {% endfor %}
     </select>
+</div>
+<div class="campo-buscador-asignacion" data-campo="grupo">
+    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+        <input type="text" class="buscador-asignacion-input w-full pl-10 pr-9 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none" placeholder="Elige carrera y ciclo primero" autocomplete="off" disabled>
+        <button type="button" class="limpiar-buscador-asignacion absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="Limpiar" aria-label="Limpiar grupo">
+            <i class="fas fa-times"></i>
+        </button>
+        <input type="hidden" name="grupo_id" class="buscador-asignacion-hidden" required>
+        <div class="lista-buscador-asignacion absolute z-30 left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+    </div>
+</div>
+<div class="campo-buscador-asignacion" data-campo="materia">
+    <label class="block text-sm font-bold text-gray-600 mb-1">Materia *</label>
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+        <input type="text" class="buscador-asignacion-input w-full pl-10 pr-9 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none" placeholder="Elige carrera primero" autocomplete="off" disabled>
+        <button type="button" class="limpiar-buscador-asignacion absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="Limpiar" aria-label="Limpiar materia">
+            <i class="fas fa-times"></i>
+        </button>
+        <input type="hidden" name="materia_id" class="buscador-asignacion-hidden" required>
+        <div class="lista-buscador-asignacion absolute z-30 left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+    </div>
+</div>
+<div class="campo-buscador-asignacion" data-campo="maestro">
+    <label class="block text-sm font-bold text-gray-600 mb-1">Maestro *</label>
+    <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+        <input type="text" class="buscador-asignacion-input w-full pl-10 pr-9 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none" placeholder="Buscar maestro..." autocomplete="off">
+        <button type="button" class="limpiar-buscador-asignacion absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="Limpiar" aria-label="Limpiar maestro">
+            <i class="fas fa-times"></i>
+        </button>
+        <input type="hidden" name="maestro_id" class="buscador-asignacion-hidden" required>
+        <div class="lista-buscador-asignacion absolute z-30 left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+    </div>
 </div>
 <div>
     <label class="block text-sm font-bold text-gray-600 mb-1">Estatus *</label>

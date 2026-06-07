@@ -1,20 +1,12 @@
 <div>
-    <label class="block text-sm font-bold text-gray-600 mb-1">Alumno *</label>
-    <select name="alumno_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-        <option value="">Seleccionar</option>
-        {% for alumno in alumnos %}
-        <option value="{{ alumno.id_usuario_id }}">{{ alumno.id_usuario.matricula }} — {{ alumno.id_usuario.nombre }} {{ alumno.id_usuario.apellido }}</option>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Carrera *</label>
+    <select class="filtro-carrera-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" required>
+        <option value="">Seleccionar carrera</option>
+        {% for carrera in carreras %}
+        <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
         {% endfor %}
     </select>
-</div>
-<div>
-    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
-    <select name="grupo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
-        <option value="">Seleccionar</option>
-        {% for grupo in grupos %}
-        <option value="{{ grupo.id_grupo }}">{{ grupo.clave }} — {{ grupo.nombre }} ({{ grupo.id_ciclo_escolar.nombre_ciclo }})</option>
-        {% endfor %}
-    </select>
+    <p class="mt-1 text-xs text-gray-500">Filtra los alumnos y grupos disponibles.</p>
 </div>
 <div>
     <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
@@ -23,6 +15,18 @@
         {% for ciclo in ciclos %}
         <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
         {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
+    <select name="grupo_id" required class="select-grupo-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" disabled>
+        <option value="">Elige carrera y ciclo primero</option>
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Alumno *</label>
+    <select name="alumno_id" required class="select-alumno-inscripcion w-full border-2 border-gray-200 rounded-lg px-3 py-2" disabled>
+        <option value="">Elige carrera primero</option>
     </select>
 </div>
 <div>

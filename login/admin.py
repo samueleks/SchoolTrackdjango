@@ -39,8 +39,8 @@ class MaestrosAdmin(admin.ModelAdmin):
 
 @admin.register(Materia)
 class MateriaAdmin(admin.ModelAdmin):
-    list_display = ('id_materia', 'clave', 'nombre', 'semestre', 'creditos', 'activo', 'created_at', 'updated_at')
-    list_filter = ('activo', 'semestre')
+    list_display = ('id_materia', 'clave', 'nombre', 'id_carrera', 'semestre', 'creditos', 'activo', 'created_at', 'updated_at')
+    list_filter = ('activo', 'semestre', 'id_carrera')
     search_fields = ('clave', 'nombre')
 
 

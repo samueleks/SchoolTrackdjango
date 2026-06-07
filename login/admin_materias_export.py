@@ -32,18 +32,20 @@ from .alumno_boleta_export import (
 _TITULO = 'Catálogo de Materias'
 
 _CONFIG_COLUMNAS = {
-    'Código': {'peso': 0.9, 'min': 22, 'max': 32, 'align': 'L'},
-    'Materia': {'peso': 3.0, 'min': 50, 'max': 120, 'align': 'L'},
-    'Semestre': {'peso': 0.7, 'min': 18, 'max': 24, 'align': 'C'},
-    'Créditos': {'peso': 0.7, 'min': 18, 'max': 24, 'align': 'C'},
-    'Estado': {'peso': 0.8, 'min': 20, 'max': 28, 'align': 'C'},
+    'Código': {'peso': 0.8, 'min': 20, 'max': 30, 'align': 'L'},
+    'Materia': {'peso': 2.4, 'min': 40, 'max': 90, 'align': 'L'},
+    'Carrera': {'peso': 1.4, 'min': 28, 'max': 60, 'align': 'L'},
+    'Semestre': {'peso': 0.6, 'min': 16, 'max': 22, 'align': 'C'},
+    'Créditos': {'peso': 0.6, 'min': 16, 'max': 22, 'align': 'C'},
+    'Estado': {'peso': 0.7, 'min': 18, 'max': 26, 'align': 'C'},
 }
 
 _HEADERS = list(_CONFIG_COLUMNAS.keys())
 
 _ANCHO_EXCEL = {
     'Código': (14, 18),
-    'Materia': (28, 52),
+    'Materia': (24, 44),
+    'Carrera': (18, 36),
     'Semestre': (10, 14),
     'Créditos': (10, 14),
     'Estado': (12, 16),
@@ -52,6 +54,7 @@ _ANCHO_EXCEL = {
 _ALINEACION_EXCEL = {
     'Código': 'left',
     'Materia': 'left',
+    'Carrera': 'left',
     'Semestre': 'center',
     'Créditos': 'center',
     'Estado': 'center',
@@ -115,6 +118,7 @@ def _fila_materia(materia: dict) -> list[str]:
     return [
         str(materia.get('codigo') or '---'),
         str(materia.get('nombre') or '---'),
+        str(materia.get('carrera_etiqueta') or '---'),
         str(materia.get('semestre') or '---'),
         str(materia.get('creditos') if materia.get('creditos') is not None else '---'),
         'Activa' if materia.get('activa') else 'Inactiva',
@@ -134,7 +138,7 @@ def generar_pdf_catalogo_materias(
 
     filas = [_fila_materia(materia) for materia in materias]
     if not filas:
-        filas = [['---', 'Sin materias registradas', '---', '---', '---']]
+        filas = [['---', 'Sin materias registradas', '---', '---', '---', '---']]
 
     x_inicio, anchos = _pdf_layout_tabla(pdf, _HEADERS, filas, _CONFIG_COLUMNAS)
     ancho_tabla = sum(anchos)

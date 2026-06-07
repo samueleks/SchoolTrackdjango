@@ -63,6 +63,7 @@ urlpatterns = [
     path('administrativo/grupos/eliminar/<int:grupo_id>/', views.eliminar_grupo, name='eliminar_grupo'),
     path('administrativo/inscripciones/', views.gestion_inscripciones, name='gestion_inscripciones'),
     path('administrativo/inscripciones/crear/', views.crear_inscripcion, name='crear_inscripcion'),
+    path('administrativo/inscripciones/crear-generacion/', views.crear_inscripcion_generacion, name='crear_inscripcion_generacion'),
     path('administrativo/inscripciones/editar/<int:inscripcion_id>/', views.editar_inscripcion, name='editar_inscripcion'),
     path('administrativo/inscripciones/eliminar/<int:inscripcion_id>/', views.eliminar_inscripcion, name='eliminar_inscripcion'),
     path('administrativo/asignaciones/', views.gestion_asignaciones, name='gestion_asignaciones'),

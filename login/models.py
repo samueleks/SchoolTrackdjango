@@ -200,6 +200,12 @@ class Materia(models.Model):
     id_materia = models.AutoField(primary_key=True)
     clave = models.CharField(max_length=20, unique=True)
     nombre = models.CharField(max_length=100)
+    id_carrera = models.ForeignKey(
+        Carrera,
+        on_delete=models.PROTECT,
+        db_column='id_carrera',
+        related_name='materias',
+    )
     creditos = models.IntegerField(default=0)
     semestre = models.IntegerField(default=1)
     activo = models.BooleanField(default=True)

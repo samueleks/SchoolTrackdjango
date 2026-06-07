@@ -2916,13 +2916,21 @@ def exportar_reportes_admin_pdf(request):
     return response
 
 
-def _materias_catalogo_admin():
+def _materias_catalogo_admin(carrera_id=None):
+    materias_qs = Materia.objects.select_related('id_carrera').order_by('nombre')
+    if carrera_id:
+        materias_qs = materias_qs.filter(id_carrera_id=carrera_id)
     materias = []
-    for materia in Materia.objects.all().order_by('nombre'):
+    for materia in materias_qs:
+        carrera = materia.id_carrera
         materias.append({
             'id_materia': materia.id_materia,
             'codigo': materia.clave,
             'nombre': materia.nombre,
+            'id_carrera': carrera.id if carrera else None,
+            'carrera_clave': carrera.clave if carrera else '',
+            'carrera_nombre': carrera.nombre if carrera else '',
+            'carrera_etiqueta': f'{carrera.clave} — {carrera.nombre}' if carrera else '—',
             'creditos': materia.creditos,
             'semestre': materia.semestre,
             'get_semestre_display': f'Semestre {materia.semestre}',
@@ -3154,9 +3162,17 @@ def admin_materias(request):
     if not sesion_roles_permitidas(request, ('administrativo',)):
         return redirect('selector_rol')
 
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    carrera_id = int(carrera_filtro) if carrera_filtro.isdigit() else None
+    materias = _materias_catalogo_admin(carrera_id=carrera_id)
+
     context = {
         'perfil': _perfil_administrativo(request),
-        'materias': _materias_catalogo_admin(),
+        'carreras': Carrera.objects.order_by('nombre'),
+        'carrera_filtro': carrera_filtro,
+        'filtros_aplicados': bool(carrera_filtro),
+        'materias': materias,
+        'total_materias': len(materias),
     }
     return render(request, 'administrativo/AdministrarMaterias.html', context)
 
@@ -3199,7 +3215,9 @@ def exportar_materias_pdf(request):
         return redirect('selector_rol')
 
     perfil = _perfil_administrativo(request)
-    materias = _materias_catalogo_admin()
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    carrera_id = int(carrera_filtro) if carrera_filtro.isdigit() else None
+    materias = _materias_catalogo_admin(carrera_id=carrera_id)
     ahora = datetime.now()
 
     pdf_bytes = generar_pdf_catalogo_materias(
@@ -3220,7 +3238,9 @@ def exportar_materias_excel(request):
         return redirect('selector_rol')
 
     perfil = _perfil_administrativo(request)
-    materias = _materias_catalogo_admin()
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    carrera_id = int(carrera_filtro) if carrera_filtro.isdigit() else None
+    materias = _materias_catalogo_admin(carrera_id=carrera_id)
     ahora = datetime.now()
 
     output = generar_excel_catalogo_materias(
@@ -3250,16 +3270,19 @@ def crear_materia(request):
     es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     codigo = request.POST.get('codigo', '').strip()
     nombre = request.POST.get('nombre', '').strip()
+    carrera_id = request.POST.get('carrera_id', '').strip()
     semestre = request.POST.get('semestre', '1').strip()
     creditos = request.POST.get('creditos', '0').strip()
     activa = request.POST.get('activa') == 'on'
 
-    if not codigo or not nombre:
-        error_msg = 'El código y el nombre de la materia son obligatorios'
+    if not codigo or not nombre or not carrera_id:
+        error_msg = 'El código, el nombre y la carrera de la materia son obligatorios'
         if es_ajax:
             return JsonResponse({'success': False, 'error': error_msg})
         messages.error(request, error_msg)
         return redirect(f"{reverse('admin_materias')}?abrir_crear=1")
+
+    carrera = get_object_or_404(Carrera, pk=carrera_id)
 
     if Materia.objects.filter(clave__iexact=codigo).exists():
         error_msg = 'Ya existe una materia con ese código'
@@ -3272,6 +3295,7 @@ def crear_materia(request):
         Materia.objects.create(
             clave=codigo,
             nombre=nombre,
+            id_carrera=carrera,
             semestre=int(semestre) if semestre.isdigit() else 1,
             creditos=int(creditos) if creditos.isdigit() else 0,
             activo=activa,
@@ -3303,18 +3327,30 @@ def editar_materia(request, materia_id):
     materia = get_object_or_404(Materia, pk=materia_id)
     codigo = request.POST.get('codigo', '').strip()
     nombre = request.POST.get('nombre', '').strip()
+    carrera_id = request.POST.get('carrera_id', '').strip()
     semestre = request.POST.get('semestre', '1').strip()
     creditos = request.POST.get('creditos', '0').strip()
     activa = request.POST.get('activa') == 'on'
 
-    if not codigo or not nombre:
-        error_msg = 'El código y el nombre de la materia son obligatorios'
+    if not codigo or not nombre or not carrera_id:
+        error_msg = 'El código, el nombre y la carrera de la materia son obligatorios'
         if es_ajax:
             return JsonResponse({'success': False, 'error': error_msg})
         messages.error(request, error_msg)
         return redirect('admin_materias')
 
+    carrera = get_object_or_404(Carrera, pk=carrera_id)
+
+    if Materia.objects.exclude(pk=materia.pk).filter(clave__iexact=codigo).exists():
+        error_msg = 'Ya existe una materia con ese código'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+        return redirect('admin_materias')
+
+    materia.clave = codigo
     materia.nombre = nombre
+    materia.id_carrera = carrera
     materia.semestre = int(semestre) if semestre.isdigit() else 1
     materia.creditos = int(creditos) if creditos.isdigit() else 0
     materia.activo = activa
@@ -3822,7 +3858,7 @@ def _contexto_gestion_academica_admin(request) -> dict:
         'maestros': Maestros.objects.select_related('id_usuario').order_by(
             'id_usuario__apellido', 'id_usuario__nombre'
         ),
-        'materias': Materia.objects.filter(activo=True).order_by('clave'),
+        'materias': Materia.objects.select_related('id_carrera').filter(activo=True).order_by('clave'),
     }
 
 
@@ -4088,9 +4124,16 @@ def gestion_inscripciones(request):
     if ciclo_filtro.isdigit():
         grupos_filtro_qs = grupos_filtro_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
 
+    inscripciones_activas = list(
+        Inscripcion.objects.filter(estatus='Activa').values(
+            'id_alumno_id', 'id_grupo_id', 'id_ciclo_escolar_id',
+        )
+    )
+
     context = {
         **_contexto_gestion_academica_admin(request),
         'inscripciones': inscripciones_qs,
+        'inscripciones_activas': inscripciones_activas,
         'grupos_filtro': grupos_filtro_qs,
         'carrera_filtro': carrera_filtro,
         'ciclo_filtro': ciclo_filtro,
@@ -4128,6 +4171,12 @@ def crear_inscripcion(request):
 
         if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
             raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if (
+            alumno.id_carrera_id
+            and grupo.id_carrera_id
+            and alumno.id_carrera_id != grupo.id_carrera_id
+        ):
+            raise ValueError('El alumno no pertenece a la carrera del grupo')
         if Inscripcion.objects.filter(
             id_alumno=alumno,
             id_grupo=grupo,
@@ -4152,6 +4201,100 @@ def crear_inscripcion(request):
         messages.error(request, error_msg)
     except Exception as e:
         error_msg = f'Error al registrar inscripción: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_inscripciones')
+
+
+@transaction.atomic
+def crear_inscripcion_generacion(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_inscripciones')
+
+    es_ajax = _es_ajax(request)
+    try:
+        grupo_id = request.POST.get('grupo_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        periodo_ingreso = request.POST.get('periodo_ingreso', '').strip().upper()
+        estatus = request.POST.get('estatus', 'Activa').strip()
+        alumno_ids = request.POST.getlist('alumno_ids')
+
+        if not all([grupo_id, ciclo_id, periodo_ingreso]):
+            raise ValueError('Selecciona carrera, ciclo, grupo y generación')
+        if not alumno_ids:
+            raise ValueError('Selecciona al menos un alumno elegible')
+        if estatus not in dict(Inscripcion.ESTATUS_CHOICES):
+            raise ValueError('Estatus de inscripción no válido')
+
+        grupo = get_object_or_404(Grupo, pk=grupo_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+
+        if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
+            raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+
+        creadas = 0
+        omitidas = 0
+        for alumno_id in alumno_ids:
+            alumno = get_object_or_404(
+                Alumnos.objects.select_related('id_usuario'),
+                pk=alumno_id,
+            )
+            if alumno.estatus != 'Activo':
+                omitidas += 1
+                continue
+            if alumno.periodo_ingreso.upper() != periodo_ingreso:
+                omitidas += 1
+                continue
+            if (
+                alumno.id_carrera_id
+                and grupo.id_carrera_id
+                and alumno.id_carrera_id != grupo.id_carrera_id
+            ):
+                omitidas += 1
+                continue
+            if alumno.semestre != grupo.semestre:
+                omitidas += 1
+                continue
+            if Inscripcion.objects.filter(
+                id_alumno=alumno,
+                id_grupo=grupo,
+                id_ciclo_escolar=ciclo,
+            ).exists():
+                omitidas += 1
+                continue
+
+            Inscripcion.objects.create(
+                id_alumno=alumno,
+                id_grupo=grupo,
+                id_ciclo_escolar=ciclo,
+                estatus=estatus,
+            )
+            creadas += 1
+
+        if creadas == 0:
+            raise ValueError('No se registró ninguna inscripción. Revisa los alumnos seleccionados.')
+
+        success_msg = f'{creadas} inscripción{"es" if creadas != 1 else ""} registrada{"s" if creadas != 1 else ""}'
+        if omitidas:
+            success_msg += f' ({omitidas} omitida{"s" if omitidas != 1 else ""})'
+
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg, 'creadas': creadas, 'omitidas': omitidas})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al registrar inscripciones: {str(e)}'
         if es_ajax:
             return JsonResponse({'success': False, 'error': error_msg})
         messages.error(request, error_msg)
@@ -4185,6 +4328,12 @@ def editar_inscripcion(request, inscripcion_id):
 
         if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
             raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if (
+            alumno.id_carrera_id
+            and grupo.id_carrera_id
+            and alumno.id_carrera_id != grupo.id_carrera_id
+        ):
+            raise ValueError('El alumno no pertenece a la carrera del grupo')
         if Inscripcion.objects.exclude(pk=inscripcion.pk).filter(
             id_alumno=alumno,
             id_grupo=grupo,
@@ -4281,8 +4430,14 @@ def gestion_asignaciones(request):
     if ciclo_filtro.isdigit():
         grupos_filtro_qs = grupos_filtro_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
 
+    contexto = _contexto_gestion_academica_admin(request)
+    materias_qs = Materia.objects.select_related('id_carrera').filter(activo=True).order_by('clave')
+    if carrera_filtro.isdigit():
+        materias_qs = materias_qs.filter(id_carrera_id=int(carrera_filtro))
+
     context = {
-        **_contexto_gestion_academica_admin(request),
+        **contexto,
+        'materias': materias_qs,
         'asignaciones': asignaciones_qs,
         'grupos_filtro': grupos_filtro_qs,
         'carrera_filtro': carrera_filtro,
@@ -4327,6 +4482,8 @@ def crear_asignacion(request):
 
         if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
             raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if materia.id_carrera_id != grupo.id_carrera_id:
+            raise ValueError('La materia seleccionada no pertenece a la carrera del grupo')
         if AsignacionMateria.objects.filter(
             id_materia=materia,
             id_maestro=maestro,
@@ -4385,6 +4542,8 @@ def editar_asignacion(request, asignacion_id):
 
         if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
             raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if materia.id_carrera_id != grupo.id_carrera_id:
+            raise ValueError('La materia seleccionada no pertenece a la carrera del grupo')
         if AsignacionMateria.objects.exclude(pk=asignacion.pk).filter(
             id_materia=materia,
             id_maestro=maestro,

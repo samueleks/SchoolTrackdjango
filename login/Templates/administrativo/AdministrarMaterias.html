@@ -54,6 +54,30 @@
                     </div>
                 </div>
 
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="filtro-carrera" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Carrera</label>
+                            <select id="filtro-carrera" onchange="aplicarFiltroCarrera()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                                <option value="" {% if not carrera_filtro %}selected{% endif %}>— Todas las carreras —</option>
+                                {% for carrera in carreras %}
+                                <option value="{{ carrera.id }}" {% if carrera_filtro == carrera.id|stringformat:"s" %}selected{% endif %}>{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+                            {% if filtros_aplicados %}
+                            <a href="{% url 'admin_materias' %}" class="text-sm font-bold text-gray-600 hover:text-gray-800 underline">Limpiar filtros</a>
+                            <span class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 font-bold">
+                                {{ total_materias }} materia{{ total_materias|pluralize:"s" }} encontrada{{ total_materias|pluralize:"s" }}
+                            </span>
+                            {% else %}
+                            <span class="text-sm text-gray-500">Filtra por carrera para acotar el catálogo.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
                     <!-- Barra de búsqueda y contador -->
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
@@ -65,10 +89,10 @@
                                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                                 <input type="text" id="buscadorMaterias" placeholder="Buscar materia..." oninput="filtrarMaterias()" onkeydown="manejarEnterBusqueda(event)" class="pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none w-full sm:w-64">
                             </div>
-                            <a href="{% url 'exportar_materias_excel' %}" class="bg-green-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-green-700 transition shadow-md uppercase text-xs tracking-widest">
+                            <a href="{% url 'exportar_materias_excel' %}{% if carrera_filtro %}?carrera={{ carrera_filtro }}{% endif %}" class="bg-green-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-green-700 transition shadow-md uppercase text-xs tracking-widest">
                                 <i class="fas fa-file-excel"></i> Exportar Excel
                             </a>
-                            <a href="{% url 'exportar_materias_pdf' %}" class="bg-red-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-red-700 transition shadow-md uppercase text-xs tracking-widest">
+                            <a href="{% url 'exportar_materias_pdf' %}{% if carrera_filtro %}?carrera={{ carrera_filtro }}{% endif %}" class="bg-red-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-red-700 transition shadow-md uppercase text-xs tracking-widest">
                                 <i class="fas fa-file-pdf"></i> Exportar PDF
                             </a>
                             <button onclick="mostrarFormularioCrear()" class="bg-blue-600 text-white flex items-center gap-2 px-6 py-2.5 rounded-xl font-black hover:bg-blue-700 transition shadow-md uppercase text-xs tracking-widest">
@@ -84,6 +108,7 @@
                                 <tr class="text-gray-500 text-[11px] font-black uppercase tracking-[0.15em]">
                                     <th class="p-4">Código</th>
                                     <th class="p-4">Materia</th>
+                                    <th class="p-4">Carrera</th>
                                     <th class="p-4 text-center">Semestre</th>
                                     <th class="p-4 text-center">Créditos</th>
                                     <th class="p-4 text-center">Estado</th>
@@ -96,6 +121,7 @@
                                     <tr class="hover:bg-blue-50 transition font-medium text-sm">
                                         <td class="p-4 text-gray-800 font-mono font-bold">{{ materia.codigo }}</td>
                                         <td class="p-4 text-gray-800 font-bold">{{ materia.nombre }}</td>
+                                        <td class="p-4 text-gray-600 text-sm">{{ materia.carrera_etiqueta }}</td>
                                         <td class="p-4 text-center text-gray-600">{{ materia.semestre }}</td>
                                         <td class="p-4 text-center text-gray-600">{{ materia.creditos }}</td>
                                         <td class="p-4 text-center">
@@ -124,7 +150,7 @@
                                     {% endfor %}
                                     <!-- Fila de mensaje de búsqueda -->
                                     <tr id="mensajeBusqueda" class="hidden">
-                                        <td colspan="6" class="p-8 text-center">
+                                        <td colspan="7" class="p-8 text-center">
                                             <div id="contenidoMensajeBusqueda" class="flex flex-col items-center">
                                                 <!-- Se actualiza dinámicamente con JavaScript -->
                                             </div>
@@ -132,7 +158,7 @@
                                     </tr>
                                 {% else %}
                                     <tr>
-                                        <td colspan="6" class="p-20 text-center text-gray-400 italic">
+                                        <td colspan="7" class="p-20 text-center text-gray-400 italic">
                                             <div class="flex flex-col items-center opacity-40">
                                                 <i class="fas fa-book text-5xl mb-4"></i>
                                                 <p class="font-bold uppercase tracking-widest">Sin materias registradas</p>
@@ -178,11 +204,20 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código *</label>
-                        <input type="text" name="codigo" id="crearCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. MAT101">
+                        <input type="text" name="codigo" id="crearCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase mb-1">Nombre *</label>
-                        <input type="text" name="nombre" id="crearNombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" placeholder="Ej. Matemáticas I">
+                        <input type="text" name="nombre" id="crearNombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Carrera *</label>
+                        <select name="carrera_id" id="crearCarrera" required class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
+                            <option value="">Seleccionar carrera</option>
+                            {% for carrera in carreras %}
+                            <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -228,6 +263,10 @@
                     <label class="block text-xs font-black text-gray-500 uppercase">Nombre</label>
                     <p id="verNombre" class="text-lg font-bold text-gray-800"></p>
                 </div>
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <label class="block text-xs font-black text-gray-500 uppercase">Carrera</label>
+                    <p id="verCarrera" class="text-lg font-bold text-gray-800"></p>
+                </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-gray-100 p-3 rounded-lg">
                         <label class="block text-xs font-black text-gray-500 uppercase">Créditos</label>
@@ -260,12 +299,21 @@
                 <input type="hidden" name="id_materia" id="editarId">
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código</label>
-                        <input type="text" name="codigo" id="editarCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none bg-gray-100" readonly>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Código *</label>
+                        <input type="text" name="codigo" id="editarCodigo" required maxlength="20" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-black text-gray-500 uppercase mb-1">Nombre *</label>
                         <input type="text" name="nombre" id="editarNombre" required maxlength="100" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 uppercase mb-1">Carrera *</label>
+                        <select name="carrera_id" id="editarCarrera" required class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
+                            <option value="">Seleccionar carrera</option>
+                            {% for carrera in carreras %}
+                            <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -386,7 +434,9 @@
             let input = null;
             let clase = 'campo-error';
 
-            if (errorLower.includes('nombre')) {
+            if (errorLower.includes('carrera')) {
+                input = document.querySelector(`#${modalId} [name="carrera_id"]`);
+            } else if (errorLower.includes('nombre')) {
                 input = document.querySelector(`#${modalId} [name="nombre"]`);
                 clase = 'nombre-error';
             } else {
@@ -454,6 +504,9 @@
 
             const editarCodigoInput = document.getElementById('editarCodigo');
             if (editarCodigoInput) {
+                editarCodigoInput.addEventListener('input', function() {
+                    limpiarErrorCampoCodigo(this);
+                });
                 editarCodigoInput.addEventListener('blur', function() {
                     const materiaId = document.getElementById('editarId').value;
                     validarCodigoEnCampo(this, materiaId);
@@ -575,6 +628,8 @@
             {{ materia.id_materia }}: {
                 codigo: '{{ materia.codigo|escapejs }}',
                 nombre: '{{ materia.nombre|escapejs }}',
+                id_carrera: '{{ materia.id_carrera|default:"" }}',
+                carrera_etiqueta: '{{ materia.carrera_etiqueta|escapejs }}',
                 creditos: {{ materia.creditos }},
                 semestre: {{ materia.semestre }},
                 activa: {{ materia.activa|yesno:"true,false" }}
@@ -587,6 +642,7 @@
             if (materia) {
                 document.getElementById('verCodigo').textContent = materia.codigo;
                 document.getElementById('verNombre').textContent = materia.nombre;
+                document.getElementById('verCarrera').textContent = materia.carrera_etiqueta || '—';
                 document.getElementById('verCreditos').textContent = materia.creditos;
                 document.getElementById('verSemestre').textContent = 'Semestre ' + materia.semestre;
                 document.getElementById('verEstado').textContent = materia.activa ? 'ACTIVA' : 'INACTIVA';
@@ -609,6 +665,7 @@
                 document.getElementById('editarId').value = id;
                 document.getElementById('editarCodigo').value = materia.codigo;
                 document.getElementById('editarNombre').value = materia.nombre;
+                document.getElementById('editarCarrera').value = materia.id_carrera || '';
                 document.getElementById('editarCreditos').value = materia.creditos;
                 document.getElementById('editarSemestre').value = materia.semestre;
                 document.getElementById('editarActiva').checked = materia.activa;
@@ -682,6 +739,17 @@
             modal.classList.add('hidden');
         }
         
+
+        function aplicarFiltroCarrera() {
+            const carrera = document.getElementById('filtro-carrera')?.value || '';
+            const url = new URL(window.location.href);
+            if (carrera) {
+                url.searchParams.set('carrera', carrera);
+            } else {
+                url.searchParams.delete('carrera');
+            }
+            window.location.href = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '');
+        }
 
         // ========== BUSCADOR Y PAGINACIÓN ==========
         let paginaActual = 1;
