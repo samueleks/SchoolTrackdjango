@@ -2354,7 +2354,7 @@ def eliminar_usuario(request, usuario_id):
       GET  → confirmar_eliminar.html (poco usado; la lista usa AJAX)
       POST → usuario.delete() en cascada → redirect o JsonResponse
 
-    Reglas: no eliminar si tiene datos académicos ligados; no eliminar al último admin.
+    Reglas: no eliminar si tiene datos académicos ligados; no eliminar al último admin ni al último administrativo.
     """
     # --- PASO 1: SEGURIDAD — respuesta JSON si es petición AJAX sin permiso ---
     if not sesion_roles_permitidas(request, ('admin',)):
@@ -2382,7 +2382,17 @@ def eliminar_usuario(request, usuario_id):
                     total_admins = Usuarios.objects.filter(rol='admin').count()
                     if total_admins <= 1:
                         error_msg = 'No puedes eliminar al último administrador del sistema'
-                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        if es_ajax:
+                            return JsonResponse({'success': False, 'error': error_msg}, status=400)
+                        messages.error(request, error_msg)
+                        return redirect('gestion_usuarios')
+
+                # Regla de negocio: debe quedar al menos 1 administrativo
+                if usuario.rol == 'administrativo':
+                    total_administrativos = Usuarios.objects.filter(rol='administrativo').count()
+                    if total_administrativos <= 1:
+                        error_msg = 'No puedes eliminar al último administrativo del sistema'
+                        if es_ajax:
                             return JsonResponse({'success': False, 'error': error_msg}, status=400)
                         messages.error(request, error_msg)
                         return redirect('gestion_usuarios')
