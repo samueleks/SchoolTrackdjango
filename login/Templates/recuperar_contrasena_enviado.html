@@ -17,11 +17,23 @@
     <header class="header-pro shadow-lg" role="banner"></header>
     <div class="flex min-h-[calc(100svh-90px)] justify-center items-center px-4 py-10">
         <main class="max-w-md w-full main-frame-white p-8 sm:p-10 text-center">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center {% if message.tags == 'warning' %}bg-amber-100{% else %}bg-green-100{% endif %}">
+                    <i class="fas {% if message.tags == 'warning' %}fa-triangle-exclamation text-amber-600{% else %}fa-envelope-open-text text-green-600{% endif %} text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-gray-800 mb-4">
+                    {% if message.tags == 'warning' %}No se pudo enviar el correo{% else %}Revisa tu correo{% endif %}
+                </h2>
+                <p class="text-gray-600 text-sm leading-relaxed mb-6">{{ message }}</p>
+                {% endfor %}
+            {% else %}
             <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
                 <i class="fas fa-envelope-open-text text-3xl text-green-600"></i>
             </div>
             <h2 class="text-2xl font-black text-gray-800 mb-4">Revisa tu correo</h2>
             <p class="text-gray-600 text-sm leading-relaxed mb-6">{{ mensaje }}</p>
+            {% endif %}
             <p class="text-xs text-gray-400 mb-8">El enlace expira en 1 hora por seguridad.</p>
             <a href="{{ login_url }}" class="inline-block bg-[#2b63d9] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#2457c2] transition-colors">
                 Volver al inicio de sesión
