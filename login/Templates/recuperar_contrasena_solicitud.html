@@ -53,7 +53,7 @@
                     <div class="input-wrapper">
                         <i class="fas fa-id-card text-gray-400 mr-3"></i>
                         <input type="text" name="matricula" value="{{ matricula_valor }}" required
-                               class="input-clean" placeholder="Ej. ADM-20260001" autocomplete="off">
+                               class="input-clean" placeholder="{% if rol == 'alumno' %}Ej. 20260001{% elif rol == 'maestro' %}Ej. EMP-20260001{% elif rol == 'administrativo' %}Ej. AD-20260001{% elif rol == 'admin' %}Ej. ADM-20260001{% else %}Tu matrícula registrada{% endif %}" autocomplete="off">
                     </div>
                 </div>
 
