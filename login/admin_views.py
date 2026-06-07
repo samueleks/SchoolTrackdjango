@@ -1818,12 +1818,43 @@ def agregar_usuario(request):
         except ValueError as e:
             # Error de validación del modelo (Usuarios.clean, DatosPersonales, etc.)
             error_msg = str(e.args[0]) if e.args else str(e)
-            messages.error(request, f'Error: {error_msg}')
-            return redirect('agregar_usuario')
+            context = {
+                'proximo_id': proximo_id,
+                'siguientes': siguientes,
+                'año_actual': año_actual,
+                'periodo_actual': _periodo_actual(),
+                'carreras': Carrera.objects.order_by('nombre').all(),
+                'ciclos_escolares': CicloEscolar.objects.order_by('-fecha_inicio').all(),
+                'perfil': {
+                    'nombre_completo': request.session.get('usuario_nombre', 'Administrador'),
+                    'matricula': request.session.get('usuario_matricula', 'N/A'),
+                },
+                'form_data': request.POST,
+                'errores_campos': {'general': error_msg},
+                'primer_campo_error': '',
+                'timestamp': timezone.now().timestamp(),
+            }
+            return render(request, 'administrador/AgregarUsuario.html', context)
         except Exception as e:
             # Cualquier otro fallo de BD; atomic() revierte los inserts
-            messages.error(request, f'Error al crear usuario: {str(e)}')
-            return redirect('agregar_usuario')
+            logger.error(f'Error al crear usuario: {str(e)}')
+            context = {
+                'proximo_id': proximo_id,
+                'siguientes': siguientes,
+                'año_actual': año_actual,
+                'periodo_actual': _periodo_actual(),
+                'carreras': Carrera.objects.order_by('nombre').all(),
+                'ciclos_escolares': CicloEscolar.objects.order_by('-fecha_inicio').all(),
+                'perfil': {
+                    'nombre_completo': request.session.get('usuario_nombre', 'Administrador'),
+                    'matricula': request.session.get('usuario_matricula', 'N/A'),
+                },
+                'form_data': request.POST,
+                'errores_campos': {'general': f'Error al crear usuario: {str(e)}'},
+                'primer_campo_error': '',
+                'timestamp': timezone.now().timestamp(),
+            }
+            return render(request, 'administrador/AgregarUsuario.html', context)
     
     # --- PASO 4: GET — primera visita o recarga; solo muestra formulario vacío ---
     context = {

@@ -50,13 +50,17 @@
                     <h2 class="page-title text-4xl font-bold text-gray-700">Agregar Nuevo Usuario</h2>
                 </div>
 
+                {% if errores_campos.general %}
+                    <div class="mb-6 p-4 rounded-lg bg-red-100 text-red-800 font-semibold">
+                        {{ errores_campos.general }}
+                    </div>
+                {% endif %}
+
                 {% if messages %}
                     {% for message in messages %}
-                        {% if message.tags == 'success' %}
-                            <div class="mb-6 p-4 rounded-lg bg-green-100 text-green-800">
-                                {{ message }}
-                            </div>
-                        {% endif %}
+                        <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ message }}
+                        </div>
                     {% endfor %}
                 {% endif %}
                 
@@ -105,7 +109,7 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Rol *</label>
                             <select name="rol" id="rol_select" required class="w-full p-3 border-2 {% if errores_campos.rol %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]">
-                                <option value="" disabled selected>Seleccionar rol...</option>
+                                <option value="" disabled {% if not form_data.rol %}selected{% endif %}>Seleccionar rol...</option>
                                 <option value="alumno" {% if form_data.rol == 'alumno' %}selected{% endif %}>Alumno</option>
                                 <option value="maestro" {% if form_data.rol == 'maestro' %}selected{% endif %}>Maestro</option>
                                 <option value="administrativo" {% if form_data.rol == 'administrativo' %}selected{% endif %}>Administrativo</option>
@@ -580,39 +584,7 @@
 
             // Validación en navegador antes de enviar (complementa validación en admin_views.py)
             document.querySelector('form').addEventListener('submit', function(e) {
-                // Convertir fecha de DD/MM/YYYY o YYYY/MM/DD a YYYY-MM-DD antes de enviar
-                const fechaInput = document.querySelector('input[name="fecha_nacimiento"]');
-                if (fechaInput) {
-                    // Leer el valor del altInput si existe (visible), si no leer el input original
-                    let fechaValue = fechaInput.value.trim();
-                    const altInput = fechaInput.nextElementSibling;
-                    if (altInput && altInput.classList.contains('flatpickr-alt-input') && altInput.value.trim()) {
-                        fechaValue = altInput.value.trim();
-                    }
-                    
-                    // Si está en formato con /, detectar y convertir
-                    if (fechaValue.includes('/')) {
-                        const partes = fechaValue.split('/');
-                        if (partes.length === 3) {
-                            const currentYear = new Date().getFullYear();
-                            // Detectar formato: si primera parte es año (4 dígitos, 1900-currentYear)
-                            const primeraParte = parseInt(partes[0]);
-                            if (primeraParte >= 1900 && primeraParte <= currentYear + 1) {
-                                // Formato YYYY/MM/DD
-                                const anio = partes[0].padStart(4, '0');
-                                const mes = partes[1].padStart(2, '0');
-                                const dia = partes[2].padStart(2, '0');
-                                fechaInput.value = `${anio}-${mes}-${dia}`;
-                            } else {
-                                // Formato DD/MM/YYYY
-                                const dia = partes[0].padStart(2, '0');
-                                const mes = partes[1].padStart(2, '0');
-                                const anio = partes[2].padStart(4, '0');
-                                fechaInput.value = `${anio}-${mes}-${dia}`;
-                            }
-                        }
-                    }
-                }
+                normalizarFechaNacimientoAntesDeEnviar();
 
                 let hasError = false;
                 const erroresMarcar = [];
@@ -658,14 +630,45 @@
 </script>
 
 <script>
+    function normalizarFechaNacimientoAntesDeEnviar() {
+        const fechaInput = document.querySelector('input[name="fecha_nacimiento"]');
+        if (!fechaInput) return;
+
+        let fechaValue = fechaInput.value.trim();
+        const altInput = fechaInput.nextElementSibling;
+        if (altInput && altInput.classList.contains('flatpickr-alt-input') && altInput.value.trim()) {
+            fechaValue = altInput.value.trim();
+        }
+
+        if (!fechaValue.includes('/')) {
+            return;
+        }
+
+        const partes = fechaValue.split('/');
+        if (partes.length !== 3) {
+            return;
+        }
+
+        const currentYear = new Date().getFullYear();
+        const primeraParte = parseInt(partes[0], 10);
+        if (primeraParte >= 1900 && primeraParte <= currentYear + 1) {
+            const anio = partes[0].padStart(4, '0');
+            const mes = partes[1].padStart(2, '0');
+            const dia = partes[2].padStart(2, '0');
+            fechaInput.value = `${anio}-${mes}-${dia}`;
+        } else {
+            const dia = partes[0].padStart(2, '0');
+            const mes = partes[1].padStart(2, '0');
+            const anio = partes[2].padStart(4, '0');
+            fechaInput.value = `${anio}-${mes}-${dia}`;
+        }
+    }
+
     // Paso 1: validar y abrir modal (aún no hay POST)
     function confirmarAgregarUsuario() {
-        // Validar campos antes de mostrar el modal
         const nombre = document.querySelector('input[name="nombre"]');
         const apellido = document.querySelector('input[name="apellido"]');
         const rol = document.getElementById('rol_select');
-        const matricula = document.querySelector('input[name="matricula"]');
-        const password = document.querySelector('input[name="password"]');
 
         let hasError = false;
 
@@ -685,18 +688,6 @@
             hasError = true;
             rol.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
             rol.classList.remove('border-gray-200', 'focus:border-blue-500');
-        }
-
-        if (matricula && !matricula.value.trim()) {
-            hasError = true;
-            matricula.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
-            matricula.classList.remove('border-gray-200', 'focus:border-blue-500');
-        }
-
-        if (password && !password.value.trim()) {
-            hasError = true;
-            password.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
-            password.classList.remove('border-gray-200', 'focus:border-blue-500');
         }
 
         const cp = document.querySelector('input[name="cp"]');
@@ -723,7 +714,13 @@
     // Paso 2: POST real → dispara agregar_usuario() en el servidor
     function ejecutarAgregar() {
         cerrarModalAgregar();
-        document.getElementById('formAgregarUsuario').submit();
+        normalizarFechaNacimientoAntesDeEnviar();
+        const form = document.getElementById('formAgregarUsuario');
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
     }
 </script>
 {% endblock %}
