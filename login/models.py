@@ -321,7 +321,7 @@ class Grupo(models.Model):
     ]
 
     id_grupo = models.AutoField(primary_key=True)
-    clave = models.CharField(max_length=20, unique=True)
+    clave = models.CharField(max_length=20)
     nombre = models.CharField(max_length=100)
     semestre = models.IntegerField()
     turno = models.CharField(max_length=20, choices=TURNO_CHOICES)
@@ -334,6 +334,12 @@ class Grupo(models.Model):
         db_table = 'grupo'
         verbose_name = 'Grupo'
         verbose_name_plural = 'Grupos'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['clave', 'id_ciclo_escolar'],
+                name='uniq_grupo_clave_ciclo',
+            )
+        ]
 
     def __str__(self):
         return f"{self.clave} - {self.nombre}"

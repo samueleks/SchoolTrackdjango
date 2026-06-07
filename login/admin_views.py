@@ -23,7 +23,20 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from fpdf import FPDF
 
-from .models import Usuarios, Alumnos, Maestros, Administrativos, Administrador, DatosPersonales, Carrera, CicloEscolar, Grupo, LogCalificacion
+from .models import (
+    Usuarios,
+    Alumnos,
+    Maestros,
+    Administrativos,
+    Administrador,
+    DatosPersonales,
+    Carrera,
+    CicloEscolar,
+    Grupo,
+    Inscripcion,
+    AsignacionMateria,
+    LogCalificacion,
+)
 from .password_utils import generar_contrasena_temporal
 from .periodo_utils import resolver_semestre_alumno
 from .datos_personales_utils import validar_cp
@@ -2640,3 +2653,177 @@ def descargar_respaldo_especifico(request, filename):
         logger.error(f"Error al descargar respaldo: {str(e)}")
         messages.error(request, f'Error al descargar respaldo: {str(e)}')
         return redirect('respaldo_bdd')
+
+
+def _mensaje_bloqueo_eliminar_ciclo(ciclo: CicloEscolar) -> str | None:
+    """Misma idea que el último admin: no borrar si el ciclo ya tiene alumnos u otros datos ligados."""
+    total_inscripciones = Inscripcion.objects.filter(id_ciclo_escolar=ciclo).count()
+    if total_inscripciones:
+        etiqueta = 'alumno inscrito' if total_inscripciones == 1 else 'alumnos inscritos'
+        return (
+            f'No puedes eliminar el ciclo {ciclo.nombre_ciclo} porque tiene '
+            f'{total_inscripciones} {etiqueta}'
+        )
+
+    total_grupos = Grupo.objects.filter(id_ciclo_escolar=ciclo).count()
+    if total_grupos:
+        etiqueta = 'grupo registrado' if total_grupos == 1 else 'grupos registrados'
+        return (
+            f'No puedes eliminar el ciclo {ciclo.nombre_ciclo} porque tiene '
+            f'{total_grupos} {etiqueta}'
+        )
+
+    total_asignaciones = AsignacionMateria.objects.filter(id_ciclo_escolar=ciclo).count()
+    if total_asignaciones:
+        etiqueta = 'asignación de materia' if total_asignaciones == 1 else 'asignaciones de materias'
+        return (
+            f'No puedes eliminar el ciclo {ciclo.nombre_ciclo} porque tiene '
+            f'{total_asignaciones} {etiqueta}'
+        )
+
+    return None
+
+
+def gestion_ciclos(request):
+    if not sesion_roles_permitidas(request, ('admin',)):
+        return redirect('selector_rol')
+
+    context = {
+        'ciclos': CicloEscolar.objects.order_by('-fecha_inicio').all(),
+        'perfil': {
+            'nombre_completo': request.session.get('usuario_nombre', 'Administrador'),
+            'matricula': request.session.get('usuario_matricula', 'N/A'),
+        },
+    }
+    return render(request, 'administrador/GestionCiclos.html', context)
+
+
+def agregar_ciclo(request):
+    if not sesion_roles_permitidas(request, ('admin',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_ciclos')
+
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    try:
+        periodo = request.POST.get('periodo', '').strip().upper()
+        fecha_inicio = request.POST.get('fecha_inicio', '').strip()
+        fecha_fin = request.POST.get('fecha_fin', '').strip()
+
+        if periodo not in ('A', 'B'):
+            raise ValueError('Selecciona un periodo válido (A o B)')
+        if not fecha_inicio or not fecha_fin:
+            raise ValueError('Las fechas de inicio y fin son obligatorias')
+
+        inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        if fin <= inicio:
+            raise ValueError('La fecha de fin debe ser posterior a la de inicio')
+
+        nombre_preview = f'{inicio.year}-{periodo}'
+        if CicloEscolar.objects.filter(nombre_ciclo=nombre_preview).exists():
+            raise ValueError(f'Ya existe el ciclo {nombre_preview}')
+
+        ciclo = CicloEscolar(periodo=periodo, fecha_inicio=inicio, fecha_fin=fin)
+        ciclo.save()
+        success_msg = f'Ciclo {ciclo.nombre_ciclo} creado correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al crear ciclo: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_ciclos')
+
+
+def editar_ciclo(request, ciclo_id):
+    if not sesion_roles_permitidas(request, ('admin',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+    if request.method != 'POST':
+        return redirect('gestion_ciclos')
+
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    try:
+        periodo = request.POST.get('periodo', '').strip().upper()
+        fecha_inicio = request.POST.get('fecha_inicio', '').strip()
+        fecha_fin = request.POST.get('fecha_fin', '').strip()
+
+        if periodo not in ('A', 'B'):
+            raise ValueError('Selecciona un periodo válido (A o B)')
+        if not fecha_inicio or not fecha_fin:
+            raise ValueError('Las fechas de inicio y fin son obligatorias')
+
+        inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+        if fin <= inicio:
+            raise ValueError('La fecha de fin debe ser posterior a la de inicio')
+
+        nombre_preview = f'{inicio.year}-{periodo}'
+        if CicloEscolar.objects.exclude(pk=ciclo.pk).filter(nombre_ciclo=nombre_preview).exists():
+            raise ValueError(f'Ya existe otro ciclo con el nombre {nombre_preview}')
+
+        ciclo.periodo = periodo
+        ciclo.fecha_inicio = inicio
+        ciclo.fecha_fin = fin
+        ciclo.save()
+        success_msg = f'Ciclo {ciclo.nombre_ciclo} actualizado correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al editar ciclo: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_ciclos')
+
+
+def eliminar_ciclo(request, ciclo_id):
+    if not sesion_roles_permitidas(request, ('admin',)):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_ciclos')
+
+    ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    bloqueo = _mensaje_bloqueo_eliminar_ciclo(ciclo)
+    if bloqueo:
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': bloqueo}, status=400)
+        messages.error(request, bloqueo)
+        return redirect('gestion_ciclos')
+
+    nombre = ciclo.nombre_ciclo
+    ciclo.delete()
+    success_msg = f'Ciclo {nombre} eliminado correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
+    return redirect('gestion_ciclos')

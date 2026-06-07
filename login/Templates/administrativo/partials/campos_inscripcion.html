@@ -1,0 +1,35 @@
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Alumno *</label>
+    <select name="alumno_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for alumno in alumnos %}
+        <option value="{{ alumno.id_usuario_id }}">{{ alumno.id_usuario.matricula }} — {{ alumno.id_usuario.nombre }} {{ alumno.id_usuario.apellido }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
+    <select name="grupo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for grupo in grupos %}
+        <option value="{{ grupo.id_grupo }}">{{ grupo.clave }} — {{ grupo.nombre }} ({{ grupo.id_ciclo_escolar.nombre_ciclo }})</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
+    <select name="ciclo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for ciclo in ciclos %}
+        <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Estatus *</label>
+    <select name="estatus" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="Activa">Activa</option>
+        <option value="Baja">Baja</option>
+        <option value="Reinscripcion">Reinscripción</option>
+    </select>
+</div>

@@ -1,0 +1,49 @@
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Clave *</label>
+    <input type="text" name="clave" required maxlength="20" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 uppercase">
+    <p class="text-xs text-gray-500 mt-1">Para el mismo grupo en otro ciclo, usa «Reutilizar» (crea un registro nuevo).</p>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Nombre *</label>
+    <input type="text" name="nombre" required maxlength="100" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+</div>
+<div class="grid grid-cols-2 gap-3">
+    <div>
+        <label class="block text-sm font-bold text-gray-600 mb-1">Semestre *</label>
+        <input type="number" name="semestre" required min="1" max="12" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+    </div>
+    <div>
+        <label class="block text-sm font-bold text-gray-600 mb-1">Cupo máximo</label>
+        <input type="number" name="cupo_maximo" min="0" value="0" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+    </div>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Turno *</label>
+    <select name="turno" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="Matutino">Matutino</option>
+        <option value="Vespertino">Vespertino</option>
+        <option value="Nocturno">Nocturno</option>
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Carrera *</label>
+    <select name="carrera_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for carrera in carreras %}
+        <option value="{{ carrera.id }}">{{ carrera.clave }} — {{ carrera.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
+    <select name="ciclo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for ciclo in ciclos %}
+        <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="flex items-center gap-2 pt-1">
+    <input type="checkbox" name="activo" checked class="rounded">
+    <span class="text-sm font-bold text-gray-600">Grupo activo</span>
+</div>

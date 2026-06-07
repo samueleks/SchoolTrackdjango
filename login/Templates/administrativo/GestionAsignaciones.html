@@ -1,0 +1,430 @@
+{% extends 'base/dashboard_administrativo.html' %}
+
+{% block title %}SchoolTrack - Asignación de Materias{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto min-w-0 w-full">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6 sm:mb-8">
+        <div class="min-w-0">
+            <h2 class="text-2xl sm:text-3xl font-black text-gray-700 uppercase tracking-tight">Asignación de materias</h2>
+            <p class="text-blue-600 font-bold text-sm uppercase tracking-widest">Maestro, materia y grupo</p>
+        </div>
+        <button onclick="abrirModal('modalCrear')" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i> Nueva asignación
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
+        <div class="filtros-gestion-grid filtros-gestion-grid--tres">
+            <div>
+                <label for="filtro-carrera" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Carrera</label>
+                <select id="filtro-carrera" onchange="aplicarFiltrosAsignaciones(true)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not carrera_filtro %}selected{% endif %}>— Todas —</option>
+                    {% for carrera in carreras %}
+                    <option value="{{ carrera.id }}" {% if carrera_filtro == carrera.id|stringformat:"s" %}selected{% endif %}>{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filtro-ciclo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo escolar</label>
+                <select id="filtro-ciclo" onchange="aplicarFiltrosAsignaciones(true)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not ciclo_filtro %}selected{% endif %}>— Todos —</option>
+                    {% for ciclo in ciclos %}
+                    <option value="{{ ciclo.id_ciclo_escolar }}" {% if ciclo_filtro == ciclo.id_ciclo_escolar|stringformat:"s" %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filtro-grupo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Grupo</label>
+                <select id="filtro-grupo" onchange="aplicarFiltrosAsignaciones(false)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none" {% if not ciclo_filtro %}disabled{% endif %}>
+                    <option value="" {% if not grupo_filtro %}selected{% endif %}>{% if ciclo_filtro %}— Todos —{% else %}Elige ciclo{% endif %}</option>
+                    {% for grupo in grupos_filtro %}
+                    <option value="{{ grupo.id_grupo }}" {% if grupo_filtro == grupo.id_grupo|stringformat:"s" %}selected{% endif %}>{{ grupo.clave }} — {{ grupo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="buscar-materia-filtro" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Materia</label>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                    <input type="text" id="buscar-materia-filtro" placeholder="Buscar materia..." autocomplete="off"
+                           class="w-full pl-10 pr-9 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <button type="button" id="limpiar-materia-filtro" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="Quitar filtro" aria-label="Quitar filtro de materia">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <input type="hidden" id="filtro-materia" value="{{ materia_filtro }}">
+                    <div id="lista-materias-filtro" class="absolute z-20 left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+                </div>
+            </div>
+            <div>
+                <label for="buscar-maestro-filtro" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Maestro</label>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                    <input type="text" id="buscar-maestro-filtro" placeholder="Buscar maestro..." autocomplete="off"
+                           class="w-full pl-10 pr-9 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <button type="button" id="limpiar-maestro-filtro" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" title="Quitar filtro" aria-label="Quitar filtro de maestro">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <input type="hidden" id="filtro-maestro" value="{{ maestro_filtro }}">
+                    <div id="lista-maestros-filtro" class="absolute z-20 left-0 right-0 mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto hidden"></div>
+                </div>
+            </div>
+            <div class="filtros-gestion-meta flex flex-wrap items-center gap-3 pt-1">
+                {% if filtros_aplicados %}
+                <a href="{% url 'gestion_asignaciones' %}" class="text-sm font-bold text-gray-600 hover:text-gray-800 underline">Limpiar</a>
+                <span class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 font-bold">
+                    {{ total_asignaciones }} encontrada{{ total_asignaciones|pluralize:"s" }}
+                </span>
+                {% else %}
+                <span class="text-sm text-gray-500">Filtra por carrera, ciclo, grupo, materia o maestro.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-100 text-xs uppercase font-bold text-gray-500">
+                <tr>
+                    <th class="p-4">Materia</th>
+                    <th class="p-4">Maestro</th>
+                    <th class="p-4">Grupo</th>
+                    <th class="p-4">Ciclo</th>
+                    <th class="p-4 text-center">Estatus</th>
+                    <th class="p-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for asig in asignaciones %}
+                <tr class="hover:bg-blue-50">
+                    <td class="p-4 font-bold">{{ asig.id_materia.clave }} — {{ asig.id_materia.nombre }}</td>
+                    <td class="p-4">{{ asig.id_maestro.id_usuario.nombre }} {{ asig.id_maestro.id_usuario.apellido }}</td>
+                    <td class="p-4 font-mono">{{ asig.id_grupo.clave }}</td>
+                    <td class="p-4">{{ asig.id_ciclo_escolar.nombre_ciclo }}</td>
+                    <td class="p-4 text-center font-bold">{{ asig.estatus }}</td>
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button type="button" class="text-blue-600 px-2"
+                                onclick="editarAsignacion({{ asig.id_asignacion_materia }}, {{ asig.id_materia_id }}, {{ asig.id_maestro_id }}, {{ asig.id_grupo_id }}, {{ asig.id_ciclo_escolar_id }}, '{{ asig.estatus|escapejs }}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 px-2"
+                                onclick="eliminarRegistro('{% url 'eliminar_asignacion' asig.id_asignacion_materia %}', 'asignación #{{ asig.id_asignacion_materia }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-10 text-center text-gray-500">
+                        {% if filtros_aplicados %}
+                        No hay asignaciones con los filtros seleccionados
+                        {% else %}
+                        No hay asignaciones registradas
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div id="modalCrear" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4">
+        <h3 class="text-xl font-bold mb-4">Nueva asignación</h3>
+        <form id="formCrear" method="POST" action="{% url 'crear_asignacion' %}" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_asignacion.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalCrear')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4">
+        <h3 class="text-xl font-bold mb-4">Editar asignación</h3>
+        <form id="formEditar" method="POST" action="" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_asignacion.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalEditar')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const materiasCatalogoFiltro = [
+    {% for materia in materias %}
+    { id: '{{ materia.id_materia }}', texto: '{{ materia.clave|escapejs }} — {{ materia.nombre|escapejs }}' },
+    {% endfor %}
+];
+
+const maestrosCatalogoFiltro = [
+    {% for maestro in maestros %}
+    { id: '{{ maestro.id_usuario_id }}', texto: '{{ maestro.id_usuario.nombre|escapejs }} {{ maestro.id_usuario.apellido|escapejs }}' },
+    {% endfor %}
+];
+
+function quitarAcentos(texto) {
+    return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function normalizarBusquedaFiltro(texto) {
+    return quitarAcentos(texto).toLowerCase().trim();
+}
+
+function escaparHtml(texto) {
+    return (texto || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function actualizarBotonLimpiarBuscador(hiddenId, btnId) {
+    const hidden = document.getElementById(hiddenId);
+    const btn = document.getElementById(btnId);
+    if (btn && hidden) {
+        btn.classList.toggle('hidden', !hidden.value);
+    }
+}
+
+function renderListaCatalogoFiltro({ catalogo, query, listaId, claseOpcion, vacioTexto, limite = 30 }) {
+    const lista = document.getElementById(listaId);
+    if (!lista) return;
+
+    const q = normalizarBusquedaFiltro(query);
+    const coincidencias = q
+        ? catalogo.filter(item => normalizarBusquedaFiltro(item.texto).includes(q))
+        : catalogo.slice(0, limite);
+
+    if (!coincidencias.length) {
+        lista.innerHTML = `<p class="px-3 py-2 text-sm text-gray-500">${vacioTexto}</p>`;
+        lista.classList.remove('hidden');
+        return;
+    }
+
+    lista.innerHTML = coincidencias.map(item =>
+        `<button type="button" class="${claseOpcion} w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0" data-id="${item.id}">${escaparHtml(item.texto)}</button>`
+    ).join('');
+    lista.classList.remove('hidden');
+}
+
+function seleccionarCatalogoFiltro({ id, texto, hiddenId, inputId, listaId, btnLimpiarId, onSelect }) {
+    const hidden = document.getElementById(hiddenId);
+    const input = document.getElementById(inputId);
+    const lista = document.getElementById(listaId);
+    if (hidden) hidden.value = id;
+    if (input) input.value = texto;
+    if (lista) lista.classList.add('hidden');
+    actualizarBotonLimpiarBuscador(hiddenId, btnLimpiarId);
+    if (onSelect) onSelect();
+}
+
+function limpiarBuscadorFiltro({ hiddenId, inputId, listaId, btnLimpiarId, aplicar }) {
+    const hidden = document.getElementById(hiddenId);
+    const input = document.getElementById(inputId);
+    const lista = document.getElementById(listaId);
+    if (hidden) hidden.value = '';
+    if (input) input.value = '';
+    if (lista) {
+        lista.innerHTML = '';
+        lista.classList.add('hidden');
+    }
+    actualizarBotonLimpiarBuscador(hiddenId, btnLimpiarId);
+    if (aplicar) aplicarFiltrosAsignaciones(false);
+}
+
+function initBuscadorCatalogoFiltro(config) {
+    const input = document.getElementById(config.inputId);
+    const lista = document.getElementById(config.listaId);
+    const btnLimpiar = document.getElementById(config.btnLimpiarId);
+    if (!input) return;
+
+    if (config.valorInicial) {
+        const item = config.catalogo.find(c => String(c.id) === String(config.valorInicial));
+        if (item) {
+            input.value = item.texto;
+            const hidden = document.getElementById(config.hiddenId);
+            if (hidden) hidden.value = item.id;
+        }
+    }
+    actualizarBotonLimpiarBuscador(config.hiddenId, config.btnLimpiarId);
+
+    input.addEventListener('input', () => renderListaCatalogoFiltro({
+        catalogo: config.catalogo,
+        query: input.value,
+        listaId: config.listaId,
+        claseOpcion: config.claseOpcion,
+        vacioTexto: config.vacioTexto,
+    }));
+
+    input.addEventListener('focus', () => renderListaCatalogoFiltro({
+        catalogo: config.catalogo,
+        query: input.value,
+        listaId: config.listaId,
+        claseOpcion: config.claseOpcion,
+        vacioTexto: config.vacioTexto,
+    }));
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            lista?.classList.add('hidden');
+            return;
+        }
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const q = normalizarBusquedaFiltro(input.value);
+        if (!q) {
+            limpiarBuscadorFiltro({
+                hiddenId: config.hiddenId,
+                inputId: config.inputId,
+                listaId: config.listaId,
+                btnLimpiarId: config.btnLimpiarId,
+                aplicar: true,
+            });
+            return;
+        }
+        const coincidencia = config.catalogo.find(item => normalizarBusquedaFiltro(item.texto).includes(q));
+        if (coincidencia) {
+            seleccionarCatalogoFiltro({
+                id: coincidencia.id,
+                texto: coincidencia.texto,
+                hiddenId: config.hiddenId,
+                inputId: config.inputId,
+                listaId: config.listaId,
+                btnLimpiarId: config.btnLimpiarId,
+                onSelect: () => aplicarFiltrosAsignaciones(false),
+            });
+        }
+    });
+
+    lista?.addEventListener('click', (e) => {
+        const btn = e.target.closest(`.${config.claseOpcion}`);
+        if (!btn) return;
+        seleccionarCatalogoFiltro({
+            id: btn.dataset.id,
+            texto: btn.textContent.trim(),
+            hiddenId: config.hiddenId,
+            inputId: config.inputId,
+            listaId: config.listaId,
+            btnLimpiarId: config.btnLimpiarId,
+            onSelect: () => aplicarFiltrosAsignaciones(false),
+        });
+    });
+
+    btnLimpiar?.addEventListener('click', () => limpiarBuscadorFiltro({
+        hiddenId: config.hiddenId,
+        inputId: config.inputId,
+        listaId: config.listaId,
+        btnLimpiarId: config.btnLimpiarId,
+        aplicar: true,
+    }));
+}
+
+function queryFiltrosAsignaciones(incluirGrupo) {
+    const params = new URLSearchParams();
+    const carrera = document.getElementById('filtro-carrera')?.value || '';
+    const ciclo = document.getElementById('filtro-ciclo')?.value || '';
+    const grupo = document.getElementById('filtro-grupo')?.value || '';
+    const materia = document.getElementById('filtro-materia')?.value || '';
+    const maestro = document.getElementById('filtro-maestro')?.value || '';
+    if (carrera) params.set('carrera', carrera);
+    if (ciclo) params.set('ciclo', ciclo);
+    if (incluirGrupo !== false && grupo) params.set('grupo', grupo);
+    if (materia) params.set('materia', materia);
+    if (maestro) params.set('maestro', maestro);
+    const qs = params.toString();
+    return qs ? '?' + qs : '';
+}
+
+function urlGestionAsignaciones(incluirGrupo) {
+    return '{% url "gestion_asignaciones" %}' + queryFiltrosAsignaciones(incluirGrupo);
+}
+
+function aplicarFiltrosAsignaciones(resetGrupo) {
+    window.location.href = urlGestionAsignaciones(!resetGrupo);
+}
+
+function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function editarAsignacion(id, materiaId, maestroId, grupoId, cicloId, estatus) {
+    const form = document.getElementById('formEditar');
+    form.action = `/administrativo/asignaciones/editar/${id}/`;
+    form.materia_id.value = materiaId;
+    form.maestro_id.value = maestroId;
+    form.grupo_id.value = grupoId;
+    form.ciclo_id.value = cicloId;
+    form.estatus.value = estatus;
+    abrirModal('modalEditar');
+}
+
+function enviarAjax(form) {
+    const fd = new FormData(form);
+    fetch(form.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) window.location.href = urlGestionAsignaciones();
+            else alert(data.error || 'Error al guardar');
+        });
+}
+
+document.getElementById('formCrear').addEventListener('submit', e => { e.preventDefault(); enviarAjax(e.target); });
+document.getElementById('formEditar').addEventListener('submit', e => { e.preventDefault(); enviarAjax(e.target); });
+
+function eliminarRegistro(url, etiqueta) {
+    if (!confirm(`¿Eliminar ${etiqueta}?`)) return;
+    const fd = new FormData();
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch(url, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) window.location.href = urlGestionAsignaciones();
+            else alert(data.error || 'No se pudo eliminar');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initBuscadorCatalogoFiltro({
+        catalogo: materiasCatalogoFiltro,
+        inputId: 'buscar-materia-filtro',
+        hiddenId: 'filtro-materia',
+        listaId: 'lista-materias-filtro',
+        btnLimpiarId: 'limpiar-materia-filtro',
+        claseOpcion: 'opcion-materia-filtro',
+        vacioTexto: 'Sin materias que coincidan',
+        valorInicial: '{{ materia_filtro|escapejs }}',
+    });
+
+    initBuscadorCatalogoFiltro({
+        catalogo: maestrosCatalogoFiltro,
+        inputId: 'buscar-maestro-filtro',
+        hiddenId: 'filtro-maestro',
+        listaId: 'lista-maestros-filtro',
+        btnLimpiarId: 'limpiar-maestro-filtro',
+        claseOpcion: 'opcion-maestro-filtro',
+        vacioTexto: 'Sin maestros que coincidan',
+        valorInicial: '{{ maestro_filtro|escapejs }}',
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#buscar-materia-filtro') && !e.target.closest('#lista-materias-filtro')) {
+            document.getElementById('lista-materias-filtro')?.classList.add('hidden');
+        }
+        if (!e.target.closest('#buscar-maestro-filtro') && !e.target.closest('#lista-maestros-filtro')) {
+            document.getElementById('lista-maestros-filtro')?.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}

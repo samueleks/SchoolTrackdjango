@@ -43,6 +43,7 @@ from .models import (
     Administrativos,
     Administrador,
     DatosPersonales,
+    Carrera,
     Materia,
     LogCalificacion,
     Grupo,
@@ -2965,8 +2966,12 @@ def admin_horarios(request):
     
     # Solo mostrar horarios si hay ciclo Y grupo seleccionados
     if ciclo_filtro and grupo_filtro:
-        # Asegurar que el grupo existe (buscar sin importar mayúsculas/minúsculas)
-        grupo_obj = Grupo.objects.filter(clave__iexact=grupo_filtro).first()
+        grupo_obj = None
+        if ciclo_actual:
+            grupo_obj = Grupo.objects.filter(
+                clave__iexact=grupo_filtro,
+                id_ciclo_escolar=ciclo_actual,
+            ).first()
         logger.info(f"Buscando grupo: '{grupo_filtro}' - Encontrado: {grupo_obj}")
         if grupo_obj:
             logger.info(f"ID del grupo encontrado: {grupo_obj.id_grupo}")
@@ -3383,10 +3388,13 @@ def agregar_horario(request):
         materia = Materia.objects.get(id_materia=int(materia_id))
         maestro_usuario = Usuarios.objects.get(matricula=docente_matricula)
         maestro = Maestros.objects.get(id_usuario=maestro_usuario)
-        grupo = Grupo.objects.filter(clave__iexact=grupo_clave).first()
-        if not grupo:
-            return JsonResponse({'success': False, 'error': 'Grupo no encontrado'})
         ciclo_escolar = CicloEscolar.objects.get(nombre_ciclo=ciclo_escolar_nombre)
+        grupo = Grupo.objects.filter(
+            clave__iexact=grupo_clave,
+            id_ciclo_escolar=ciclo_escolar,
+        ).first()
+        if not grupo:
+            return JsonResponse({'success': False, 'error': 'Grupo no encontrado en el ciclo seleccionado'})
 
         # Validar que el ciclo escolar esté activo (dentro de fechas válidas)
         hoy = timezone.now().date()
@@ -3720,6 +3728,720 @@ def get_horarios_semanales(request):
         })
 
     return JsonResponse({'horarios': horarios_data})
+
+
+def _es_ajax(request) -> bool:
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _validar_clave_grupo_en_ciclo(
+    clave: str,
+    ciclo: CicloEscolar,
+    *,
+    excluir_grupo_id: int | None = None,
+) -> str | None:
+    clave_limpia = (clave or '').strip().upper()
+    if not clave_limpia:
+        return 'La clave del grupo es obligatoria'
+
+    queryset = Grupo.objects.filter(clave__iexact=clave_limpia, id_ciclo_escolar=ciclo)
+    if excluir_grupo_id:
+        queryset = queryset.exclude(pk=excluir_grupo_id)
+    if queryset.exists():
+        return f'Ya existe el grupo {clave_limpia} en el ciclo {ciclo.nombre_ciclo}'
+    return None
+
+
+def _grupo_tiene_datos_ligados(grupo: Grupo) -> bool:
+    return (
+        Inscripcion.objects.filter(id_grupo=grupo).exists()
+        or AsignacionMateria.objects.filter(id_grupo=grupo).exists()
+    )
+
+
+def _mensaje_bloqueo_eliminar_grupo(grupo: Grupo) -> str | None:
+    total_inscripciones = Inscripcion.objects.filter(id_grupo=grupo).count()
+    if total_inscripciones:
+        etiqueta = 'alumno inscrito' if total_inscripciones == 1 else 'alumnos inscritos'
+        return (
+            f'No puedes eliminar el grupo {grupo.clave} porque tiene '
+            f'{total_inscripciones} {etiqueta}'
+        )
+
+    total_asignaciones = AsignacionMateria.objects.filter(id_grupo=grupo).count()
+    if total_asignaciones:
+        etiqueta = 'asignación de materia' if total_asignaciones == 1 else 'asignaciones de materias'
+        return (
+            f'No puedes eliminar el grupo {grupo.clave} porque tiene '
+            f'{total_asignaciones} {etiqueta}'
+        )
+
+    return None
+
+
+def _mensaje_bloqueo_eliminar_inscripcion(inscripcion: Inscripcion) -> str | None:
+    alumno = inscripcion.id_alumno.id_usuario
+    nombre_alumno = f'{alumno.nombre} {alumno.apellido}'
+
+    total_asistencias = Asistencia.objects.filter(id_inscripcion=inscripcion).count()
+    if total_asistencias:
+        etiqueta = 'asistencia registrada' if total_asistencias == 1 else 'asistencias registradas'
+        return (
+            f'No puedes eliminar la inscripción de {nombre_alumno} porque tiene '
+            f'{total_asistencias} {etiqueta}'
+        )
+
+    total_calificaciones = Calificacion.objects.filter(id_inscripcion=inscripcion).count()
+    if total_calificaciones:
+        etiqueta = 'calificación registrada' if total_calificaciones == 1 else 'calificaciones registradas'
+        return (
+            f'No puedes eliminar la inscripción de {nombre_alumno} porque tiene '
+            f'{total_calificaciones} {etiqueta}'
+        )
+
+    return None
+
+
+def _asignacion_tiene_dependencias(asignacion: AsignacionMateria) -> str | None:
+    if Horario.objects.filter(id_asignacion_materia=asignacion).exists():
+        return 'Esta asignación tiene horarios registrados'
+    if Calificacion.objects.filter(id_asignacion_materia=asignacion).exists():
+        return 'Esta asignación tiene calificaciones registradas'
+    return None
+
+
+def _contexto_gestion_academica_admin(request) -> dict:
+    return {
+        'perfil': _perfil_administrativo(request),
+        'carreras': Carrera.objects.order_by('nombre'),
+        'ciclos': CicloEscolar.objects.order_by('-fecha_inicio'),
+        'grupos': Grupo.objects.select_related('id_carrera', 'id_ciclo_escolar').order_by('clave'),
+        'alumnos': Alumnos.objects.select_related('id_usuario', 'id_carrera').filter(
+            estatus='Activo'
+        ).order_by('id_usuario__apellido', 'id_usuario__nombre'),
+        'maestros': Maestros.objects.select_related('id_usuario').order_by(
+            'id_usuario__apellido', 'id_usuario__nombre'
+        ),
+        'materias': Materia.objects.filter(activo=True).order_by('clave'),
+    }
+
+
+def gestion_grupos(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    ciclo_filtro = request.GET.get('ciclo', '').strip()
+
+    grupos_qs = Grupo.objects.select_related('id_carrera', 'id_ciclo_escolar').order_by('clave')
+    if carrera_filtro.isdigit():
+        grupos_qs = grupos_qs.filter(id_carrera_id=int(carrera_filtro))
+    if ciclo_filtro.isdigit():
+        grupos_qs = grupos_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
+
+    context = {
+        **_contexto_gestion_academica_admin(request),
+        'grupos_lista': grupos_qs,
+        'carrera_filtro': carrera_filtro,
+        'ciclo_filtro': ciclo_filtro,
+        'filtros_aplicados': bool(carrera_filtro or ciclo_filtro),
+        'total_grupos': grupos_qs.count(),
+    }
+    return render(request, 'administrativo/GestionGrupos.html', context)
+
+
+def crear_grupo(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_grupos')
+
+    es_ajax = _es_ajax(request)
+    try:
+        clave = request.POST.get('clave', '').strip().upper()
+        nombre = request.POST.get('nombre', '').strip()
+        semestre = request.POST.get('semestre', '').strip()
+        turno = request.POST.get('turno', '').strip()
+        carrera_id = request.POST.get('carrera_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        cupo_maximo = request.POST.get('cupo_maximo', '0').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not all([clave, nombre, semestre, turno, carrera_id, ciclo_id]):
+            raise ValueError('Completa todos los campos obligatorios')
+        if not semestre.isdigit() or int(semestre) < 1:
+            raise ValueError('El semestre debe ser un número válido')
+        if turno not in dict(Grupo.TURNO_CHOICES):
+            raise ValueError('Selecciona un turno válido')
+        carrera = get_object_or_404(Carrera, pk=carrera_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+        error_clave = _validar_clave_grupo_en_ciclo(clave, ciclo)
+        if error_clave:
+            raise ValueError(error_clave)
+
+        Grupo.objects.create(
+            clave=clave,
+            nombre=nombre,
+            semestre=int(semestre),
+            turno=turno,
+            id_carrera=carrera,
+            id_ciclo_escolar=ciclo,
+            cupo_maximo=int(cupo_maximo) if cupo_maximo.isdigit() else 0,
+            activo=activo,
+        )
+        success_msg = 'Grupo creado correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al crear grupo: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_grupos')
+
+
+def editar_grupo(request, grupo_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    grupo = get_object_or_404(Grupo, pk=grupo_id)
+    if request.method != 'POST':
+        return redirect('gestion_grupos')
+
+    es_ajax = _es_ajax(request)
+    try:
+        clave = request.POST.get('clave', '').strip().upper()
+        nombre = request.POST.get('nombre', '').strip()
+        semestre = request.POST.get('semestre', '').strip()
+        turno = request.POST.get('turno', '').strip()
+        carrera_id = request.POST.get('carrera_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        cupo_maximo = request.POST.get('cupo_maximo', '0').strip()
+        activo = request.POST.get('activo') == 'on'
+
+        if not all([clave, nombre, semestre, turno, carrera_id, ciclo_id]):
+            raise ValueError('Completa todos los campos obligatorios')
+
+        carrera = get_object_or_404(Carrera, pk=carrera_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+        ciclo_anterior_id = grupo.id_ciclo_escolar_id
+        ciclo_cambia = str(ciclo.id_ciclo_escolar) != str(ciclo_anterior_id)
+
+        if ciclo_cambia and _grupo_tiene_datos_ligados(grupo):
+            raise ValueError(
+                'No puedes cambiar el ciclo de este grupo porque tiene alumnos inscritos '
+                'o asignaciones de materias. Usa «Reutilizar» para crear uno nuevo en otro ciclo.'
+            )
+
+        error_clave = _validar_clave_grupo_en_ciclo(
+            clave,
+            ciclo,
+            excluir_grupo_id=grupo.pk,
+        )
+        if error_clave:
+            raise ValueError(error_clave)
+
+        grupo.clave = clave
+        grupo.nombre = nombre
+        grupo.semestre = int(semestre) if semestre.isdigit() else grupo.semestre
+        grupo.turno = turno
+        grupo.id_carrera = carrera
+        grupo.id_ciclo_escolar = ciclo
+        grupo.cupo_maximo = int(cupo_maximo) if cupo_maximo.isdigit() else 0
+        grupo.activo = activo
+        grupo.save()
+
+        success_msg = 'Grupo actualizado correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al editar grupo: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_grupos')
+
+
+def reutilizar_grupo(request, grupo_id):
+    """Crea un grupo nuevo en otro ciclo copiando los datos del original (misma tabla grupo)."""
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_grupos')
+
+    es_ajax = _es_ajax(request)
+    origen = get_object_or_404(Grupo, pk=grupo_id)
+
+    try:
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        if not ciclo_id:
+            raise ValueError('Selecciona el ciclo escolar de destino')
+
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+        error_clave = _validar_clave_grupo_en_ciclo(origen.clave, ciclo)
+        if error_clave:
+            raise ValueError(error_clave)
+
+        Grupo.objects.create(
+            clave=origen.clave,
+            nombre=origen.nombre,
+            semestre=origen.semestre,
+            turno=origen.turno,
+            id_carrera=origen.id_carrera,
+            id_ciclo_escolar=ciclo,
+            cupo_maximo=origen.cupo_maximo,
+            activo=True,
+        )
+        success_msg = (
+            f'Grupo {origen.clave} creado en el ciclo {ciclo.nombre_ciclo} correctamente'
+        )
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al reutilizar grupo: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_grupos')
+
+
+def eliminar_grupo(request, grupo_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_grupos')
+
+    grupo = get_object_or_404(Grupo, pk=grupo_id)
+    es_ajax = _es_ajax(request)
+    bloqueo = _mensaje_bloqueo_eliminar_grupo(grupo)
+    if bloqueo:
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': bloqueo}, status=400)
+        messages.error(request, bloqueo)
+        return redirect('gestion_grupos')
+
+    clave = grupo.clave
+    grupo.delete()
+    success_msg = f'Grupo {clave} eliminado correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
+    return redirect('gestion_grupos')
+
+
+def gestion_inscripciones(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    ciclo_filtro = request.GET.get('ciclo', '').strip()
+    grupo_filtro = request.GET.get('grupo', '').strip()
+
+    inscripciones_qs = Inscripcion.objects.select_related(
+        'id_alumno__id_usuario',
+        'id_grupo__id_carrera',
+        'id_ciclo_escolar',
+    ).order_by('-id_inscripcion')
+
+    if carrera_filtro.isdigit():
+        inscripciones_qs = inscripciones_qs.filter(id_grupo__id_carrera_id=int(carrera_filtro))
+    if ciclo_filtro.isdigit():
+        inscripciones_qs = inscripciones_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
+    if grupo_filtro.isdigit():
+        inscripciones_qs = inscripciones_qs.filter(id_grupo_id=int(grupo_filtro))
+
+    grupos_filtro_qs = Grupo.objects.select_related('id_carrera', 'id_ciclo_escolar').order_by('clave')
+    if carrera_filtro.isdigit():
+        grupos_filtro_qs = grupos_filtro_qs.filter(id_carrera_id=int(carrera_filtro))
+    if ciclo_filtro.isdigit():
+        grupos_filtro_qs = grupos_filtro_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
+
+    context = {
+        **_contexto_gestion_academica_admin(request),
+        'inscripciones': inscripciones_qs,
+        'grupos_filtro': grupos_filtro_qs,
+        'carrera_filtro': carrera_filtro,
+        'ciclo_filtro': ciclo_filtro,
+        'grupo_filtro': grupo_filtro,
+        'filtros_aplicados': bool(carrera_filtro or ciclo_filtro or grupo_filtro),
+        'total_inscripciones': inscripciones_qs.count(),
+    }
+    return render(request, 'administrativo/GestionInscripciones.html', context)
+
+
+def crear_inscripcion(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_inscripciones')
+
+    es_ajax = _es_ajax(request)
+    try:
+        alumno_id = request.POST.get('alumno_id', '').strip()
+        grupo_id = request.POST.get('grupo_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        estatus = request.POST.get('estatus', 'Activa').strip()
+
+        if not all([alumno_id, grupo_id, ciclo_id]):
+            raise ValueError('Selecciona alumno, grupo y ciclo escolar')
+        if estatus not in dict(Inscripcion.ESTATUS_CHOICES):
+            raise ValueError('Estatus de inscripción no válido')
+
+        alumno = get_object_or_404(Alumnos, pk=alumno_id)
+        grupo = get_object_or_404(Grupo, pk=grupo_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+
+        if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
+            raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if Inscripcion.objects.filter(
+            id_alumno=alumno,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+        ).exists():
+            raise ValueError('El alumno ya está inscrito en ese grupo para ese ciclo')
+
+        Inscripcion.objects.create(
+            id_alumno=alumno,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+            estatus=estatus,
+        )
+        success_msg = 'Inscripción registrada correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al registrar inscripción: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_inscripciones')
+
+
+def editar_inscripcion(request, inscripcion_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    inscripcion = get_object_or_404(Inscripcion, pk=inscripcion_id)
+    if request.method != 'POST':
+        return redirect('gestion_inscripciones')
+
+    es_ajax = _es_ajax(request)
+    try:
+        alumno_id = request.POST.get('alumno_id', '').strip()
+        grupo_id = request.POST.get('grupo_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        estatus = request.POST.get('estatus', 'Activa').strip()
+
+        if not all([alumno_id, grupo_id, ciclo_id]):
+            raise ValueError('Selecciona alumno, grupo y ciclo escolar')
+
+        alumno = get_object_or_404(Alumnos, pk=alumno_id)
+        grupo = get_object_or_404(Grupo, pk=grupo_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+
+        if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
+            raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if Inscripcion.objects.exclude(pk=inscripcion.pk).filter(
+            id_alumno=alumno,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+        ).exists():
+            raise ValueError('Ya existe otra inscripción con esos datos')
+
+        inscripcion.id_alumno = alumno
+        inscripcion.id_grupo = grupo
+        inscripcion.id_ciclo_escolar = ciclo
+        inscripcion.estatus = estatus
+        inscripcion.save()
+
+        success_msg = 'Inscripción actualizada correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al actualizar inscripción: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_inscripciones')
+
+
+def eliminar_inscripcion(request, inscripcion_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_inscripciones')
+
+    inscripcion = get_object_or_404(
+        Inscripcion.objects.select_related('id_alumno__id_usuario'),
+        pk=inscripcion_id,
+    )
+    es_ajax = _es_ajax(request)
+    bloqueo = _mensaje_bloqueo_eliminar_inscripcion(inscripcion)
+    if bloqueo:
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': bloqueo}, status=400)
+        messages.error(request, bloqueo)
+        return redirect('gestion_inscripciones')
+
+    alumno = inscripcion.id_alumno.id_usuario
+    nombre_alumno = f'{alumno.nombre} {alumno.apellido}'
+    inscripcion.delete()
+    success_msg = f'Inscripción de {nombre_alumno} eliminada correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
+    return redirect('gestion_inscripciones')
+
+
+def gestion_asignaciones(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    carrera_filtro = request.GET.get('carrera', '').strip()
+    ciclo_filtro = request.GET.get('ciclo', '').strip()
+    grupo_filtro = request.GET.get('grupo', '').strip()
+    materia_filtro = request.GET.get('materia', '').strip()
+    maestro_filtro = request.GET.get('maestro', '').strip()
+
+    asignaciones_qs = AsignacionMateria.objects.select_related(
+        'id_materia',
+        'id_maestro__id_usuario',
+        'id_grupo__id_carrera',
+        'id_ciclo_escolar',
+    ).order_by('-id_asignacion_materia')
+
+    if carrera_filtro.isdigit():
+        asignaciones_qs = asignaciones_qs.filter(id_grupo__id_carrera_id=int(carrera_filtro))
+    if ciclo_filtro.isdigit():
+        asignaciones_qs = asignaciones_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
+    if grupo_filtro.isdigit():
+        asignaciones_qs = asignaciones_qs.filter(id_grupo_id=int(grupo_filtro))
+    if materia_filtro.isdigit():
+        asignaciones_qs = asignaciones_qs.filter(id_materia_id=int(materia_filtro))
+    if maestro_filtro.isdigit():
+        asignaciones_qs = asignaciones_qs.filter(id_maestro_id=int(maestro_filtro))
+
+    grupos_filtro_qs = Grupo.objects.select_related('id_carrera', 'id_ciclo_escolar').order_by('clave')
+    if carrera_filtro.isdigit():
+        grupos_filtro_qs = grupos_filtro_qs.filter(id_carrera_id=int(carrera_filtro))
+    if ciclo_filtro.isdigit():
+        grupos_filtro_qs = grupos_filtro_qs.filter(id_ciclo_escolar_id=int(ciclo_filtro))
+
+    context = {
+        **_contexto_gestion_academica_admin(request),
+        'asignaciones': asignaciones_qs,
+        'grupos_filtro': grupos_filtro_qs,
+        'carrera_filtro': carrera_filtro,
+        'ciclo_filtro': ciclo_filtro,
+        'grupo_filtro': grupo_filtro,
+        'materia_filtro': materia_filtro,
+        'maestro_filtro': maestro_filtro,
+        'filtros_aplicados': bool(
+            carrera_filtro or ciclo_filtro or grupo_filtro or materia_filtro or maestro_filtro
+        ),
+        'total_asignaciones': asignaciones_qs.count(),
+    }
+    return render(request, 'administrativo/GestionAsignaciones.html', context)
+
+
+def crear_asignacion(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_asignaciones')
+
+    es_ajax = _es_ajax(request)
+    try:
+        materia_id = request.POST.get('materia_id', '').strip()
+        maestro_id = request.POST.get('maestro_id', '').strip()
+        grupo_id = request.POST.get('grupo_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        estatus = request.POST.get('estatus', 'Activa').strip()
+
+        if not all([materia_id, maestro_id, grupo_id, ciclo_id]):
+            raise ValueError('Selecciona materia, maestro, grupo y ciclo escolar')
+        if estatus not in dict(AsignacionMateria.ESTATUS_CHOICES):
+            raise ValueError('Estatus de asignación no válido')
+
+        materia = get_object_or_404(Materia, pk=materia_id)
+        maestro = get_object_or_404(Maestros, pk=maestro_id)
+        grupo = get_object_or_404(Grupo, pk=grupo_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+
+        if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
+            raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if AsignacionMateria.objects.filter(
+            id_materia=materia,
+            id_maestro=maestro,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+        ).exists():
+            raise ValueError('Ya existe esa asignación de materia')
+
+        AsignacionMateria.objects.create(
+            id_materia=materia,
+            id_maestro=maestro,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+            estatus=estatus,
+        )
+        success_msg = 'Asignación creada correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al crear asignación: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_asignaciones')
+
+
+def editar_asignacion(request, asignacion_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    asignacion = get_object_or_404(AsignacionMateria, pk=asignacion_id)
+    if request.method != 'POST':
+        return redirect('gestion_asignaciones')
+
+    es_ajax = _es_ajax(request)
+    try:
+        materia_id = request.POST.get('materia_id', '').strip()
+        maestro_id = request.POST.get('maestro_id', '').strip()
+        grupo_id = request.POST.get('grupo_id', '').strip()
+        ciclo_id = request.POST.get('ciclo_id', '').strip()
+        estatus = request.POST.get('estatus', 'Activa').strip()
+
+        materia = get_object_or_404(Materia, pk=materia_id)
+        maestro = get_object_or_404(Maestros, pk=maestro_id)
+        grupo = get_object_or_404(Grupo, pk=grupo_id)
+        ciclo = get_object_or_404(CicloEscolar, pk=ciclo_id)
+
+        if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
+            raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
+        if AsignacionMateria.objects.exclude(pk=asignacion.pk).filter(
+            id_materia=materia,
+            id_maestro=maestro,
+            id_grupo=grupo,
+            id_ciclo_escolar=ciclo,
+        ).exists():
+            raise ValueError('Ya existe otra asignación con esos datos')
+
+        asignacion.id_materia = materia
+        asignacion.id_maestro = maestro
+        asignacion.id_grupo = grupo
+        asignacion.id_ciclo_escolar = ciclo
+        asignacion.estatus = estatus
+        asignacion.save()
+
+        success_msg = 'Asignación actualizada correctamente'
+        if es_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+    except ValueError as e:
+        error_msg = str(e)
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+    except Exception as e:
+        error_msg = f'Error al actualizar asignación: {str(e)}'
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': error_msg})
+        messages.error(request, error_msg)
+
+    return redirect('gestion_asignaciones')
+
+
+def eliminar_asignacion(request, asignacion_id):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+        return redirect('selector_rol')
+
+    if request.method != 'POST':
+        return redirect('gestion_asignaciones')
+
+    asignacion = get_object_or_404(AsignacionMateria, pk=asignacion_id)
+    es_ajax = _es_ajax(request)
+    bloqueo = _asignacion_tiene_dependencias(asignacion)
+    if bloqueo:
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': bloqueo})
+        messages.error(request, bloqueo)
+        return redirect('gestion_asignaciones')
+
+    asignacion.delete()
+    success_msg = 'Asignación eliminada correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
+    return redirect('gestion_asignaciones')
 
 
 def dashboard_administrador(request):

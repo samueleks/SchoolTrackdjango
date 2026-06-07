@@ -1,0 +1,44 @@
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Materia *</label>
+    <select name="materia_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for materia in materias %}
+        <option value="{{ materia.id_materia }}">{{ materia.clave }} — {{ materia.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Maestro *</label>
+    <select name="maestro_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for maestro in maestros %}
+        <option value="{{ maestro.id_usuario_id }}">{{ maestro.id_usuario.matricula }} — {{ maestro.id_usuario.nombre }} {{ maestro.id_usuario.apellido }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Grupo *</label>
+    <select name="grupo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for grupo in grupos %}
+        <option value="{{ grupo.id_grupo }}">{{ grupo.clave }} — {{ grupo.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar *</label>
+    <select name="ciclo_id" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="">Seleccionar</option>
+        {% for ciclo in ciclos %}
+        <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-bold text-gray-600 mb-1">Estatus *</label>
+    <select name="estatus" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+        <option value="Activa">Activa</option>
+        <option value="Finalizada">Finalizada</option>
+        <option value="Suspendida">Suspendida</option>
+    </select>
+</div>

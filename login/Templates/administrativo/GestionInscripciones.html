@@ -1,0 +1,347 @@
+{% extends 'base/dashboard_administrativo.html' %}
+
+{% block title %}SchoolTrack - Inscripciones{% endblock %}
+
+{% block modals %}
+<div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+        <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-check text-4xl text-green-500"></i>
+        </div>
+        <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+            Acción realizada correctamente
+        </p>
+        <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+            Toca en cualquier parte para continuar
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto min-w-0 w-full">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6 sm:mb-8">
+        <div class="min-w-0">
+            <h2 class="text-2xl sm:text-3xl font-black text-gray-700 uppercase tracking-tight">Inscripciones</h2>
+            <p class="text-blue-600 font-bold text-sm uppercase tracking-widest">Alumno a grupo por ciclo</p>
+        </div>
+        <button onclick="abrirModal('modalCrear')" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i> Nueva inscripción
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
+        <div class="filtros-gestion-grid filtros-gestion-grid--tres">
+            <div>
+                <label for="filtro-carrera" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Carrera</label>
+                <select id="filtro-carrera" onchange="aplicarFiltrosInscripciones(true)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not carrera_filtro %}selected{% endif %}>— Todas las carreras —</option>
+                    {% for carrera in carreras %}
+                    <option value="{{ carrera.id }}" {% if carrera_filtro == carrera.id|stringformat:"s" %}selected{% endif %}>{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filtro-ciclo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo escolar</label>
+                <select id="filtro-ciclo" onchange="aplicarFiltrosInscripciones(true)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not ciclo_filtro %}selected{% endif %}>— Todos los ciclos —</option>
+                    {% for ciclo in ciclos %}
+                    <option value="{{ ciclo.id_ciclo_escolar }}" {% if ciclo_filtro == ciclo.id_ciclo_escolar|stringformat:"s" %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filtro-grupo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Grupo</label>
+                <select id="filtro-grupo" onchange="aplicarFiltrosInscripciones(false)" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none" {% if not ciclo_filtro %}disabled{% endif %}>
+                    <option value="" {% if not grupo_filtro %}selected{% endif %}>{% if ciclo_filtro %}— Todos los grupos —{% else %}Primero elige un ciclo{% endif %}</option>
+                    {% for grupo in grupos_filtro %}
+                    <option value="{{ grupo.id_grupo }}" {% if grupo_filtro == grupo.id_grupo|stringformat:"s" %}selected{% endif %}>{{ grupo.clave }} — {{ grupo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtros-gestion-meta flex flex-wrap items-center gap-3 pt-1">
+                {% if filtros_aplicados %}
+                <a href="{% url 'gestion_inscripciones' %}" class="text-sm font-bold text-gray-600 hover:text-gray-800 underline">Limpiar filtros</a>
+                <span class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 font-bold">
+                    {{ total_inscripciones }} inscripción{{ total_inscripciones|pluralize:"es" }} encontrada{{ total_inscripciones|pluralize:"s" }}
+                </span>
+                {% else %}
+                <span class="text-sm text-gray-500">Filtra por carrera, ciclo y/o grupo para acotar la lista.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-100 text-xs uppercase font-bold text-gray-500">
+                <tr>
+                    <th class="p-4">Alumno</th>
+                    <th class="p-4">Matrícula</th>
+                    <th class="p-4">Grupo</th>
+                    <th class="p-4">Ciclo</th>
+                    <th class="p-4">Fecha</th>
+                    <th class="p-4 text-center">Estatus</th>
+                    <th class="p-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for ins in inscripciones %}
+                <tr class="hover:bg-blue-50">
+                    <td class="p-4 font-bold">{{ ins.id_alumno.id_usuario.nombre }} {{ ins.id_alumno.id_usuario.apellido }}</td>
+                    <td class="p-4 font-mono">{{ ins.id_alumno.id_usuario.matricula }}</td>
+                    <td class="p-4">{{ ins.id_grupo.clave }}</td>
+                    <td class="p-4">{{ ins.id_ciclo_escolar.nombre_ciclo }}</td>
+                    <td class="p-4">{{ ins.fecha_inscripcion|date:"d/m/Y" }}</td>
+                    <td class="p-4 text-center font-bold">{{ ins.estatus }}</td>
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button type="button" class="text-blue-600 px-2" title="Editar"
+                                onclick="editarInscripcion({{ ins.id_inscripcion }}, {{ ins.id_alumno_id }}, {{ ins.id_grupo_id }}, {{ ins.id_ciclo_escolar_id }}, '{{ ins.estatus|escapejs }}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 px-2" title="Eliminar"
+                                onclick="eliminarInscripcion({{ ins.id_inscripcion }}, '{{ ins.id_alumno.id_usuario.nombre|escapejs }} {{ ins.id_alumno.id_usuario.apellido|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="p-10 text-center text-gray-500">
+                        {% if filtros_aplicados %}
+                        No hay inscripciones con los filtros seleccionados
+                        {% else %}
+                        No hay inscripciones registradas
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div id="modalCrear" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4">
+        <h3 class="text-xl font-bold mb-4">Nueva inscripción</h3>
+        <form id="formCrear" method="POST" action="{% url 'crear_inscripcion' %}" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_inscripcion.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalCrear')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4">
+        <h3 class="text-xl font-bold mb-4">Editar inscripción</h3>
+        <form id="formEditar" method="POST" action="" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_inscripcion.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalEditar')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                <span class="text-4xl text-gray-400 font-serif">?</span>
+            </div>
+            <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar inscripción</h3>
+            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar la inscripción de <span id="nombreInscripcionEliminar" class="font-bold text-gray-700"></span>?</p>
+            <div class="flex gap-4 w-full justify-center">
+                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                    Eliminar
+                </button>
+                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let inscripcionIdEliminar = null;
+const eliminarInscripcionUrl = '{% url "eliminar_inscripcion" 0 %}'.replace('/0/', '/');
+
+function queryFiltrosInscripciones(incluirGrupo, extra) {
+    const params = new URLSearchParams();
+    const carrera = document.getElementById('filtro-carrera')?.value || '';
+    const ciclo = document.getElementById('filtro-ciclo')?.value || '';
+    const grupo = document.getElementById('filtro-grupo')?.value || '';
+    if (carrera) params.set('carrera', carrera);
+    if (ciclo) params.set('ciclo', ciclo);
+    if (incluirGrupo !== false && grupo) params.set('grupo', grupo);
+    if (extra) params.set('exito', extra);
+    const qs = params.toString();
+    return qs ? '?' + qs : '';
+}
+
+function urlGestionInscripciones(incluirGrupo, extra) {
+    return '{% url "gestion_inscripciones" %}' + queryFiltrosInscripciones(incluirGrupo, extra);
+}
+
+function aplicarFiltrosInscripciones(resetGrupo) {
+    window.location.href = urlGestionInscripciones(!resetGrupo);
+}
+
+function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function cerrarModalExitoSistema() {
+    document.getElementById('modalExitoSistema').classList.add('hidden');
+}
+
+function mostrarExitoSistema(mensaje) {
+    document.getElementById('textoExitoSistema').textContent = mensaje;
+    document.getElementById('modalExitoSistema').classList.remove('hidden');
+    setTimeout(cerrarModalExitoSistema, 3000);
+}
+
+function limpiarParametroExito() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('exito');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+}
+
+function editarInscripcion(id, alumnoId, grupoId, cicloId, estatus) {
+    const form = document.getElementById('formEditar');
+    form.action = `/administrativo/inscripciones/editar/${id}/`;
+    form.alumno_id.value = alumnoId;
+    form.grupo_id.value = grupoId;
+    form.ciclo_id.value = cicloId;
+    form.estatus.value = estatus;
+    abrirModal('modalEditar');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function enviarAjax(form, onSuccess) {
+    const fd = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => r.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (body.success) {
+            onSuccess();
+            sessionStorage.setItem('exitoInscripcionMensaje', body.message || 'Acción realizada correctamente');
+            window.location.href = urlGestionInscripciones(true, 'guardar');
+        } else {
+            alert(body.error || 'Error al guardar');
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+}
+
+document.getElementById('formCrear').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarAjax(e.target, () => cerrarModal('modalCrear'));
+});
+
+document.getElementById('formEditar').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarAjax(e.target, () => cerrarModal('modalEditar'));
+});
+
+function eliminarInscripcion(id, nombreAlumno) {
+    inscripcionIdEliminar = id;
+    document.getElementById('nombreInscripcionEliminar').textContent = nombreAlumno;
+    document.getElementById('modalEliminar').classList.remove('hidden');
+}
+
+function cerrarModalEliminar() {
+    document.getElementById('modalEliminar').classList.add('hidden');
+    inscripcionIdEliminar = null;
+}
+
+function confirmarBorrado() {
+    if (!inscripcionIdEliminar) {
+        cerrarModalEliminar();
+        return;
+    }
+
+    const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
+    if (btnEliminar) {
+        btnEliminar.disabled = true;
+        btnEliminar.textContent = 'Procesando...';
+    }
+
+    fetch(`${eliminarInscripcionUrl}${encodeURIComponent(inscripcionIdEliminar)}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (!body.success) {
+            alert(body.error || 'Error al eliminar inscripción');
+        } else {
+            cerrarModalEliminar();
+            sessionStorage.setItem(
+                'exitoInscripcionMensaje',
+                body.message || 'Se eliminó la inscripción de manera correcta en la base de datos'
+            );
+            window.location.href = urlGestionInscripciones(true, 'eliminar');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'Error al eliminar inscripción. Por favor, intenta nuevamente.');
+        cerrarModalEliminar();
+    })
+    .finally(() => {
+        if (btnEliminar) {
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = 'Eliminar';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tipoExito = urlParams.get('exito');
+    if (tipoExito === 'eliminar' || tipoExito === 'guardar') {
+        const mensaje = sessionStorage.getItem('exitoInscripcionMensaje')
+            || (tipoExito === 'eliminar'
+                ? 'Se eliminó la inscripción de manera correcta en la base de datos'
+                : 'Acción realizada correctamente');
+        sessionStorage.removeItem('exitoInscripcionMensaje');
+        mostrarExitoSistema(mensaje);
+        limpiarParametroExito();
+    }
+});
+</script>
+{% endblock %}

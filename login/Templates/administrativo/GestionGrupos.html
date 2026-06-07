@@ -1,0 +1,418 @@
+{% extends 'base/dashboard_administrativo.html' %}
+
+{% block title %}SchoolTrack - Gestión de Grupos{% endblock %}
+
+{% block modals %}
+<div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+        <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-check text-4xl text-green-500"></i>
+        </div>
+        <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+            Acción realizada correctamente
+        </p>
+        <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+            Toca en cualquier parte para continuar
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto min-w-0 w-full">
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6 sm:mb-8">
+        <div class="min-w-0">
+            <h2 class="text-2xl sm:text-3xl font-black text-gray-700 uppercase tracking-tight">Grupos</h2>
+            <p class="text-blue-600 font-bold text-sm uppercase tracking-widest">Carrera, ciclo y turno</p>
+        </div>
+        <button onclick="abrirModal('modalCrear')" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i> Nuevo grupo
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
+        <div class="filtros-gestion-grid">
+            <div>
+                <label for="filtro-carrera" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Carrera</label>
+                <select id="filtro-carrera" onchange="aplicarFiltrosGrupos()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not carrera_filtro %}selected{% endif %}>— Todas las carreras —</option>
+                    {% for carrera in carreras %}
+                    <option value="{{ carrera.id }}" {% if carrera_filtro == carrera.id|stringformat:"s" %}selected{% endif %}>{{ carrera.clave }} — {{ carrera.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filtro-ciclo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo escolar</label>
+                <select id="filtro-ciclo" onchange="aplicarFiltrosGrupos()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                    <option value="" {% if not ciclo_filtro %}selected{% endif %}>— Todos los ciclos —</option>
+                    {% for ciclo in ciclos %}
+                    <option value="{{ ciclo.id_ciclo_escolar }}" {% if ciclo_filtro == ciclo.id_ciclo_escolar|stringformat:"s" %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtros-gestion-meta flex flex-wrap items-center gap-3 pt-1">
+                {% if filtros_aplicados %}
+                <a href="{% url 'gestion_grupos' %}" class="text-sm font-bold text-gray-600 hover:text-gray-800 underline">Limpiar filtros</a>
+                <span class="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 font-bold">
+                    {{ total_grupos }} grupo{{ total_grupos|pluralize:"s" }} encontrado{{ total_grupos|pluralize:"s" }}
+                </span>
+                {% else %}
+                <span class="text-sm text-gray-500">Filtra por carrera y/o ciclo para acotar la lista.</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-100 text-xs uppercase font-bold text-gray-500">
+                <tr>
+                    <th class="p-4">Clave</th>
+                    <th class="p-4">Nombre</th>
+                    <th class="p-4">Carrera</th>
+                    <th class="p-4">Ciclo</th>
+                    <th class="p-4 text-center">Sem.</th>
+                    <th class="p-4">Turno</th>
+                    <th class="p-4 text-center">Estado</th>
+                    <th class="p-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for grupo in grupos_lista %}
+                <tr class="hover:bg-blue-50">
+                    <td class="p-4 font-mono font-bold">{{ grupo.clave }}</td>
+                    <td class="p-4 font-bold">{{ grupo.nombre }}</td>
+                    <td class="p-4">{{ grupo.id_carrera.clave }}</td>
+                    <td class="p-4">{{ grupo.id_ciclo_escolar.nombre_ciclo }}</td>
+                    <td class="p-4 text-center">{{ grupo.semestre }}</td>
+                    <td class="p-4">{{ grupo.turno }}</td>
+                    <td class="p-4 text-center">
+                        {% if grupo.activo %}<span class="text-green-700 font-bold">Activo</span>{% else %}<span class="text-red-600 font-bold">Inactivo</span>{% endif %}
+                    </td>
+                    <td class="p-4 text-center whitespace-nowrap">
+                        <button type="button" class="text-indigo-600 px-2" title="Reutilizar en otro ciclo"
+                                onclick="abrirReutilizar({{ grupo.id_grupo }}, '{{ grupo.clave|escapejs }}', {{ grupo.id_ciclo_escolar_id }})">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button type="button" class="text-blue-600 px-2" title="Editar"
+                                onclick="editarGrupo({{ grupo.id_grupo }}, '{{ grupo.clave|escapejs }}', '{{ grupo.nombre|escapejs }}', {{ grupo.semestre }}, '{{ grupo.turno|escapejs }}', {{ grupo.id_carrera_id }}, {{ grupo.id_ciclo_escolar_id }}, {{ grupo.cupo_maximo }}, {{ grupo.activo|yesno:'true,false' }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="text-red-600 px-2" title="Eliminar"
+                                onclick="eliminarGrupo({{ grupo.id_grupo }}, '{{ grupo.clave|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="p-10 text-center text-gray-500">
+                        {% if filtros_aplicados %}
+                        No hay grupos con los filtros seleccionados
+                        {% else %}
+                        No hay grupos registrados
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div id="modalCrear" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4 mb-10">
+        <h3 class="text-xl font-bold mb-4">Nuevo grupo</h3>
+        <form id="formCrear" method="POST" action="{% url 'crear_grupo' %}" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_grupo.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalCrear')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEditar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16 overflow-y-auto">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 mx-4 mb-10">
+        <h3 class="text-xl font-bold mb-4">Editar grupo</h3>
+        <form id="formEditar" method="POST" action="" class="space-y-3">
+            {% csrf_token %}
+            {% include 'administrativo/partials/campos_grupo.html' %}
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalEditar')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalReutilizar" class="fixed inset-0 bg-black/50 hidden z-50 flex items-start justify-center pt-16">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 mx-4">
+        <h3 class="text-xl font-bold mb-2">Reutilizar grupo</h3>
+        <p class="text-sm text-gray-600 mb-4">
+            Crea un grupo nuevo con los mismos datos de <strong id="claveGrupoReutilizar"></strong> en otro ciclo escolar.
+        </p>
+        <form id="formReutilizar" method="POST" action="" class="space-y-3">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">Ciclo escolar destino *</label>
+                <select name="ciclo_id" id="cicloReutilizar" required class="w-full border-2 border-gray-200 rounded-lg px-3 py-2">
+                    <option value="">Seleccionar ciclo</option>
+                    {% for ciclo in ciclos %}
+                    <option value="{{ ciclo.id_ciclo_escolar }}">{{ ciclo.nombre_ciclo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button type="button" onclick="cerrarModal('modalReutilizar')" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold">Crear en otro ciclo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                <span class="text-4xl text-gray-400 font-serif">?</span>
+            </div>
+            <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar grupo</h3>
+            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar el grupo <span id="nombreGrupoEliminar" class="font-bold text-gray-700"></span>?</p>
+            <div class="flex gap-4 w-full justify-center">
+                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                    Eliminar
+                </button>
+                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let grupoIdEliminar = null;
+const eliminarGrupoUrl = '{% url "eliminar_grupo" 0 %}'.replace('/0/', '/');
+const reutilizarGrupoUrl = '{% url "reutilizar_grupo" 0 %}'.replace('/0/', '/');
+
+function queryFiltrosGrupos(extra) {
+    const params = new URLSearchParams();
+    const carrera = document.getElementById('filtro-carrera')?.value || '';
+    const ciclo = document.getElementById('filtro-ciclo')?.value || '';
+    if (carrera) params.set('carrera', carrera);
+    if (ciclo) params.set('ciclo', ciclo);
+    if (extra) params.set('exito', extra);
+    const qs = params.toString();
+    return qs ? '?' + qs : '';
+}
+
+function urlGestionGrupos(extra) {
+    return '{% url "gestion_grupos" %}' + queryFiltrosGrupos(extra);
+}
+
+function aplicarFiltrosGrupos() {
+    window.location.href = urlGestionGrupos();
+}
+
+function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function cerrarModalExitoSistema() {
+    document.getElementById('modalExitoSistema').classList.add('hidden');
+}
+
+function mostrarExitoSistema(mensaje) {
+    document.getElementById('textoExitoSistema').textContent = mensaje;
+    document.getElementById('modalExitoSistema').classList.remove('hidden');
+    setTimeout(cerrarModalExitoSistema, 3000);
+}
+
+function limpiarParametroExito() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('exito');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+}
+
+function filtrosDesdeUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const carrera = params.get('carrera');
+    const ciclo = params.get('ciclo');
+    const selCarrera = document.getElementById('filtro-carrera');
+    const selCiclo = document.getElementById('filtro-ciclo');
+    if (selCarrera && carrera) selCarrera.value = carrera;
+    if (selCiclo && ciclo) selCiclo.value = ciclo;
+}
+
+function editarGrupo(id, clave, nombre, semestre, turno, carreraId, cicloId, cupo, activo) {
+    const form = document.getElementById('formEditar');
+    form.action = `/administrativo/grupos/editar/${id}/`;
+    form.clave.value = clave;
+    form.nombre.value = nombre;
+    form.semestre.value = semestre;
+    form.turno.value = turno;
+    form.carrera_id.value = carreraId;
+    form.ciclo_id.value = cicloId;
+    form.cupo_maximo.value = cupo;
+    form.activo.checked = activo;
+    abrirModal('modalEditar');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function enviarAjax(form, onSuccess) {
+    const fd = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => r.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (body.success) {
+            onSuccess();
+            sessionStorage.setItem('exitoGrupoMensaje', body.message || 'Acción realizada correctamente');
+            window.location.href = urlGestionGrupos('guardar');
+        } else {
+            alert(body.error || 'Error al guardar');
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+}
+
+document.getElementById('formCrear').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarAjax(this, () => cerrarModal('modalCrear'));
+});
+
+document.getElementById('formEditar').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarAjax(this, () => cerrarModal('modalEditar'));
+});
+
+function abrirReutilizar(id, clave, cicloActualId) {
+    document.getElementById('claveGrupoReutilizar').textContent = clave;
+    document.getElementById('formReutilizar').action = `${reutilizarGrupoUrl}${id}/`;
+    const select = document.getElementById('cicloReutilizar');
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) return;
+        opt.disabled = String(opt.value) === String(cicloActualId);
+    });
+    select.value = '';
+    abrirModal('modalReutilizar');
+}
+
+document.getElementById('formReutilizar').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch(this.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => r.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (body.success) {
+            cerrarModal('modalReutilizar');
+            sessionStorage.setItem('exitoGrupoMensaje', body.message || 'Grupo creado en otro ciclo');
+            window.location.href = urlGestionGrupos('guardar');
+        } else {
+            alert(body.error || 'No se pudo crear el grupo en otro ciclo');
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+});
+
+function eliminarGrupo(id, clave) {
+    grupoIdEliminar = id;
+    document.getElementById('nombreGrupoEliminar').textContent = clave;
+    document.getElementById('modalEliminar').classList.remove('hidden');
+}
+
+function cerrarModalEliminar() {
+    document.getElementById('modalEliminar').classList.add('hidden');
+    grupoIdEliminar = null;
+}
+
+function confirmarBorrado() {
+    if (!grupoIdEliminar) {
+        cerrarModalEliminar();
+        return;
+    }
+
+    const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
+    if (btnEliminar) {
+        btnEliminar.disabled = true;
+        btnEliminar.textContent = 'Procesando...';
+    }
+
+    fetch(`${eliminarGrupoUrl}${encodeURIComponent(grupoIdEliminar)}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (!body.success) {
+            alert(body.error || 'Error al eliminar grupo');
+        } else {
+            cerrarModalEliminar();
+            sessionStorage.setItem(
+                'exitoGrupoMensaje',
+                body.message || 'Se eliminó el grupo de manera correcta en la base de datos'
+            );
+            window.location.href = urlGestionGrupos('eliminar');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'Error al eliminar grupo. Por favor, intenta nuevamente.');
+        cerrarModalEliminar();
+    })
+    .finally(() => {
+        if (btnEliminar) {
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = 'Eliminar';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filtrosDesdeUrl();
+    const urlParams = new URLSearchParams(window.location.search);
+    const tipoExito = urlParams.get('exito');
+    if (tipoExito === 'eliminar' || tipoExito === 'guardar') {
+        const mensaje = sessionStorage.getItem('exitoGrupoMensaje')
+            || (tipoExito === 'eliminar'
+                ? 'Se eliminó el grupo de manera correcta en la base de datos'
+                : 'Acción realizada correctamente');
+        sessionStorage.removeItem('exitoGrupoMensaje');
+        mostrarExitoSistema(mensaje);
+        limpiarParametroExito();
+    }
+});
+</script>
+{% endblock %}

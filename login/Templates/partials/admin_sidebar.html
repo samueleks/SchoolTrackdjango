@@ -13,6 +13,10 @@
            class="nav-item {% if nav == 'gestion_carreras' or nav == 'agregar_carrera' or nav == 'editar_carrera' or nav == 'eliminar_carrera' or nav == 'verificar_clave_carrera' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
             <i class="fas fa-graduation-cap text-xl {% if nav == 'gestion_carreras' or nav == 'agregar_carrera' or nav == 'editar_carrera' or nav == 'eliminar_carrera' or nav == 'verificar_clave_carrera' %}text-blue-600{% endif %}"></i> Gestionar Carreras
         </a>
+        <a href="{% url 'gestion_ciclos' %}"
+           class="nav-item {% if nav == 'gestion_ciclos' or nav == 'agregar_ciclo' or nav == 'editar_ciclo' or nav == 'eliminar_ciclo' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-calendar-alt text-xl {% if nav == 'gestion_ciclos' or nav == 'agregar_ciclo' or nav == 'editar_ciclo' or nav == 'eliminar_ciclo' %}text-blue-600{% endif %}"></i> Ciclos Escolares
+        </a>
         <a href="{% url 'gestion_seguridad' %}"
            class="nav-item {% if nav == 'gestion_seguridad' or nav == 'desbloquear_cuenta' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
             <i class="fas fa-shield-alt text-xl {% if nav == 'gestion_seguridad' or nav == 'desbloquear_cuenta' %}text-blue-600{% endif %}"></i> Gestionar Seguridad

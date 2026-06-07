@@ -1,0 +1,300 @@
+{% extends 'base/dashboard_administrador.html' %}
+
+{% block title %}SchoolTrack - Ciclos Escolares{% endblock %}
+
+{% block modals %}
+<div id="modalExitoSistema" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[120] hidden" onclick="cerrarModalExitoSistema()">
+    <div class="bg-white p-10 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all" onclick="event.stopPropagation()">
+        <div class="w-20 h-20 border-4 border-green-100 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-check text-4xl text-green-500"></i>
+        </div>
+        <p id="textoExitoSistema" class="text-gray-700 text-xl font-bold leading-tight">
+            Acción realizada correctamente
+        </p>
+        <p class="text-gray-400 text-[10px] mt-6 uppercase tracking-[0.2em] font-black">
+            Toca en cualquier parte para continuar
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-700">Ciclos Escolares</h2>
+        <button onclick="showAddModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition">
+            <i class="fas fa-plus mr-2"></i> Agregar ciclo
+        </button>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-100 border-b">
+                <tr class="text-xs font-bold uppercase text-gray-500">
+                    <th class="p-4">Ciclo</th>
+                    <th class="p-4">Periodo</th>
+                    <th class="p-4">Inicio</th>
+                    <th class="p-4">Fin</th>
+                    <th class="p-4 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y">
+                {% for ciclo in ciclos %}
+                <tr class="hover:bg-blue-50 text-sm">
+                    <td class="p-4 font-bold text-gray-800">{{ ciclo.nombre_ciclo }}</td>
+                    <td class="p-4">{{ ciclo.periodo }}</td>
+                    <td class="p-4">{{ ciclo.fecha_inicio|date:"d/m/Y" }}</td>
+                    <td class="p-4">{{ ciclo.fecha_fin|date:"d/m/Y" }}</td>
+                    <td class="p-4 text-center space-x-2">
+                        <button type="button" onclick="showEditModal({{ ciclo.id_ciclo_escolar }}, '{{ ciclo.periodo }}', '{{ ciclo.fecha_inicio|date:"Y-m-d" }}', '{{ ciclo.fecha_fin|date:"Y-m-d" }}')"
+                                class="text-blue-600 hover:text-blue-800 px-2" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" onclick="eliminarCiclo({{ ciclo.id_ciclo_escolar }}, '{{ ciclo.nombre_ciclo|escapejs }}')"
+                                class="text-red-600 hover:text-red-800 px-2" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="p-10 text-center text-gray-500">No hay ciclos escolares registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_modals %}
+<div id="addModal" class="fixed inset-0 bg-gray-600/50 hidden z-50 flex items-start justify-center pt-20">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 mx-4">
+        <h3 class="text-lg font-bold mb-4">Nuevo ciclo escolar</h3>
+        <form id="addForm" method="POST" action="{% url 'agregar_ciclo' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Periodo *</label>
+                <select name="periodo" required class="w-full border rounded-lg px-3 py-2">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Fecha inicio *</label>
+                <input type="date" name="fecha_inicio" required class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Fecha fin *</label>
+                <input type="date" name="fecha_fin" required class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="hideAddModal()" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editModal" class="fixed inset-0 bg-gray-600/50 hidden z-50 flex items-start justify-center pt-20">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 mx-4">
+        <h3 class="text-lg font-bold mb-4">Editar ciclo escolar</h3>
+        <form id="editForm" method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium mb-1">Periodo *</label>
+                <select name="periodo" id="editPeriodo" required class="w-full border rounded-lg px-3 py-2">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Fecha inicio *</label>
+                <input type="date" name="fecha_inicio" id="editInicio" required class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Fecha fin *</label>
+                <input type="date" name="fecha_fin" id="editFin" required class="w-full border rounded-lg px-3 py-2">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="hideEditModal()" class="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button>
+                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEliminar" class="fixed inset-0 bg-black/60 hidden z-[110]" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-[calc(100svh-90px)]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm text-center transform transition-all scale-100">
+            <div class="w-20 h-20 border-4 border-gray-100 rounded-full flex items-center justify-center mb-6">
+                <span class="text-4xl text-gray-400 font-serif">?</span>
+            </div>
+            <h3 class="text-gray-700 text-2xl font-bold mb-2">Eliminar ciclo escolar</h3>
+            <p class="text-gray-500 text-lg mb-8">¿Desea eliminar el ciclo <span id="nombreCicloEliminar" class="font-bold text-gray-700"></span>?</p>
+            <div class="flex gap-4 w-full justify-center">
+                <button onclick="confirmarBorrado()" class="bg-[#c22e2e] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-red-800 transition">
+                    Eliminar
+                </button>
+                <button onclick="cerrarModalEliminar()" class="bg-[#2d1a1a] text-white px-8 py-2.5 rounded-lg font-bold shadow-md hover:bg-black transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let cicloIdEliminar = null;
+const eliminarCicloUrl = '{% url "eliminar_ciclo" 0 %}'.replace('/0/', '/');
+
+function cerrarModalExitoSistema() {
+    document.getElementById('modalExitoSistema').classList.add('hidden');
+}
+
+function mostrarExitoSistema(mensaje) {
+    document.getElementById('textoExitoSistema').textContent = mensaje;
+    document.getElementById('modalExitoSistema').classList.remove('hidden');
+    setTimeout(cerrarModalExitoSistema, 3000);
+}
+
+function limpiarParametroExito() {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('exito');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+}
+
+function showAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
+function hideAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+function hideEditModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+function showEditModal(id, periodo, inicio, fin) {
+    document.getElementById('editForm').action = `/administrador/ciclos/editar/${id}/`;
+    document.getElementById('editPeriodo').value = periodo;
+    document.getElementById('editInicio').value = inicio;
+    document.getElementById('editFin').value = fin;
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function enviarFormulario(form, onSuccess) {
+    const fd = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+    .then(r => r.json().then(data => ({ body: data })))
+    .then(({ body }) => {
+        if (body.success) {
+            onSuccess();
+            sessionStorage.setItem('exitoCicloMensaje', body.message || 'Acción realizada correctamente');
+            window.location.href = '{% url "gestion_ciclos" %}?exito=guardar';
+        } else {
+            alert(body.error || 'No se pudo completar la acción');
+        }
+    })
+    .catch(() => alert('Error de conexión'));
+}
+
+document.getElementById('addForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarFormulario(this, hideAddModal);
+});
+
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    enviarFormulario(this, hideEditModal);
+});
+
+function eliminarCiclo(id, nombre) {
+    cicloIdEliminar = id;
+    document.getElementById('nombreCicloEliminar').textContent = nombre;
+    document.getElementById('modalEliminar').classList.remove('hidden');
+}
+
+function cerrarModalEliminar() {
+    document.getElementById('modalEliminar').classList.add('hidden');
+    cicloIdEliminar = null;
+}
+
+function confirmarBorrado() {
+    if (!cicloIdEliminar) {
+        cerrarModalEliminar();
+        return;
+    }
+
+    const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
+    if (btnEliminar) {
+        btnEliminar.disabled = true;
+        btnEliminar.textContent = 'Procesando...';
+    }
+
+    fetch(`${eliminarCicloUrl}${encodeURIComponent(cicloIdEliminar)}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json().then(data => ({
+        body: data
+    })))
+    .then(({ body }) => {
+        if (!body.success) {
+            alert(body.error || 'Error al eliminar ciclo escolar');
+        } else {
+            cerrarModalEliminar();
+            sessionStorage.setItem(
+                'exitoCicloMensaje',
+                body.message || 'Se eliminó el ciclo escolar de manera correcta en la base de datos'
+            );
+            window.location.href = '{% url "gestion_ciclos" %}?exito=eliminar';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'Error al eliminar ciclo escolar. Por favor, intenta nuevamente.');
+        cerrarModalEliminar();
+    })
+    .finally(() => {
+        if (btnEliminar) {
+            btnEliminar.disabled = false;
+            btnEliminar.textContent = 'Eliminar';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tipoExito = urlParams.get('exito');
+    if (tipoExito === 'eliminar' || tipoExito === 'guardar') {
+        const mensaje = sessionStorage.getItem('exitoCicloMensaje')
+            || (tipoExito === 'eliminar'
+                ? 'Se eliminó el ciclo escolar de manera correcta en la base de datos'
+                : 'Acción realizada correctamente');
+        sessionStorage.removeItem('exitoCicloMensaje');
+        mostrarExitoSistema(mensaje);
+        limpiarParametroExito();
+    }
+});
+</script>
+{% endblock %}

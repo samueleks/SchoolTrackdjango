@@ -81,6 +81,40 @@ body {
     min-width: 640px;
 }
 
+/* Filtros: Grupos, Inscripciones, Asignación de materias */
+.filtros-gestion-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    align-items: end;
+    min-width: 0;
+    width: 100%;
+}
+
+.filtros-gestion-grid > * {
+    min-width: 0;
+}
+
+.filtros-gestion-meta {
+    grid-column: 1 / -1;
+}
+
+.filtros-gestion-grid .relative {
+    min-width: 0;
+}
+
+@media (min-width: 640px) {
+    .filtros-gestion-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .filtros-gestion-grid--tres {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 .sidebar {
     grid-column: 1;
     grid-row: 1;
@@ -136,6 +170,8 @@ body {
         color: #374151 !important;
         word-break: break-word;
         hyphens: auto;
+        max-width: 100%;
+        overflow: hidden;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
 
@@ -270,6 +306,7 @@ body {
         text-align: left !important;
         padding: 1rem !important;
         min-height: 56px;
+        overflow: visible;
     }
 
     .dashboard-main {

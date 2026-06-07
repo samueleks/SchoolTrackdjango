@@ -17,6 +17,18 @@
            class="nav-item {% if nav == 'admin_materias' or nav == 'crear_materia' or nav == 'editar_materia' or nav == 'eliminar_materia' or nav == 'exportar_materias_pdf' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
             <i class="fas fa-book text-xl {% if nav == 'admin_materias' or nav == 'crear_materia' or nav == 'editar_materia' or nav == 'eliminar_materia' or nav == 'exportar_materias_pdf' %}text-blue-600{% endif %}"></i> Administrar Materias
         </a>
+        <a href="{% url 'gestion_grupos' %}"
+           class="nav-item {% if nav == 'gestion_grupos' or nav == 'crear_grupo' or nav == 'editar_grupo' or nav == 'reutilizar_grupo' or nav == 'eliminar_grupo' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-users text-xl {% if nav == 'gestion_grupos' or nav == 'crear_grupo' or nav == 'editar_grupo' or nav == 'reutilizar_grupo' or nav == 'eliminar_grupo' %}text-blue-600{% endif %}"></i> Grupos
+        </a>
+        <a href="{% url 'gestion_inscripciones' %}"
+           class="nav-item {% if nav == 'gestion_inscripciones' or nav == 'crear_inscripcion' or nav == 'editar_inscripcion' or nav == 'eliminar_inscripcion' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-user-plus text-xl {% if nav == 'gestion_inscripciones' or nav == 'crear_inscripcion' or nav == 'editar_inscripcion' or nav == 'eliminar_inscripcion' %}text-blue-600{% endif %}"></i> Inscripciones
+        </a>
+        <a href="{% url 'gestion_asignaciones' %}"
+           class="nav-item {% if nav == 'gestion_asignaciones' or nav == 'crear_asignacion' or nav == 'editar_asignacion' or nav == 'eliminar_asignacion' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-chalkboard-teacher text-xl {% if nav == 'gestion_asignaciones' or nav == 'crear_asignacion' or nav == 'editar_asignacion' or nav == 'eliminar_asignacion' %}text-blue-600{% endif %}"></i> Asignar Materias
+        </a>
         <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase nav-logout">
             <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión
         </a>

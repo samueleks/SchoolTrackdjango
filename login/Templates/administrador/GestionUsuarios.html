@@ -927,14 +927,12 @@
                 return;
             }
             
-            // Deshabilitar botón para evitar múltiples clics
             const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
             if (btnEliminar) {
                 btnEliminar.disabled = true;
                 btnEliminar.textContent = 'Procesando...';
             }
-            
-            // POST AJAX → admin_views.eliminar_usuario → JsonResponse {success, message|error}
+
             fetch("{% url 'eliminar_usuario' 0 %}".replace('0', usuarioIdEliminar), {
                 method: 'POST',
                 headers: {
@@ -945,7 +943,7 @@
             }).then(response => response.json().then(data => ({
                 status: response.status,
                 body: data
-            }))).then(({status, body}) => {
+            }))).then(({ body }) => {
                 if (!body.success) {
                     alert(body.error || 'Error al eliminar usuario');
                 } else {
@@ -965,7 +963,6 @@
                 alert(error.message || 'Error al eliminar usuario. Por favor, intenta nuevamente.');
                 cerrarModalEliminar();
             }).finally(() => {
-                // Rehabilitar botón
                 if (btnEliminar) {
                     btnEliminar.disabled = false;
                     btnEliminar.textContent = 'Eliminar';
