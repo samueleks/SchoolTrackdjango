@@ -1662,6 +1662,8 @@ def guardar_calificaciones_maestro(request):
 
     guardadas = 0
     with transaction.atomic():
+        asegurar_secuencia_postgresql(Calificacion)
+        asegurar_secuencia_postgresql(LogCalificacion)
         for registro in registros:
             id_inscripcion = registro.get('id_inscripcion')
             if id_inscripcion is None:
@@ -2525,6 +2527,7 @@ def guardar_asistencia_maestro(request):
 
     guardadas = 0
     with transaction.atomic():
+        asegurar_secuencia_postgresql(Asistencia)
         for registro in registros:
             id_inscripcion = registro.get('id_inscripcion')
             if id_inscripcion is None:
@@ -3293,6 +3296,7 @@ def crear_materia(request):
         return redirect(f"{reverse('admin_materias')}?abrir_crear=1")
 
     try:
+        asegurar_secuencia_postgresql(Materia)
         Materia.objects.create(
             clave=codigo,
             nombre=nombre,
@@ -3372,16 +3376,43 @@ def editar_materia(request, materia_id):
     return redirect('admin_materias')
 
 
+def _mensaje_bloqueo_eliminar_materia(materia: Materia) -> str | None:
+    total_asignaciones = AsignacionMateria.objects.filter(id_materia=materia).count()
+    if total_asignaciones:
+        etiqueta = 'asignación' if total_asignaciones == 1 else 'asignaciones'
+        return (
+            f'No puedes eliminar la materia {materia.clave} porque tiene '
+            f'{total_asignaciones} {etiqueta} registrada{"s" if total_asignaciones != 1 else ""}'
+        )
+    return None
+
+
 def eliminar_materia(request, materia_id):
     if not sesion_roles_permitidas(request, ('administrativo',)):
+        if _es_ajax(request):
+            return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
         return redirect('selector_rol')
 
     if request.method != 'POST':
         return redirect('admin_materias')
 
     materia = get_object_or_404(Materia, pk=materia_id)
+    es_ajax = _es_ajax(request)
+    bloqueo = _mensaje_bloqueo_eliminar_materia(materia)
+    if bloqueo:
+        if es_ajax:
+            return JsonResponse({'success': False, 'error': bloqueo}, status=400)
+        messages.error(request, bloqueo)
+        return redirect('admin_materias')
+
+    clave = materia.clave
+    id_eliminado = materia.id_materia
     materia.delete()
-    messages.success(request, 'Materia eliminada correctamente')
+    avanzar_secuencia_tras_eliminar(Materia, id_eliminado)
+    success_msg = f'Materia {clave} eliminada correctamente'
+    if es_ajax:
+        return JsonResponse({'success': True, 'message': success_msg})
+    messages.success(request, success_msg)
     return redirect('admin_materias')
 
 
@@ -3923,6 +3954,7 @@ def crear_grupo(request):
         if error_clave:
             raise ValueError(error_clave)
 
+        asegurar_secuencia_postgresql(Grupo)
         Grupo.objects.create(
             clave=clave,
             nombre=nombre,
@@ -4045,6 +4077,7 @@ def reutilizar_grupo(request, grupo_id):
         if error_clave:
             raise ValueError(error_clave)
 
+        asegurar_secuencia_postgresql(Grupo)
         Grupo.objects.create(
             clave=origen.clave,
             nombre=origen.nombre,
@@ -4094,7 +4127,9 @@ def eliminar_grupo(request, grupo_id):
         return redirect('gestion_grupos')
 
     clave = grupo.clave
+    id_eliminado = grupo.id_grupo
     grupo.delete()
+    avanzar_secuencia_tras_eliminar(Grupo, id_eliminado)
     success_msg = f'Grupo {clave} eliminado correctamente'
     if es_ajax:
         return JsonResponse({'success': True, 'message': success_msg})
@@ -4395,7 +4430,9 @@ def eliminar_inscripcion(request, inscripcion_id):
 
     alumno = inscripcion.id_alumno.id_usuario
     nombre_alumno = f'{alumno.nombre} {alumno.apellido}'
+    id_eliminado = inscripcion.id_inscripcion
     inscripcion.delete()
+    avanzar_secuencia_tras_eliminar(Inscripcion, id_eliminado)
     success_msg = f'Inscripción de {nombre_alumno} eliminada correctamente'
     if es_ajax:
         return JsonResponse({'success': True, 'message': success_msg})

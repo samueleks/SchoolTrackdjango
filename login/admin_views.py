@@ -36,6 +36,7 @@ from .models import (
     Administrador,
     DatosPersonales,
     Carrera,
+    Materia,
     CicloEscolar,
     Grupo,
     Inscripcion,
@@ -1440,9 +1441,21 @@ def eliminar_carrera(request, carrera_id):
             messages.error(request, error_msg)
             return redirect('gestion_carreras')
 
-        # Validar que la carrera no tenga grupos asociados (con materias)
+        if Materia.objects.filter(id_carrera=carrera).exists():
+            total_materias = Materia.objects.filter(id_carrera=carrera).count()
+            etiqueta = 'materia registrada' if total_materias == 1 else 'materias registradas'
+            error_msg = (
+                f'No se puede eliminar "{carrera.nombre}" porque tiene '
+                f'{total_materias} {etiqueta}'
+            )
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': error_msg})
+            messages.error(request, error_msg)
+            return redirect('gestion_carreras')
+
+        # Validar que la carrera no tenga grupos asociados
         if Grupo.objects.filter(id_carrera=carrera).exists():
-            error_msg = f'No se puede eliminar "{carrera.nombre}" porque tiene grupos/materias asignadas'
+            error_msg = f'No se puede eliminar "{carrera.nombre}" porque tiene grupos asignados'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'error': error_msg})
             messages.error(request, error_msg)
@@ -2871,6 +2884,7 @@ def agregar_ciclo(request):
         if CicloEscolar.objects.filter(nombre_ciclo=nombre_preview).exists():
             raise ValueError(f'Ya existe el ciclo {nombre_preview}')
 
+        _asegurar_secuencia_postgresql(CicloEscolar)
         ciclo = CicloEscolar(periodo=periodo, fecha_inicio=inicio, fecha_fin=fin)
         ciclo.save()
         success_msg = f'Ciclo {ciclo.nombre_ciclo} creado correctamente'
@@ -2964,7 +2978,9 @@ def eliminar_ciclo(request, ciclo_id):
         return redirect('gestion_ciclos')
 
     nombre = ciclo.nombre_ciclo
+    id_eliminado = ciclo.id_ciclo_escolar
     ciclo.delete()
+    _avanzar_secuencia_tras_eliminar(CicloEscolar, id_eliminado)
     success_msg = f'Ciclo {nombre} eliminado correctamente'
     if es_ajax:
         return JsonResponse({'success': True, 'message': success_msg})

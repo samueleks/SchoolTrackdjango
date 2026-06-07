@@ -29,6 +29,7 @@
             </p>
         </div>
     </div>
+
 {% endblock %}
 
 {% block content %}
@@ -453,10 +454,18 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            const exitoMateria = sessionStorage.getItem('exitoMateriaMensaje');
+            if (exitoMateria) {
+                mostrarExitoSistema(exitoMateria);
+                sessionStorage.removeItem('exitoMateriaMensaje');
+            }
+
             {% if messages %}
                 {% for message in messages %}
                     {% if message.tags == 'success' %}
                         mostrarExitoSistema("{{ message|escapejs }}");
+                    {% elif message.tags == 'error' %}
+                        alert("{{ message|escapejs }}");
                     {% endif %}
                 {% endfor %}
             {% endif %}
@@ -716,15 +725,44 @@
                 cerrarModalEliminar();
                 return;
             }
+
+            const btnEliminar = document.querySelector('#modalEliminar button[onclick="confirmarBorrado()"]');
+            if (btnEliminar) {
+                btnEliminar.disabled = true;
+                btnEliminar.textContent = 'Procesando...';
+            }
+
             fetch('/administrativo/materias/eliminar/' + materiaIdEliminar + '/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
-            }).then(() => {
+            })
+            .then(response => response.json().then(data => ({ body: data })))
+            .then(({ body }) => {
+                if (!body.success) {
+                    alert(body.error || 'Error al eliminar la materia');
+                    return;
+                }
                 cerrarModalEliminar();
-                window.location.href = '/administrativo/materias/';
+                sessionStorage.setItem(
+                    'exitoMateriaMensaje',
+                    body.message || 'Materia eliminada correctamente'
+                );
+                window.location.href = '{% url "admin_materias" %}';
+            })
+            .catch(error => {
+                console.error('Error al eliminar materia:', error);
+                alert(error.message || 'Error al eliminar la materia. Por favor, intenta nuevamente.');
+                cerrarModalEliminar();
+            })
+            .finally(() => {
+                if (btnEliminar) {
+                    btnEliminar.disabled = false;
+                    btnEliminar.textContent = 'Eliminar';
+                }
             });
         }
         

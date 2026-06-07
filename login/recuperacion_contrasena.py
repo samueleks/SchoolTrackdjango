@@ -19,6 +19,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
+from .db_sequence_utils import asegurar_secuencia_postgresql
 from .models import DatosPersonales, TokenRecuperacionContrasena, Usuarios
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,7 @@ def _preparar_token_recuperacion(
         ).update(usado_en=ahora)
 
         datos = DatosPersonales.objects.get(id_usuario=usuario)
+        asegurar_secuencia_postgresql(TokenRecuperacionContrasena)
         TokenRecuperacionContrasena.objects.create(
             id_usuario=usuario,
             token_hash=token_hash,

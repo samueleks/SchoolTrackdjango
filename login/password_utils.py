@@ -83,6 +83,10 @@ def validar_contrasena_usuario(contrasena, usuario=None):
         errores.append('Esa contraseña es demasiado común. Elige otra.')
 
     if usuario:
+        if getattr(usuario, 'contrasena', None) and hasattr(usuario, 'verificar_contrasena'):
+            if usuario.verificar_contrasena(contrasena):
+                errores.append('La nueva contraseña debe ser distinta a la actual.')
+
         datos_personales = [
             getattr(usuario, 'nombre', '') or '',
             getattr(usuario, 'apellido', '') or '',

@@ -1,0 +1,27 @@
+{% extends 'base/dashboard_administrador.html' %}
+
+{% block title %}SchoolTrack - Confirmar eliminación{% endblock %}
+{% block body_class %}bg-gray-100{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Confirmar eliminación</h1>
+    <p class="text-gray-600 mb-6">
+        ¿Eliminar al usuario
+        <strong>{{ usuario.nombre }} {{ usuario.apellido }}</strong>
+        ({{ usuario.matricula }})?
+        Esta acción no se puede deshacer.
+    </p>
+    <form method="post" action="{% url 'eliminar_usuario' usuario.id_usuario %}" class="flex gap-3">
+        {% csrf_token %}
+        <button type="submit"
+                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+            Sí, eliminar
+        </button>
+        <a href="{% url 'gestion_usuarios' %}"
+           class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+            Cancelar
+        </a>
+    </form>
+</div>
+{% endblock %}
