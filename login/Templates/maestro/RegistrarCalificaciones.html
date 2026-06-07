@@ -140,7 +140,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-1 sm:px-0">
+<div class="max-w-7xl mx-auto min-w-0 w-full px-1 sm:px-0">
                 <div class="text-center mb-8 sm:mb-10">
                     <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Registrar Calificaciones</h2>
                     <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
@@ -150,7 +150,7 @@
 
                 <div id="alerta" class="hidden mb-6 p-4 rounded-xl font-bold text-sm border"></div>
 
-                <div class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+                <div class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 min-w-0 max-w-full">
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
                         <div class="min-w-0">
                             <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Seleccionar asignación</h3>
@@ -195,11 +195,11 @@
                     </div>
                 </div>
 
-                <div id="contenidoCalificaciones" class="hidden card-soft bg-white p-4 sm:p-6">
+                <div id="contenidoCalificaciones" class="hidden card-soft bg-white p-4 sm:p-6 min-w-0 max-w-full">
                     <div class="flex flex-wrap items-start justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
                         <div class="min-w-0 flex-1">
                             <h3 class="text-lg sm:text-xl font-black text-gray-800 uppercase tracking-tight">Lista de alumnos</h3>
-                            <p id="textoAsignacion" class="mt-1 text-sm text-blue-700 font-semibold truncate">---</p>
+                            <p id="textoAsignacion" class="texto-asignacion-maestro mt-1 text-sm text-blue-700 font-semibold">---</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 shrink-0">
                             <span id="conteoAlumnos" class="badge-conteo">0</span>
@@ -212,8 +212,8 @@
                         Escala de calificación: <span class="font-black text-gray-700">0 a 100</span> por unidad
                     </p>
 
-                    <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
-                        <table class="tabla-calificaciones w-full text-left border-collapse">
+                    <div class="tabla-maestro-scroll border border-gray-200 rounded-xl shadow-sm">
+                        <table class="tabla-calificaciones text-left border-collapse">
                             <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
                                 <tr class="text-gray-600">
                                     <th class="p-3 sm:p-4 border-b border-gray-200">Matrícula</th>

@@ -68,11 +68,22 @@
         }
         .tabla-reportes .col-alumno { min-width: 11rem; }
         .vista-toggle {
-            display: inline-flex;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
             border: 2px solid #bfdbfe;
             border-radius: 0.75rem;
             overflow: hidden;
             background: #fff;
+        }
+        @media (min-width: 641px) {
+            .vista-toggle {
+                display: inline-flex;
+                flex-direction: row;
+                width: auto;
+            }
         }
         .vista-toggle label {
             display: flex;
@@ -121,7 +132,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-1 sm:px-0">
+<div class="max-w-7xl mx-auto min-w-0 w-full px-1 sm:px-0">
     <div class="text-center mb-8 sm:mb-10">
         <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Consultar Reportes</h2>
         <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
@@ -129,7 +140,7 @@
         </p>
     </div>
 
-    <form method="get" id="formReportes" class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+    <form method="get" id="formReportes" class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 min-w-0 max-w-full">
         <div class="mb-5">
             <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Filtros de consulta</h3>
             <p class="text-xs text-gray-500 font-medium">Elige el tipo, la unidad y opcionalmente una asignación</p>
@@ -148,7 +159,7 @@
             </div>
             <div class="filtro-campo" id="campoVistaAsistencias" {% if reporte_tipo != 'asistencias' %}style="display:none"{% endif %}>
                 <span class="filtro-label">Vista de asistencias</span>
-                <div class="vista-toggle w-full sm:w-auto">
+                <div class="vista-toggle">
                     <label>
                         <input type="radio" name="vistaRadio" value="lista" {% if vista_asistencias == 'lista' %}checked{% endif %}>
                         <span><i class="fas fa-list"></i> Lista detallada</span>
@@ -257,7 +268,7 @@
     </div>
 
     {% if reporte_tipo == 'asistencias' and vista_asistencias == 'sesion' %}
-    <div class="card-soft bg-white overflow-hidden">
+    <div class="card-soft bg-white min-w-0 max-w-full">
         {% if sesion_error %}
         <div class="p-6 sm:p-8 text-center text-amber-800 bg-amber-50 border-b border-amber-100">
             <i class="fas fa-exclamation-triangle mb-2 text-2xl opacity-70 block"></i>
@@ -294,8 +305,8 @@
                 </div>
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="tabla-reportes w-full text-left border-collapse">
+        <div class="tabla-maestro-scroll">
+            <table class="tabla-reportes text-left border-collapse">
                 <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
                     <tr class="text-gray-600">
                         <th class="p-3 sm:p-4 border-b border-gray-200 text-center w-12">#</th>
@@ -348,9 +359,9 @@
         {% endif %}
     </div>
     {% else %}
-    <div class="card-soft bg-white overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="tabla-reportes w-full text-left border-collapse">
+    <div class="card-soft bg-white min-w-0 max-w-full">
+        <div class="tabla-maestro-scroll">
+            <table class="tabla-reportes text-left border-collapse">
                 <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
                     <tr class="text-gray-600">
                         <th class="p-3 sm:p-4 border-b border-gray-200">Fecha</th>

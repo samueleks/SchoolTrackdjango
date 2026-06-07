@@ -81,6 +81,49 @@ body {
     min-width: 640px;
 }
 
+/* Maestro: asistencias, calificaciones y reportes — scroll dentro del panel */
+.dashboard-main .max-w-7xl {
+    min-width: 0;
+    width: 100%;
+}
+
+.dashboard-main #contenidoAsistencia,
+.dashboard-main #contenidoCalificaciones,
+.dashboard-main #contenidoAsistencia > .card-soft,
+.dashboard-main .card-soft.bg-white {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.dashboard-main .tabla-maestro-scroll {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-main .tabla-asistencia {
+    min-width: 36rem;
+    width: max-content;
+}
+
+.dashboard-main .tabla-calificaciones {
+    min-width: 44rem;
+    width: max-content;
+}
+
+.dashboard-main .tabla-reportes {
+    min-width: 32rem;
+    width: max-content;
+}
+
+.dashboard-main .texto-asignacion-maestro {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 /* Filtros: Grupos, Inscripciones, Asignación de materias */
 .filtros-gestion-grid {
     display: grid;
@@ -869,5 +912,53 @@ body {
 
     .dashboard-main .perfil-dato-correo {
         font-size: 0.82rem !important;
+    }
+
+    /* Maestro: toggle vista reportes en columna */
+    .dashboard-main .vista-toggle {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .dashboard-main .vista-toggle label {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .dashboard-main .vista-toggle label span {
+        width: 100% !important;
+        justify-content: center !important;
+        white-space: normal !important;
+        text-align: center;
+    }
+
+    /* Maestro: cabecera lista (chips + título) */
+    .dashboard-main .card-soft .flex.flex-wrap.items-start.justify-between {
+        min-width: 0 !important;
+    }
+
+    .dashboard-main .card-soft .flex.flex-wrap.items-start.justify-between > .min-w-0 {
+        max-width: 100% !important;
+    }
+
+    .dashboard-main .tabla-maestro-scroll::after {
+        content: '';
+        display: block;
+        height: 0;
+    }
+
+    .dashboard-main .panel-acciones {
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .dashboard-main .card-filtros .filtros-reporte,
+    .dashboard-main .card-filtros .filtros-asistencia,
+    .dashboard-main .card-filtros .filtros-asignacion {
+        min-width: 0 !important;
+        width: 100% !important;
     }
 }
