@@ -504,13 +504,10 @@ def _primer_campo_error_editar_usuario(errores_campos: dict) -> str | None:
     return _primer_campo_error_por_orden(errores_campos, _ORDEN_CAMPOS_EDITAR_USUARIO)
 
 
-def _sincronizar_secuencia_postgresql(model) -> None:
-    """
-    Alinea la secuencia de PostgreSQL con el MAX(pk) real de la tabla.
-    Evita errores duplicate key cuando hubo restauraciones o inserts manuales.
-    """
+def _info_secuencia_postgresql(model) -> tuple[str | None, int]:
+    """Nombre de secuencia y valor que tomaría el próximo INSERT en PostgreSQL."""
     if connection.vendor != 'postgresql':
-        return
+        return None, 0
 
     table = model._meta.db_table
     column = model._meta.pk.column
@@ -521,19 +518,60 @@ def _sincronizar_secuencia_postgresql(model) -> None:
         )
         row = cursor.fetchone()
         if not row or not row[0]:
-            return
+            return None, 0
         sequence_name = row[0]
-        cursor.execute(
-            f'SELECT setval(%s, COALESCE((SELECT MAX("{column}") FROM "{table}"), 1), true)',
-            [sequence_name],
-        )
+        cursor.execute(f'SELECT last_value, is_called FROM {sequence_name}')
+        last_value, is_called = cursor.fetchone()
+        return sequence_name, int(last_value + (1 if is_called else 0))
+
+
+def _asegurar_secuencia_usuarios_postgresql() -> None:
+    """
+    Solo adelanta la secuencia si va rezagada (restauraciones/imports).
+    Nunca la retrocede: los IDs eliminados no se reutilizan.
+    """
+    from django.db.models import Max
+
+    if connection.vendor != 'postgresql':
+        return
+
+    max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
+    sequence_name, proximo_secuencia = _info_secuencia_postgresql(Usuarios)
+    if not sequence_name or proximo_secuencia > max_id:
+        return
+
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT setval(%s, %s, true)', [sequence_name, max_id])
+
+
+def _avanzar_secuencia_usuarios_tras_eliminar(id_eliminado: int) -> None:
+    """Evita reasignar el ID del usuario que acaba de borrarse."""
+    from django.db.models import Max
+
+    if connection.vendor != 'postgresql':
+        return
+
+    max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
+    if id_eliminado <= max_id:
+        return
+
+    sequence_name, proximo_secuencia = _info_secuencia_postgresql(Usuarios)
+    if not sequence_name or proximo_secuencia > id_eliminado:
+        return
+
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT setval(%s, %s, true)', [sequence_name, id_eliminado])
 
 
 def _proximo_id_usuario_preview() -> int:
     """ID que la BD asignará al próximo INSERT en usuarios."""
     from django.db.models import Max
 
-    _sincronizar_secuencia_postgresql(Usuarios)
+    if connection.vendor == 'postgresql':
+        _asegurar_secuencia_usuarios_postgresql()
+        _, proximo_secuencia = _info_secuencia_postgresql(Usuarios)
+        return proximo_secuencia
+
     max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
     return max_id + 1
 _ALINEACION_EXCEL_USUARIOS = {
@@ -1743,7 +1781,7 @@ def agregar_usuario(request):
             with transaction.atomic():
                 # TABLA 1: usuarios — registro principal (matrícula y hash se aplican en .save())
                 try:
-                    _sincronizar_secuencia_postgresql(Usuarios)
+                    _asegurar_secuencia_usuarios_postgresql()
                     usuario = Usuarios(
                         nombre=nombre,
                         apellido=apellido,
@@ -2441,7 +2479,9 @@ def eliminar_usuario(request, usuario_id):
                 usuario_nombre = f"{usuario.nombre} {usuario.apellido}"
                 admin_nombre = request.session.get('usuario_nombre', 'Administrador')
                 logger.info(f'Usuario eliminado: {usuario_nombre} (ID: {usuario_id}) por {admin_nombre}')
+                id_eliminado = usuario.id_usuario
                 usuario.delete()
+                _avanzar_secuencia_usuarios_tras_eliminar(id_eliminado)
                 
                 # Éxito: JSON para AJAX (GestionUsuarios.html) o redirect clásico
                 success_msg = f'Usuario {usuario_nombre} eliminado exitosamente'
