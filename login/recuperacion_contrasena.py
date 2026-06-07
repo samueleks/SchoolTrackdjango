@@ -90,7 +90,12 @@ def _incrementar_limite(clave: str, maximo: int, segundos: int = 3600) -> bool:
     return True
 
 
-def buscar_usuario_por_matricula_y_correo(matricula: str, correo: str) -> Usuarios | None:
+def buscar_usuario_por_matricula_y_correo(
+    matricula: str,
+    correo: str,
+    *,
+    rol: str | None = None,
+) -> Usuarios | None:
     matricula_limpia = (matricula or '').strip()
     correo_limpio = _normalizar_correo(correo)
     if not matricula_limpia or not correo_limpio:
@@ -98,6 +103,15 @@ def buscar_usuario_por_matricula_y_correo(matricula: str, correo: str) -> Usuari
 
     usuario = Usuarios.objects.filter(matricula__iexact=matricula_limpia).first()
     if not usuario:
+        return None
+
+    if rol and usuario.rol != rol:
+        logger.info(
+            'Recuperación: rol no coincide para %s (portal %s, cuenta %s)',
+            matricula_limpia,
+            rol,
+            usuario.rol,
+        )
         return None
 
     try:
@@ -260,6 +274,7 @@ def solicitar_recuperacion_contrasena(
     request,
     matricula: str,
     correo: str,
+    rol: str = '',
 ) -> tuple[bool, str]:
     """
     Procesa la solicitud. Siempre retorna mensaje genérico al usuario si hay match o no.
@@ -285,9 +300,10 @@ def solicitar_recuperacion_contrasena(
         logger.warning('Recuperación bloqueada por límite correo: %s', correo_norm)
         return False, MENSAJE_SOLICITUD_GENERICO
 
-    usuario = buscar_usuario_por_matricula_y_correo(matricula, correo)
+    rol_esperado = rol if rol in LOGIN_POR_ROL else None
+    usuario = buscar_usuario_por_matricula_y_correo(matricula, correo, rol=rol_esperado)
     if not usuario:
-        logger.info('Recuperación solicitada sin coincidencia (matrícula/correo).')
+        logger.info('Recuperación solicitada sin coincidencia (matrícula/correo/rol).')
         return False, MENSAJE_SOLICITUD_GENERICO
 
     if usuario.cuenta_bloqueada:

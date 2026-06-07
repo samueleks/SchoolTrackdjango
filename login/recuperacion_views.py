@@ -39,6 +39,10 @@ def _contexto_rol(rol: str) -> dict:
 @require_http_methods(['GET', 'POST'])
 def recuperar_contrasena_solicitud(request):
     rol = _rol_desde_request(request)
+    if rol not in LOGIN_POR_ROL:
+        messages.error(request, 'Accede a la recuperación desde el inicio de sesión de tu rol.')
+        return redirect('selector_rol')
+
     error_msg = None
     matricula_valor = ''
     correo_valor = ''
@@ -55,6 +59,7 @@ def recuperar_contrasena_solicitud(request):
                     request=request,
                     matricula=matricula_valor,
                     correo=correo_valor,
+                    rol=rol,
                 )
             except Exception:
                 logger.exception('Error inesperado en recuperación de contraseña')
@@ -83,6 +88,8 @@ def recuperar_contrasena_solicitud(request):
 
 def recuperar_contrasena_enviado(request):
     rol = _rol_desde_request(request)
+    if rol not in LOGIN_POR_ROL:
+        return redirect('selector_rol')
     context = {
         **_contexto_rol(rol),
         'mensaje': MENSAJE_SOLICITUD_GENERICO,
@@ -98,7 +105,11 @@ def recuperar_contrasena_establecer(request, token: str):
             request,
             'Este enlace no es válido o ya expiró. Solicita uno nuevo desde el inicio de sesión.',
         )
-        return redirect('recuperar_contrasena_solicitud')
+        destino = reverse('recuperar_contrasena_solicitud')
+        rol_token = _rol_desde_request(request)
+        if rol_token in LOGIN_POR_ROL:
+            destino = f'{destino}?rol={rol_token}'
+        return redirect(destino)
 
     usuario = registro.id_usuario
     rol = usuario.rol

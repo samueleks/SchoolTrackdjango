@@ -27,7 +27,8 @@
             {% include 'includes/recuperacion_cabecera.html' with titulo_pagina="Recuperar contraseña" %}
 
             <p class="text-sm text-gray-600 mb-6 text-center leading-relaxed">
-                Ingresa tu <strong>matrícula</strong> y el <strong>correo institucional</strong> registrado en tu perfil.
+                Ingresa tu <strong>matrícula</strong> y el <strong>correo institucional</strong> registrado en tu perfil
+                {% if rol_etiqueta %}de <strong>{{ rol_etiqueta }}</strong>{% endif %}.
                 Te enviaremos un enlace seguro para crear una contraseña nueva.
             </p>
 
@@ -53,7 +54,7 @@
                     <div class="input-wrapper">
                         <i class="fas fa-id-card text-gray-400 mr-3"></i>
                         <input type="text" name="matricula" value="{{ matricula_valor }}" required
-                               class="input-clean" placeholder="{% if rol == 'alumno' %}Ej. 20260001{% elif rol == 'maestro' %}Ej. EMP-20260001{% elif rol == 'administrativo' %}Ej. AD-20260001{% elif rol == 'admin' %}Ej. ADM-20260001{% else %}Tu matrícula registrada{% endif %}" autocomplete="off">
+                               class="input-clean" placeholder="Matrícula registrada" autocomplete="off">
                     </div>
                 </div>
 
@@ -62,7 +63,7 @@
                     <div class="input-wrapper">
                         <i class="fas fa-envelope text-gray-400 mr-3"></i>
                         <input type="email" name="correo" value="{{ correo_valor }}" required
-                               class="input-clean" placeholder="correo@institucion.edu.mx" autocomplete="email">
+                               class="input-clean" placeholder="Correo institucional registrado" autocomplete="email">
                     </div>
                 </div>
 
