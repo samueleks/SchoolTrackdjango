@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Recuperar contraseña</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {% include 'includes/dashboard_responsive.html' %}
+    <style>
+        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; width: 100%; }
+        .main-frame-white { background-color: white; border-radius: 1.5rem; border: 2px solid #e5e7eb; box-shadow: 0 16px 48px -12px rgba(30, 64, 175, 0.14); }
+        .input-wrapper { background-color: #f3f4f6; border: 2px solid transparent; border-radius: 1rem; display: flex; align-items: center; padding: 0.8rem 1.15rem; transition: border-color 0.2s; }
+        .input-wrapper:focus-within { background: #fff; border-color: #2b63d9; box-shadow: 0 0 0 4px rgba(43, 99, 217, 0.12); }
+        .input-clean { background: transparent !important; outline: none !important; border: none !important; width: 100%; font-size: 1rem; font-weight: 600; color: #1f2937; }
+        .btn-primary-login { background-color: #2b63d9; transition: background-color 0.2s; }
+        .btn-primary-login:hover { background-color: #2457c2; }
+        @media (max-width: 640px) { .header-pro { height: 64px !important; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased">
+    <header class="header-pro shadow-lg sticky top-0 z-40" role="banner"></header>
+
+    <div class="flex min-h-[calc(100svh-90px)] justify-center items-center px-4 py-10">
+        <main class="max-w-md w-full main-frame-white p-8 sm:p-10">
+            <div class="flex flex-col items-center text-center mb-8">
+                <img src="{% static 'logo.png' %}" alt="Logo" width="72" height="72" class="w-16 h-16 rounded-full border-2 border-gray-100 p-1 shadow-md object-cover mb-4">
+                <h2 class="text-2xl font-black text-gray-800">Recuperar contraseña</h2>
+                {% if rol_etiqueta %}
+                <p class="text-blue-600 font-bold uppercase text-xs mt-2 tracking-widest">{{ rol_etiqueta }}</p>
+                {% endif %}
+            </div>
+
+            <p class="text-sm text-gray-600 mb-6 text-center leading-relaxed">
+                Ingresa tu <strong>matrícula</strong> y el <strong>correo institucional</strong> registrado en tu perfil.
+                Te enviaremos un enlace seguro para crear una contraseña nueva.
+            </p>
+
+            {% if not email_configurado %}
+            <div class="mb-5 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                El servidor de correo no está configurado. Contacta al administrador.
+            </div>
+            {% endif %}
+
+            {% if error_msg %}
+            <div class="mb-5 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" role="alert">
+                {{ error_msg }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5" autocomplete="off">
+                {% csrf_token %}
+                {% if rol %}<input type="hidden" name="rol" value="{{ rol }}">{% endif %}
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Matrícula</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-id-card text-gray-400 mr-3"></i>
+                        <input type="text" name="matricula" value="{{ matricula_valor }}" required
+                               class="input-clean" placeholder="Ej. ADM-20260001" autocomplete="off">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Correo institucional</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope text-gray-400 mr-3"></i>
+                        <input type="email" name="correo" value="{{ correo_valor }}" required
+                               class="input-clean" placeholder="correo@institucion.edu.mx" autocomplete="email">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary-login w-full text-white font-bold py-3.5 rounded-xl text-base tracking-wide">
+                    Enviar enlace de recuperación
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <a href="{{ login_url }}" class="text-sm text-[#2b63d9] font-semibold hover:underline">
+                    <i class="fas fa-arrow-left mr-1"></i> Volver al inicio de sesión
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

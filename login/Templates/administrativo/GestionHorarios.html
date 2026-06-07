@@ -85,14 +85,11 @@
                     </div>
                 </div>
 
-                <!-- PASO 1: Consultar -->
+                <!-- Consultar horario -->
                 <section class="bg-white border-2 border-blue-100 rounded-2xl p-6 mb-6 shadow-sm">
-                    <div class="flex items-center gap-3 mb-5">
-                        <span class="w-9 h-9 rounded-full bg-blue-600 text-white font-black flex items-center justify-center text-sm shrink-0">1</span>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">Ver horario de un grupo</h3>
-                            <p class="text-sm text-gray-500">Elige ciclo y grupo para cargar la tabla semanal.</p>
-                        </div>
+                    <div class="mb-5">
+                        <h3 class="text-lg font-bold text-gray-800">Ver horario de un grupo</h3>
+                        <p class="text-sm text-gray-500">Elige ciclo y grupo para cargar la tabla semanal.</p>
                     </div>
                     <div class="flex flex-wrap items-end gap-4">
                         <div class="flex-1 min-w-[180px]">
@@ -131,16 +128,13 @@
                     {% endif %}
                 </section>
 
-                <!-- PASO 2: Registrar -->
+                <!-- Registrar clase -->
                 <section class="bg-white border-2 border-green-100 rounded-2xl p-6 mb-8 shadow-sm">
-                    <div class="flex items-center gap-3 mb-2">
-                        <span class="w-9 h-9 rounded-full bg-green-600 text-white font-black flex items-center justify-center text-sm shrink-0">2</span>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">Registrar nueva clase</h3>
-                            <p class="text-sm text-gray-500">Se guardará para el ciclo y grupo del Paso 1.</p>
-                        </div>
+                    <div class="mb-2">
+                        <h3 class="text-lg font-bold text-gray-800">Registrar nueva clase</h3>
+                        <p class="text-sm text-gray-500">Se guardará para el ciclo y grupo seleccionados arriba.</p>
                     </div>
-                    <div id="contexto-registro" class="flex flex-wrap gap-2 mb-5 ml-12">
+                    <div id="contexto-registro" class="flex flex-wrap gap-2 mb-5">
                         <span id="chip-ciclo" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Ciclo: <span id="chip-ciclo-val">{% if ciclo_filtro %}{{ ciclo_filtro }}{% else %}sin elegir{% endif %}</span></span>
                         <span id="chip-grupo" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Grupo: <span id="chip-grupo-val">{% if grupo_filtro %}{{ grupo_filtro }}{% else %}sin elegir{% endif %}</span></span>
                     </div>
@@ -191,7 +185,7 @@
                                 </div>
                                 <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-xs text-gray-500 leading-relaxed">
                                     <i class="fas fa-info-circle text-blue-500 mr-1"></i>
-                                    El <strong>grupo</strong> y el <strong>ciclo</strong> se toman automáticamente del Paso 1. No hace falta volver a elegirlos aquí.
+                                    El <strong>grupo</strong> y el <strong>ciclo</strong> se toman automáticamente de los filtros superiores. No hace falta volver a elegirlos aquí.
                                 </div>
                             </div>
                             
@@ -233,7 +227,7 @@
                             <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
                                 <h4 class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                                     <i class="fas fa-list-ol text-green-600"></i>
-                                    Paso 3 — Lista antes de guardar
+                                    Lista antes de guardar
                                 </h4>
                                 <p class="text-xs text-gray-500 mb-2">Materia, docente y aula se mantienen fijos. Solo cambias <strong>día y horas</strong> para agregar otro bloque.</p>
                                 <div id="resumen-clase-pendiente" class="text-xs bg-white border border-green-200 rounded-lg p-3 mb-3 text-gray-700 hidden"></div>
@@ -264,16 +258,16 @@
                 <section class="mb-8 bg-white border-2 border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <div class="calendar-grid p-6">
                         <div class="flex flex-wrap items-center gap-3 mb-6">
-                            <span class="w-9 h-9 rounded-full bg-gray-700 text-white font-black flex items-center justify-center text-sm shrink-0">3</span>
                             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2 flex-1">
                                 <i class="fas fa-calendar-alt text-blue-600"></i>
                                 Horario semanal
                             </h3>
                             {% if ciclo_filtro and grupo_filtro %}
-                            <button onclick="exportarHorarioPDF()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm">
+                            <a href="{{ exportar_horarios_pdf_url }}"
+                               class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm no-underline">
                                 <i class="fas fa-file-pdf"></i>
                                 Exportar PDF
-                            </button>
+                            </a>
                             {% endif %}
                         </div>
                         <p class="text-sm text-gray-500 mb-4 -mt-2 ml-12">Pasa el cursor sobre una clase para <strong>editar</strong> o <strong>eliminar</strong>.</p>
@@ -296,14 +290,14 @@
                                     <tr>
                                         <td colspan="6" class="border border-gray-300 p-10 text-center text-gray-500">
                                             <i class="fas fa-filter text-3xl text-gray-300 mb-3 block"></i>
-                                            Elige <strong>ciclo</strong> y <strong>grupo</strong> en el Paso 1 para ver el horario aquí.
+                                            Elige <strong>ciclo</strong> y <strong>grupo</strong> arriba para ver el horario aquí.
                                         </td>
                                     </tr>
                                     {% elif not horarios_tabla %}
                                     <tr>
                                         <td colspan="6" class="border border-gray-300 p-10 text-center text-gray-500">
                                             <i class="fas fa-calendar-plus text-3xl text-gray-300 mb-3 block"></i>
-                                            Este grupo aún no tiene clases. Usa el <strong>Paso 2</strong> para registrar la primera.
+                                            Este grupo aún no tiene clases. Usa el formulario de arriba para registrar la primera.
                                         </td>
                                     </tr>
                                     {% endif %}
@@ -417,114 +411,9 @@
 {% block page_modals %}
 <div class="hidden" aria-hidden="true">{% csrf_token %}</div>
 
-<!-- Horario oculto para exportar PDF (mismo patrón que boleta de calificaciones) -->
-    <div id="horario-pdf" style="display:none;">
-        <div style="width:10in; font-family:Arial,sans-serif; padding:12px; box-sizing:border-box; background:#fff; color:#1f2937;">
-            <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #333; padding-bottom:6px; margin-bottom:8px; gap:8px;">
-                <div style="flex:1;">
-                    <h1 style="margin:0; font-size:14px; font-weight:900; letter-spacing:0.5px;">SCHOOLTRACK</h1>
-                    <p style="margin:2px 0 0 0; font-size:8px; color:#555;">Sistema de Control Escolar</p>
-                </div>
-                <div style="text-align:center; flex:2;">
-                    <h2 style="margin:0; font-size:12px; font-weight:700;">CARGA ACADÉMICA</h2>
-                    <p style="margin:3px 0 0 0; font-size:8px; color:#333;">PERIODO: <strong id="pdf-ciclo">{{ ciclo_filtro|default:"---" }}</strong></p>
-                </div>
-                <div style="flex:1; text-align:right;">
-                    <p style="margin:0; font-size:8px; color:#555;">FECHA: <strong id="pdf-fecha"></strong></p>
-                </div>
-            </div>
-
-            <table style="border-collapse:collapse; font-size:9px; width:100%; margin-bottom:8px;">
-                <tr>
-                    <td style="padding:4px 10px 4px 0; font-weight:700; white-space:nowrap;">GRUPO:</td>
-                    <td style="padding:4px 0; border-bottom:1px solid #999; width:100%;" id="pdf-grupo-clave">{{ grupo_filtro|default:"---" }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:4px 10px 4px 0; font-weight:700; white-space:nowrap;">NOMBRE:</td>
-                    <td style="padding:4px 0; border-bottom:1px solid #999;" id="pdf-nombre-grupo">---</td>
-                </tr>
-            </table>
-
-            <table style="width:100%; border-collapse:collapse; border:1px solid #d1d5db; font-size:10px; table-layout:fixed;">
-                <thead>
-                    <tr>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px; width:10%;">HORA</th>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">LUNES</th>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">MARTES</th>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">MIÉRCOLES</th>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">JUEVES</th>
-                        <th style="border:1px solid #d1d5db; padding:4px 2px; background-color:#e5e7eb; font-weight:700; text-align:center; font-size:8px;">VIERNES</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for fila in horarios_tabla %}
-                    <tr>
-                        <td style="border:1px solid #d1d5db; padding:3px 2px; text-align:center; font-weight:600; background-color:#f9fafb; font-size:8px; vertical-align:middle;">{{ fila.hora }}</td>
-                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
-                            {% for segmento in fila.lunes %}
-                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
-                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
-                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
-                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
-                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
-                            </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
-                            {% for segmento in fila.martes %}
-                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
-                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
-                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
-                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
-                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
-                            </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
-                            {% for segmento in fila.miercoles %}
-                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
-                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
-                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
-                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
-                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
-                            </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
-                            {% for segmento in fila.jueves %}
-                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
-                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
-                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
-                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
-                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
-                            </div>
-                            {% endfor %}
-                        </td>
-                        <td style="border:1px solid #d1d5db; padding:2px; vertical-align:top;">
-                            {% for segmento in fila.viernes %}
-                            <div style="margin-bottom:2px; padding:2px 3px; background-color:#eff6ff; border-radius:2px;">
-                                <div style="font-weight:700; font-size:7.5px; color:#111827; line-height:1.15;">{{ segmento.materia }}</div>
-                                <div style="font-size:7px; color:#4b5563; line-height:1.15;">{{ segmento.docente }}</div>
-                                <div style="font-size:7px; color:#6b7280; line-height:1.15;">{{ segmento.aula }}</div>
-                                <div style="font-size:7px; color:#2563eb; font-weight:700; line-height:1.15;">{{ segmento.hora_inicio }} - {{ segmento.hora_fin }}</div>
-                            </div>
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            <div style="margin-top:8px; padding-top:4px; border-top:1px solid #d1d5db; display:flex; justify-content:space-between; font-size:7px; color:#9ca3af;">
-                <span>Documento generado por SchoolTrack</span>
-                <span>Este documento es informativo y no tiene validez oficial</span>
-            </div>
-        </div>
-    </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
         let horariosDelSistema = {{ horarios|safe }};
         const materiasCatalogoHorario = [
@@ -804,78 +693,6 @@
                     fila.style.display = 'none';
                 }
             });
-        }
-
-        // Función para exportar horario a PDF (mismo patrón que calificaciones)
-        function exportarHorarioPDF() {
-            const ciclo = document.getElementById('filtro-ciclo').value;
-            const grupo = document.getElementById('filtro-grupo').value;
-
-            if (!ciclo || !grupo) {
-                alert('Debes seleccionar un ciclo y un grupo para exportar el horario');
-                return;
-            }
-
-            const horario = document.getElementById('horario-pdf');
-            if (!horario) {
-                alert('No se encontró el contenedor del PDF.');
-                return;
-            }
-
-            const hoy = new Date();
-            const fechaStr = hoy.getFullYear() + '-' +
-                String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
-                String(hoy.getDate()).padStart(2, '0');
-            document.getElementById('pdf-fecha').textContent = fechaStr;
-            document.getElementById('pdf-ciclo').textContent = ciclo;
-            document.getElementById('pdf-grupo-clave').textContent = grupo;
-
-            const grupoSelect = document.getElementById('filtro-grupo');
-            const grupoNombre = grupoSelect.options[grupoSelect.selectedIndex]?.text || grupo;
-            document.getElementById('pdf-nombre-grupo').textContent = grupoNombre;
-
-            const restaurarHorarioPDF = () => {
-                horario.style.display = 'none';
-                horario.style.zoom = '';
-                horario.style.width = '';
-            };
-
-            horario.style.display = 'block';
-            horario.style.width = '10in';
-
-            const generarPDF = () => {
-                horario.style.zoom = '1';
-                const margen = 0.2;
-                const anchoUtil = (11 - margen * 2) * 96;
-                const altoUtil = (8.5 - margen * 2) * 96;
-                const escala = Math.min(
-                    anchoUtil / horario.offsetWidth,
-                    altoUtil / horario.offsetHeight,
-                    1
-                );
-                if (escala < 0.995) {
-                    horario.style.zoom = escala;
-                }
-
-                const opt = {
-                    margin: margen,
-                    filename: `carga_academica_${grupo}_${ciclo}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-                    jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
-                    pagebreak: { mode: ['avoid-all'] }
-                };
-
-                html2pdf().set(opt).from(horario).save()
-                    .then(restaurarHorarioPDF)
-                    .catch((error) => {
-                        console.error('Error al exportar PDF:', error);
-                        restaurarHorarioPDF();
-                        alert('No se pudo generar el PDF. Intenta de nuevo.');
-                    });
-            };
-
-            setTimeout(generarPDF, 80);
         }
 
         // Función para abrir modal de edición (fuera de DOMContentLoaded)
@@ -1264,7 +1081,7 @@
                 };
                 
                 if (!cicloEscolar || !grupoClave) {
-                    mostrarAlerta('Primero elige ciclo y grupo en el Paso 1', 'error');
+                    mostrarAlerta('Primero elige ciclo y grupo en los filtros superiores', 'error');
                     return;
                 }
                 if (!formData.materia || !formData.docente || !formData.aula) {

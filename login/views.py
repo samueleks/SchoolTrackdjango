@@ -24,6 +24,7 @@ from django.views.decorators.http import require_http_methods
 from urllib.parse import urlencode
 
 from .password_utils import LONGITUD_MINIMA_USUARIO, validar_contrasena_usuario
+from .admin_horarios_export import generar_pdf_horario_grupo, obtener_datos_horario_pdf
 from .admin_materias_export import generar_excel_catalogo_materias, generar_pdf_catalogo_materias
 from .alumno_asistencias_export import generar_pdf_asistencias_alumno
 from .alumno_boleta_export import generar_pdf_boleta_alumno
@@ -3113,6 +3114,14 @@ def admin_horarios(request):
     logger.info(f"Horarios por día - Jueves: {len(horarios_por_dia['jueves'])}")
     logger.info(f"Horarios por día - Viernes: {len(horarios_por_dia['viernes'])}")
 
+    exportar_horarios_pdf_url = ''
+    if ciclo_filtro and grupo_filtro:
+        exportar_horarios_pdf_url = (
+            reverse('exportar_horarios_pdf')
+            + '?'
+            + urlencode({'ciclo': ciclo_filtro, 'grupo': grupo_filtro})
+        )
+
     context = {
         'perfil': _perfil_administrativo(request),
         'materias': materias,
@@ -3127,6 +3136,7 @@ def admin_horarios(request):
         'grupo_filtro': grupo_filtro,
         'ciclo_filtro': ciclo_filtro,
         'horas_del_dia': intervalos_hora,
+        'exportar_horarios_pdf_url': exportar_horarios_pdf_url,
     }
     logger.info(f"Contexto enviado al template: total_horarios={total_horarios}, grupo_filtro='{grupo_filtro}'")
     logger.info(f"Horarios por día en contexto: {[(k, len(v)) for k, v in horarios_por_dia.items()]}")
@@ -3144,6 +3154,38 @@ def admin_materias(request):
         'materias': _materias_catalogo_admin(),
     }
     return render(request, 'administrativo/AdministrarMaterias.html', context)
+
+
+def exportar_horarios_pdf(request):
+    """Genera el horario semanal del grupo en PDF desde el servidor."""
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    ciclo = request.GET.get('ciclo', '').strip()
+    grupo = request.GET.get('grupo', '').strip()
+    if not ciclo or not grupo:
+        messages.error(request, 'Selecciona un ciclo y un grupo para exportar el horario.')
+        return redirect('admin_horarios')
+
+    datos = obtener_datos_horario_pdf(ciclo, grupo)
+    if datos is None:
+        messages.error(request, 'No se encontró el grupo indicado.')
+        return redirect(f"{reverse('admin_horarios')}?{urlencode({'ciclo': ciclo, 'grupo': grupo})}")
+
+    perfil = _perfil_administrativo(request)
+    ahora = datetime.now()
+    pdf_bytes = generar_pdf_horario_grupo(
+        datos,
+        ahora=ahora,
+        generado_por=perfil.get('nombre_completo', ''),
+    )
+
+    ciclo_slug = re.sub(r'[^\w\-]+', '_', ciclo, flags=re.UNICODE).strip('_') or 'ciclo'
+    grupo_slug = re.sub(r'[^\w\-]+', '_', datos['grupo_clave'], flags=re.UNICODE).strip('_') or 'grupo'
+    nombre_archivo = f'carga_academica_{grupo_slug}_{ciclo_slug}.pdf'
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
 
 
 def exportar_materias_pdf(request):

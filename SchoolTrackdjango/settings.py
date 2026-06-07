@@ -196,3 +196,40 @@ if _env_bool('DJANGO_USE_PROXY_HEADERS', default=False):
 if _env_bool('DJANGO_SECURE_HSTS', default=False):
     SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', '31536000'))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# --- Correo electrónico (recuperación de contraseña y notificaciones) ---
+# Producción: Resend SMTP → EMAIL_HOST=smtp.resend.com, EMAIL_HOST_USER=resend,
+# EMAIL_HOST_PASSWORD=re_xxx, DEFAULT_FROM_EMAIL=noreply@tudominio.com (dominio verificado en Resend)
+_email_host = os.environ.get('EMAIL_HOST', '').strip()
+if _email_host:
+    EMAIL_BACKEND = os.environ.get(
+        'EMAIL_BACKEND',
+        'django.core.mail.backends.smtp.EmailBackend',
+    )
+    EMAIL_HOST = _email_host
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+    EMAIL_USE_TLS = _env_bool('EMAIL_USE_TLS', default=True)
+    EMAIL_USE_SSL = _env_bool('EMAIL_USE_SSL', default=False)
+    DEFAULT_FROM_EMAIL = os.environ.get(
+        'DEFAULT_FROM_EMAIL',
+        'SchoolTrack <noreply@schooltrack.mx>',
+    )
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'SchoolTrack <dev@localhost>'
+
+# URL pública del sitio (opcional; si no se define, se usa la del request al enviar correos)
+SCHOOLTRACK_BASE_URL = os.environ.get('SCHOOLTRACK_BASE_URL', '').strip().rstrip('/')
+
+# Recuperación de contraseña
+RECUPERACION_CONTRASENA_HORAS_VALIDEZ = int(
+    os.environ.get('RECUPERACION_CONTRASENA_HORAS_VALIDEZ', '1')
+)
+RECUPERACION_CONTRASENA_MAX_POR_IP_HORA = int(
+    os.environ.get('RECUPERACION_CONTRASENA_MAX_POR_IP_HORA', '5')
+)
+RECUPERACION_CONTRASENA_MAX_POR_CORREO_HORA = int(
+    os.environ.get('RECUPERACION_CONTRASENA_MAX_POR_CORREO_HORA', '3')
+)

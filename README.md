@@ -71,6 +71,15 @@ python manage.py runserver
    - `DJANGO_SECURE_COOKIES`: 1
    - `DJANGO_DB_NAME`, `DJANGO_DB_USER`, `DJANGO_DB_PASSWORD`, `DJANGO_DB_HOST`, `DJANGO_DB_PORT`: Configuración de PostgreSQL en Railway
 5. Railway hará deploy automático
+6. **Correo (recuperación de contraseña)** — variables en Railway:
+   - `EMAIL_HOST=smtp.resend.com`
+   - `EMAIL_PORT=587`
+   - `EMAIL_HOST_USER=resend`
+   - `EMAIL_HOST_PASSWORD=re_...` (API key de [Resend](https://resend.com))
+   - `EMAIL_USE_TLS=1`
+   - `DEFAULT_FROM_EMAIL=SchoolTrack <noreply@tudominio.com>` (dominio verificado en Resend)
+   - `SCHOOLTRACK_BASE_URL=https://tu-dominio.up.railway.app`
+7. El usuario debe tener **correo institucional** en su perfil (`datos_personales`). Sin correo, el administrador puede restablecer desde Gestión de usuarios.
 
 ### Opción 2: Render
 

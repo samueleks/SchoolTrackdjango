@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import admin_views
+from . import recuperacion_views
 
 urlpatterns = [
     path('', views.selector_rol, name='selector_rol'),
@@ -8,6 +9,11 @@ urlpatterns = [
     path('login/maestro/', views.login_maestro, name='login_maestro'),
     path('login/administrativo/', views.login_administrativo, name='login_administrativo'),
     path('login/administrador/', views.login_administrador, name='login_administrador'),
+
+    # Recuperación de contraseña por correo (matrícula + correo institucional)
+    path('recuperar-contrasena/', recuperacion_views.recuperar_contrasena_solicitud, name='recuperar_contrasena_solicitud'),
+    path('recuperar-contrasena/enviado/', recuperacion_views.recuperar_contrasena_enviado, name='recuperar_contrasena_enviado'),
+    path('recuperar-contrasena/establecer/<str:token>/', recuperacion_views.recuperar_contrasena_establecer, name='recuperar_contrasena_establecer'),
     
     # Dashboards protegidos por rol
     path('dashboard/alumno/', views.dashboard_alumno, name='dashboard_alumno'),
@@ -39,6 +45,7 @@ urlpatterns = [
     path('administrativo/reportes/exportar-excel/', views.exportar_reportes_admin_excel, name='exportar_reportes_admin_excel'),
     path('administrativo/reportes/exportar-pdf/', views.exportar_reportes_admin_pdf, name='exportar_reportes_admin_pdf'),
     path('administrativo/horarios/', views.admin_horarios, name='admin_horarios'),
+    path('administrativo/horarios/exportar-pdf/', views.exportar_horarios_pdf, name='exportar_horarios_pdf'),
     path('administrativo/materias/', views.admin_materias, name='admin_materias'),
     path('administrativo/materias/exportar-pdf/', views.exportar_materias_pdf, name='exportar_materias_pdf'),
     path('administrativo/materias/exportar-excel/', views.exportar_materias_excel, name='exportar_materias_excel'),

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchoolTrack - Nueva contraseña</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
+        .main-frame-white { background: white; border-radius: 1.5rem; border: 2px solid #e5e7eb; box-shadow: 0 16px 48px -12px rgba(30, 64, 175, 0.14); }
+        .input-wrapper { background: #f3f4f6; border: 2px solid transparent; border-radius: 1rem; display: flex; align-items: center; padding: 0.8rem 1.15rem; }
+        .input-wrapper:focus-within { background: #fff; border-color: #2b63d9; }
+        .input-clean { background: transparent !important; outline: none !important; border: none !important; width: 100%; font-weight: 600; }
+        @media (max-width: 640px) { .header-pro { height: 64px !important; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 antialiased">
+    <header class="header-pro shadow-lg" role="banner"></header>
+    <div class="flex min-h-[calc(100svh-90px)] justify-center items-center px-4 py-10">
+        <main class="max-w-md w-full main-frame-white p-8 sm:p-10">
+            <div class="text-center mb-8">
+                <img src="{% static 'logo.png' %}" alt="Logo" class="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-gray-100 shadow-md">
+                <h2 class="text-2xl font-black text-gray-800">Nueva contraseña</h2>
+                <p class="text-sm text-gray-500 mt-2">{{ usuario_nombre }} · {{ usuario_matricula }}</p>
+            </div>
+
+            {% if error_msg %}
+            <div class="mb-5 p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                <p>{{ error_msg }}</p>
+                {% if errores_lista %}
+                <ul class="mt-2 list-disc list-inside text-xs">
+                    {% for e in errores_lista %}<li>{{ e }}</li>{% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nueva contraseña</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="nueva_contrasena" required minlength="12"
+                               class="input-clean" autocomplete="new-password" placeholder="Mínimo 12 caracteres">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Confirmar contraseña</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="confirmar_contrasena" required minlength="12"
+                               class="input-clean" autocomplete="new-password">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400">Mayúscula, minúscula, número y símbolo (!@#$%&*+-=?).</p>
+                <button type="submit" class="w-full bg-[#2b63d9] text-white font-bold py-3.5 rounded-xl hover:bg-[#2457c2]">
+                    Guardar contraseña
+                </button>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

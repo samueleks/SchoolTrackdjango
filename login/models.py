@@ -585,3 +585,38 @@ class Administrador(models.Model):
     
     def __str__(self):
         return f"Administrador: {self.id_usuario.matricula} - {self.id_usuario.nombre} {self.id_usuario.apellido}"
+
+
+class TokenRecuperacionContrasena(models.Model):
+    """Token de un solo uso para restablecer contraseña vía correo electrónico."""
+
+    id_token = models.AutoField(primary_key=True)
+    id_usuario = models.ForeignKey(
+        Usuarios,
+        on_delete=models.CASCADE,
+        db_column='id_usuario',
+        related_name='tokens_recuperacion',
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    correo_destino = models.EmailField()
+    creado_en = models.DateTimeField(auto_now_add=True)
+    expira_en = models.DateTimeField()
+    usado_en = models.DateTimeField(null=True, blank=True)
+    ip_solicitud = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'token_recuperacion_contrasena'
+        verbose_name = 'Token de recuperación de contraseña'
+        verbose_name_plural = 'Tokens de recuperación de contraseña'
+        indexes = [
+            models.Index(fields=['id_usuario', 'creado_en']),
+        ]
+
+    def __str__(self):
+        return f'Recuperación {self.id_usuario.matricula} ({self.creado_en:%Y-%m-%d %H:%M})'
+
+    @property
+    def vigente(self) -> bool:
+        if self.usado_en:
+            return False
+        return timezone.now() < self.expira_en
