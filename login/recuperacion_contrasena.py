@@ -78,17 +78,25 @@ def _clave_limite_correo(correo: str) -> str:
 
 def _incrementar_limite(clave: str, maximo: int, segundos: int = 3600) -> bool:
     """Retorna True si aún puede continuar; False si excedió el límite."""
-    actual = cache.get(clave, 0) or 0
-    if actual >= maximo:
-        return False
     try:
+        actual = cache.get(clave, 0) or 0
+        if actual >= maximo:
+            return False
         if actual == 0:
             cache.set(clave, 1, segundos)
         else:
-            cache.incr(clave)
-    except ValueError:
-        cache.set(clave, 1, segundos)
-    return True
+            try:
+                cache.incr(clave)
+            except ValueError:
+                cache.set(clave, 1, segundos)
+        return True
+    except Exception:
+        logger.warning(
+            'Caché no disponible para rate limit de recuperación (%s); se permite la solicitud.',
+            clave,
+            exc_info=True,
+        )
+        return True
 
 
 def buscar_usuario_por_matricula_y_correo(
