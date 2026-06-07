@@ -1,0 +1,16 @@
+<div class="mt-8 text-center space-y-3">
+    <a href="{{ login_url }}"
+       class="inline-flex items-center justify-center gap-2 text-sm text-[#2b63d9] font-semibold hover:underline">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        {% if rol_etiqueta %}
+            Volver al login de {{ rol_etiqueta }}
+        {% else %}
+            Volver al inicio de sesión
+        {% endif %}
+    </a>
+    <p>
+        <a href="{{ selector_url }}" class="text-xs text-gray-500 hover:text-gray-700 hover:underline">
+            Elegir otro portal
+        </a>
+    </p>
+</div>

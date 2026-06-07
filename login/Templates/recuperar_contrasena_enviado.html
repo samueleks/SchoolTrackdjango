@@ -4,40 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SchoolTrack - Revisa tu correo</title>
+    <title>SchoolTrack - Recuperar contraseña</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {% include 'includes/dashboard_responsive.html' %}
     <style>
-        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; }
+        .header-pro { background-color: #2b63d9 !important; height: 90px; border-bottom: 4px solid #1e40af; width: 100%; }
         .main-frame-white { background: white; border-radius: 1.5rem; border: 2px solid #e5e7eb; box-shadow: 0 16px 48px -12px rgba(30, 64, 175, 0.14); }
         @media (max-width: 640px) { .header-pro { height: 64px !important; } }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800 antialiased">
-    <header class="header-pro shadow-lg" role="banner"></header>
+    <header class="header-pro shadow-lg sticky top-0 z-40" role="banner"></header>
     <div class="flex min-h-[calc(100svh-90px)] justify-center items-center px-4 py-10">
         <main class="max-w-md w-full main-frame-white p-8 sm:p-10 text-center">
+            {% include 'includes/recuperacion_cabecera.html' with titulo_pagina="Recuperar contraseña" %}
+
             {% if messages %}
                 {% for message in messages %}
-                <div class="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center {% if message.tags == 'warning' %}bg-amber-100{% else %}bg-green-100{% endif %}">
-                    <i class="fas {% if message.tags == 'warning' %}fa-triangle-exclamation text-amber-600{% else %}fa-envelope-open-text text-green-600{% endif %} text-3xl"></i>
+                <div class="w-14 h-14 mx-auto mb-5 rounded-full flex items-center justify-center {% if message.tags == 'warning' %}bg-amber-100{% else %}bg-green-100{% endif %}">
+                    <i class="fas {% if message.tags == 'warning' %}fa-triangle-exclamation text-amber-600{% else %}fa-envelope-open-text text-green-600{% endif %} text-2xl"></i>
                 </div>
-                <h2 class="text-2xl font-black text-gray-800 mb-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-3">
                     {% if message.tags == 'warning' %}No se pudo enviar el correo{% else %}Revisa tu correo{% endif %}
-                </h2>
-                <p class="text-gray-600 text-sm leading-relaxed mb-6">{{ message }}</p>
+                </h3>
+                <p class="text-gray-600 text-sm leading-relaxed mb-4">{{ message }}</p>
+                {% if message.tags != 'warning' %}
+                <p class="text-xs text-gray-400 mb-2">El enlace expira en 1 hora por seguridad.</p>
+                {% endif %}
                 {% endfor %}
             {% else %}
-            <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-                <i class="fas fa-envelope-open-text text-3xl text-green-600"></i>
+            <div class="w-14 h-14 mx-auto mb-5 rounded-full bg-green-100 flex items-center justify-center">
+                <i class="fas fa-envelope-open-text text-2xl text-green-600"></i>
             </div>
-            <h2 class="text-2xl font-black text-gray-800 mb-4">Revisa tu correo</h2>
-            <p class="text-gray-600 text-sm leading-relaxed mb-6">{{ mensaje }}</p>
+            <h3 class="text-lg font-bold text-gray-800 mb-3">Revisa tu correo</h3>
+            <p class="text-gray-600 text-sm leading-relaxed mb-4">{{ mensaje }}</p>
+            <p class="text-xs text-gray-400 mb-2">El enlace expira en 1 hora por seguridad.</p>
             {% endif %}
-            <p class="text-xs text-gray-400 mb-8">El enlace expira en 1 hora por seguridad.</p>
-            <a href="{{ login_url }}" class="inline-block bg-[#2b63d9] text-white font-bold py-3 px-8 rounded-xl hover:bg-[#2457c2] transition-colors">
-                Volver al inicio de sesión
-            </a>
+
+            {% include 'includes/recuperacion_nav.html' %}
         </main>
     </div>
 </body>
