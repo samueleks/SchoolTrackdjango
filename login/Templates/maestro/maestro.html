@@ -105,58 +105,59 @@
                                 <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Matrícula:</label>
                                 <span class="perfil-dato-valor text-gray-700 leading-relaxed">{{ perfil.matricula|default:'---' }}</span>
                             </div>
-                            <div class="perfil-campo flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
-                                <label class="text-xs font-black text-gray-600 uppercase tracking-tighter">Correo institucional:</label>
-                                <span class="perfil-dato-correo text-gray-700 leading-relaxed">{{ perfil.correo_institucional|default:'---' }}</span>
-                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="section-crema p-10 shadow-md">
                     <h3 class="font-bold text-2xl mb-8 text-gray-700 text-center border-b border-white/30 pb-3">Datos Personales</h3>
-                    <form method="post" action="{% url 'dashboard_maestro' %}">
+                    <form id="formPerfilMaestro" method="post" action="{% url 'dashboard_maestro' %}">
                         {% csrf_token %}
                         <div class="space-y-6">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div class="flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
+                                    <label class="text-xs font-black text-gray-600 uppercase ml-1">Correo Institucional:</label>
+                                    <input type="email" name="correo_institucional" id="correo_institucional" value="{{ perfil.correo_institucional|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.correo_institucional|default:'' }}{% else %}{{ perfil.correo_institucional|default:'' }}{% endif %}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <span id="error-correo_institucional" class="text-red-600 text-xs hidden"></span>
+                                </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Calle:</label>
-                                    <input type="text" name="calle" id="calle" value="{{ perfil.calle|default:'' }}" placeholder="Ej. Calle 18" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="calle" id="calle" value="{{ perfil.calle|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.calle|default:'' }}{% else %}{{ perfil.calle|default:'' }}{% endif %}" placeholder="Ej. Calle 18" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-calle" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Número exterior:</label>
-                                    <input type="text" name="numero_exterior" id="numero_exterior" value="{{ perfil.numero_exterior|default:'' }}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="numero_exterior" id="numero_exterior" value="{{ perfil.numero_exterior|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.numero_exterior|default:'' }}{% else %}{{ perfil.numero_exterior|default:'' }}{% endif %}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-numero_exterior" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Número interior:</label>
-                                    <input type="text" name="numero_interior" id="numero_interior" value="{{ perfil.numero_interior|default:'' }}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="numero_interior" id="numero_interior" value="{{ perfil.numero_interior|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.numero_interior|default:'' }}{% else %}{{ perfil.numero_interior|default:'' }}{% endif %}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-numero_interior" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Colonia:</label>
-                                    <input type="text" name="colonia" id="colonia" value="{{ perfil.colonia|default:'' }}" placeholder="Ej. San Juan" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="colonia" id="colonia" value="{{ perfil.colonia|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.colonia|default:'' }}{% else %}{{ perfil.colonia|default:'' }}{% endif %}" placeholder="Ej. San Juan" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-colonia" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Municipio / Ciudad:</label>
-                                    <input type="text" name="ciudad" id="ciudad" value="{{ perfil.ciudad|default:'' }}" placeholder="Ej. Motul" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="ciudad" id="ciudad" value="{{ perfil.ciudad|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.ciudad|default:'' }}{% else %}{{ perfil.ciudad|default:'' }}{% endif %}" placeholder="Ej. Motul" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-ciudad" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Estado:</label>
-                                    <input type="text" name="estado" id="estado" value="{{ perfil.estado|default:'' }}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="estado" id="estado" value="{{ perfil.estado|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.estado|default:'' }}{% else %}{{ perfil.estado|default:'' }}{% endif %}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-estado" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3 sm:col-span-2">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Código Postal:</label>
-                                    <input type="text" name="cp" id="cp" value="{{ perfil.cp|default:'' }}" placeholder="00000" class="w-32 p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="cp" id="cp" value="{{ perfil.cp|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.cp|default:'' }}{% else %}{{ perfil.cp|default:'' }}{% endif %}" maxlength="5" inputmode="numeric" pattern="[0-9]{5}" placeholder="00000" class="w-32 p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-cp" class="text-red-600 text-xs hidden"></span>
                                 </div>
                                 <div class="flex flex-col gap-1 border-b border-white/20 pb-3">
                                     <label class="text-xs font-black text-gray-600 uppercase ml-1">Teléfono:</label>
-                                    <input type="text" name="telefono" id="telefono" value="{{ perfil.telefono|default:'' }}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
+                                    <input type="text" name="telefono" id="telefono" value="{{ perfil.telefono|default:'' }}" data-valor-guardado="{% if perfil_guardado %}{{ perfil_guardado.telefono|default:'' }}{% else %}{{ perfil.telefono|default:'' }}{% endif %}" class="w-full p-1 bg-transparent border-none outline-none text-gray-700" readonly>
                                     <span id="error-telefono" class="text-red-600 text-xs hidden"></span>
                                 </div>
                             </div>
@@ -194,13 +195,33 @@
 <script>
         // Variable para guardar valores originales
         let valoresOriginales = {};
+        const CAMPOS_PERFIL = ['correo_institucional', 'telefono', 'calle', 'numero_exterior', 'numero_interior', 'colonia', 'ciudad', 'estado', 'cp'];
+
+        function obtenerValorGuardado(el) {
+            if (el.dataset.valorGuardado !== undefined) {
+                return el.dataset.valorGuardado;
+            }
+            const attrGuardado = el.getAttribute('data-valor-guardado');
+            if (attrGuardado !== null) {
+                return attrGuardado;
+            }
+            return el.defaultValue || el.getAttribute('value') || el.value;
+        }
+
+        function inicializarValoresGuardados() {
+            CAMPOS_PERFIL.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.dataset.valorGuardado = obtenerValorGuardado(el);
+            });
+        }
 
         function habilitarEdicion() {
-            const inputs = ['telefono', 'calle', 'numero_exterior', 'numero_interior', 'colonia', 'ciudad', 'estado', 'cp'];
+            const inputs = CAMPOS_PERFIL;
             inputs.forEach(id => {
                 const el = document.getElementById(id);
-                // Guardar valor original
-                valoresOriginales[id] = el.value;
+                if (!el) return;
+                valoresOriginales[id] = obtenerValorGuardado(el);
                 el.readOnly = false;
                 // Remover border-none del HTML original y agregar estilos de edición
                 el.classList.remove('border-none');
@@ -214,13 +235,11 @@
         }
         
         function cancelarEdicion() {
-            const inputs = ['telefono', 'calle', 'numero_exterior', 'numero_interior', 'colonia', 'ciudad', 'estado', 'cp'];
+            const inputs = CAMPOS_PERFIL;
             inputs.forEach(id => {
                 const el = document.getElementById(id);
-                // Restaurar valor original
-                if (valoresOriginales[id] !== undefined) {
-                    el.value = valoresOriginales[id];
-                }
+                if (!el) return;
+                el.value = valoresOriginales[id] ?? obtenerValorGuardado(el);
                 el.readOnly = true;
                 // Quitar todos los estilos de edición y error
                 el.classList.remove('bg-white', 'rounded-lg', 'px-2', 'border-2', 'border-gray-400', 'shadow-md', 'border-red-500');
@@ -233,18 +252,56 @@
             document.getElementById('botonesGuardar').classList.add('hidden');
         }
 
+        function validarTelefono(valor) {
+            const telefonoLimpio = valor.replace(/[-\s()]/g, '');
+            if (!/^\d+$/.test(telefonoLimpio)) {
+                return 'El teléfono debe contener solo números (sin guiones ni espacios)';
+            }
+            if (telefonoLimpio.length !== 10) {
+                return 'El teléfono debe tener exactamente 10 dígitos';
+            }
+            return '';
+        }
+
+        function validarCp(valor) {
+            const cpLimpio = valor.trim();
+            if (!cpLimpio) {
+                return 'Este campo es obligatorio';
+            }
+            if (!/^\d+$/.test(cpLimpio)) {
+                return 'El código postal debe contener solo números';
+            }
+            if (cpLimpio.length !== 5) {
+                return 'El código postal debe tener exactamente 5 dígitos';
+            }
+            return '';
+        }
+
         function validarYGuardar() {
-            const inputs = ['telefono', 'calle', 'numero_exterior', 'numero_interior', 'colonia', 'ciudad', 'estado', 'cp'];
+            const inputs = CAMPOS_PERFIL;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             let valido = true;
             let primerError = null;
             
             inputs.forEach(id => {
                 const el = document.getElementById(id);
                 const errorEl = document.getElementById('error-' + id);
-                if (!el.value.trim()) {
-                    errorEl.textContent = 'Este campo es obligatorio';
+                const valor = el.value.trim();
+                let mensajeError = '';
+
+                if (id === 'cp') {
+                    mensajeError = validarCp(valor);
+                } else if (!valor) {
+                    mensajeError = 'Este campo es obligatorio';
+                } else if (id === 'correo_institucional' && !emailRegex.test(valor)) {
+                    mensajeError = 'El formato del correo no es válido.';
+                } else if (id === 'telefono') {
+                    mensajeError = validarTelefono(valor);
+                }
+
+                if (mensajeError) {
+                    errorEl.textContent = mensajeError;
                     errorEl.classList.remove('hidden');
-                    // Pintar borde de rojo - asegurar que border-none no interfiera
                     el.classList.remove('border-none');
                     el.classList.add('border-2', 'border-red-500');
                     valido = false;
@@ -252,7 +309,6 @@
                 } else {
                     errorEl.classList.add('hidden');
                     el.classList.remove('border-2', 'border-red-500');
-                    // Restaurar border-none del HTML original
                     el.classList.add('border-none');
                 }
             });
@@ -267,7 +323,7 @@
             }
             
             if (valido) {
-                document.querySelector('form').submit();
+                document.getElementById('formPerfilMaestro').submit();
             } else if (primerError) {
                 primerError.focus();
             }
@@ -288,5 +344,28 @@
         {% endif %}
         {% endfor %}
         {% endif %}
+
+        {% if modo_edicion %}
+        document.addEventListener('DOMContentLoaded', () => {
+            inicializarValoresGuardados();
+            habilitarEdicion();
+            const erroresServidor = {
+                {% for campo, mensaje in errores_campos.items %}
+                '{{ campo }}': '{{ mensaje|escapejs }}',
+                {% endfor %}
+            };
+            Object.entries(erroresServidor).forEach(([id, mensaje]) => {
+                const el = document.getElementById(id);
+                const errorEl = document.getElementById('error-' + id);
+                if (!el || !errorEl) return;
+                errorEl.textContent = mensaje;
+                errorEl.classList.remove('hidden');
+                el.classList.remove('border-gray-400');
+                el.classList.add('border-2', 'border-red-500');
+            });
+        });
+        {% endif %}
+
+        document.addEventListener('DOMContentLoaded', inicializarValoresGuardados);
 </script>
 {% endblock %}

@@ -1,185 +1,441 @@
 {% extends 'base/dashboard_administrativo.html' %}
 
-{% block title %}SchoolTrack - Panel Administrativo{% endblock %}
+{% block title %}SchoolTrack - Consultar Reportes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-filtros {
+        background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 55%, #eef2ff 100%);
+        border: 2px solid #bfdbfe;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, .08);
+    }
+    .filtro-label {
+        display: flex;
+        align-items: center;
+        font-size: 0.7rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    .filtro-select {
+        width: 100%;
+        min-width: 0;
+        padding: 0.75rem 1rem;
+        border: 2px solid #cbd5e1;
+        border-radius: 0.75rem;
+        background: #fff;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    .filtro-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+    }
+    .filtro-select:disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        cursor: not-allowed;
+    }
+    .btn-accion {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-weight: 800;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem;
+        transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+        text-decoration: none;
+    }
+    .btn-accion:hover { transform: translateY(-1px); }
+    .card-soft {
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, .04);
+    }
+    .tabla-reportes thead th {
+        font-size: 0.65rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+    .tabla-reportes .col-alumno { min-width: 11rem; }
+    .text-empty { color: #d1d5db; font-size: 0.74rem; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-
-                <div class="text-center mb-10">
-
-                    <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Reportes Académicos</h2>
-
-                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Datos para la SEP</p>
-
-                </div>
-
-
-
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
-
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
-
-                        <div class="flex flex-col gap-2">
-
-                            <label class="font-bold text-gray-600 uppercase text-[10px] tracking-widest">Grado:</label>
-
-                            <select class="p-2 border-2 border-gray-300 rounded-lg bg-white font-bold text-sm outline-none focus:border-blue-500">
-
-                                <option>1er Grado</option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-
-                            <label class="font-bold text-gray-600 uppercase text-[10px] tracking-widest">Grupo:</label>
-
-                            <select class="p-2 border-2 border-gray-300 rounded-lg bg-white font-bold text-sm outline-none focus:border-blue-500">
-
-                                <option>A</option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-
-                            <label class="font-bold text-gray-600 uppercase text-[10px] tracking-widest">Alumno:</label>
-
-                            <select class="p-2 border-2 border-gray-300 rounded-lg bg-white font-bold text-sm outline-none focus:border-blue-500">
-
-                                <option>Todos</option>
-
-                            </select>
-
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-
-                            <label class="font-bold text-gray-600 uppercase text-[10px] tracking-widest">Unidad:</label>
-
-                            <select class="p-2 border-2 border-gray-300 rounded-lg bg-white font-bold text-sm outline-none focus:border-blue-500">
-
-                                <option>1</option>
-
-                            </select>
-
-                        </div>
-
-                        <button class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-black hover:bg-blue-700 transition shadow-md uppercase text-xs tracking-widest">
-
-                            Buscar
-
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-
-                <div class="table-container table-scroll bg-white shadow-2xl">
-
-                    <table class="w-full text-left border-collapse">
-
-                        <thead class="bg-gray-100 border-b-2 border-gray-300">
-
-                            <tr class="text-gray-500 text-[11px] font-black uppercase tracking-[0.15em]">
-
-                                <th class="p-4">Alumno</th>
-
-                                <th class="p-4 text-center">Materia</th>
-
-                                <th class="p-4 text-center">Calificación / Asistencia</th>
-
-                                <th class="p-4 text-center">Periodo</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody class="divide-y divide-gray-200">
-
-                            {% if reportes_admin %}
-
-                                {% for item in reportes_admin %}
-
-                                <tr class="hover:bg-blue-50 transition font-medium text-sm">
-
-                                    <td class="p-4 text-gray-800 font-bold">{{ item.alumno }}</td>
-
-                                    <td class="p-4 text-center text-gray-600">{{ item.materia }}</td>
-
-                                    <td class="p-4 text-center">
-
-                                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-black">{{ item.valor }}</span>
-
-                                    </td>
-
-                                    <td class="p-4 text-center text-gray-500">{{ item.periodo }}</td>
-
-                                </tr>
-
-                                {% endfor %}
-
-                            {% else %}
-
-                                <tr>
-
-                                    <td colspan="4" class="p-20 text-center text-gray-400 italic">
-
-                                        <div class="flex flex-col items-center opacity-40">
-
-                                            <i class="fas fa-database text-5xl mb-4"></i>
-
-                                            <p class="font-bold uppercase tracking-widest">Sin datos para mostrar</p>
-
-                                            <p class="text-xs not-italic mt-1">Ajuste los filtros para realizar una consulta a la base de datos.</p>
-
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-
-                            {% endif %}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-
-
-                <div class="mt-10 flex flex-wrap justify-between items-center border-t pt-8">
-
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Última actualización: 2026-10-27</p>
-
-                    <div class="flex gap-4">
-
-                        <button class="bg-green-600 text-white flex items-center gap-3 px-8 py-3 rounded-xl font-black hover:bg-green-700 transition shadow-lg uppercase text-xs">
-
-                            <i class="fas fa-file-pdf"></i> Exportar PDF
-
-                        </button>
-
-                        <button class="bg-blue-600 text-white flex items-center gap-3 px-8 py-3 rounded-xl font-black hover:bg-blue-700 transition shadow-lg uppercase text-xs">
-
-                            <i class="fas fa-print"></i> Imprimir
-
-                        </button>
-
-                        <button class="bg-gray-800 text-white flex items-center gap-3 px-8 py-3 rounded-xl font-black hover:bg-gray-900 transition shadow-lg uppercase text-xs">
-
-                            <i class="fas fa-info-circle"></i> Ver detalles
-
-                        </button>
-
-                    </div>
-
-                </div>
-
+<div class="max-w-7xl mx-auto px-1 sm:px-0">
+    <div class="text-center mb-8 sm:mb-10">
+        <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Consultar Reportes</h2>
+        <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
+            Consulta institucional de asistencias y calificaciones por unidad, grupo, materia y alumno
+        </p>
+        <p class="mt-1 text-xs text-blue-600 font-bold uppercase tracking-widest">Periodo {{ periodo_actual|default:"---" }}</p>
+    </div>
+
+    <form method="get" id="formReportesAdmin" class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8">
+        <div class="mb-5">
+            <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Filtros de consulta</h3>
+            <p class="text-xs text-gray-500 font-medium">Selecciona el tipo, la unidad y opcionalmente ciclo, grupo, materia o alumno</p>
+        </div>
+
+        <input type="hidden" name="asignacion_id" id="asignacionIdInput" value="{{ filtro_asignacion_id }}">
+        <input type="hidden" name="ciclo_id" id="cicloIdInput" value="{{ filtro_ciclo_id }}">
+        <input type="hidden" name="grupo_id" id="grupoIdInput" value="{{ filtro_grupo_id }}">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div>
+                <label class="filtro-label" for="tipoSelect">Tipo de reporte</label>
+                <select name="tipo" id="tipoSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="asistencias" {% if reporte_tipo == 'asistencias' %}selected{% endif %}>Asistencias</option>
+                    <option value="calificaciones" {% if reporte_tipo == 'calificaciones' %}selected{% endif %}>Calificaciones</option>
+                </select>
             </div>
+            <div>
+                <label class="filtro-label" for="unidadSelect">Unidad</label>
+                <select name="unidad" id="unidadSelect" class="filtro-select text-sm sm:text-base" required>
+                    <option value="">Selecciona unidad...</option>
+                    {% for n in "123456" %}
+                    <option value="{{ n }}" {% if filtro_unidad == n %}selected{% endif %}>Unidad {{ n }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="filtro-label" for="cicloSelect">Ciclo escolar</label>
+                <select id="cicloSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="">Todos los ciclos</option>
+                </select>
+            </div>
+            <div>
+                <label class="filtro-label" for="grupoSelect">Grupo</label>
+                <select id="grupoSelect" class="filtro-select text-sm sm:text-base" disabled>
+                    <option value="">Todos los grupos</option>
+                </select>
+            </div>
+            <div>
+                <label class="filtro-label" for="materiaSelect">Materia</label>
+                <select id="materiaSelect" class="filtro-select text-sm sm:text-base" disabled>
+                    <option value="">Todas las materias</option>
+                </select>
+            </div>
+            <div>
+                <label class="filtro-label" for="alumnoSelect">Alumno</label>
+                <select name="alumno_id" id="alumnoSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="">Todos los alumnos</option>
+                </select>
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3 flex flex-col sm:flex-row gap-3">
+                <button type="submit" class="btn-accion w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 border-0 cursor-pointer">
+                    <i class="fas fa-search"></i> Consultar
+                </button>
+                <button type="button" id="btnLimpiarFiltros" class="btn-accion w-full sm:w-auto bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50">
+                    <i class="fas fa-eraser"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    {{ asignaciones_reportes|json_script:"asignaciones-reportes-data" }}
+    {{ alumnos_reportes|json_script:"alumnos-reportes-data" }}
+
+    <div class="mb-4 p-4 rounded-xl border-2 {% if filtros_aplicados %}bg-blue-50 border-blue-200{% else %}bg-gray-50 border-gray-200{% endif %}">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p class="font-bold text-gray-700 text-sm">
+                {% if filtros_aplicados %}
+                    <i class="fas fa-check-circle text-blue-600 mr-2"></i>
+                    Resultados: <span class="text-blue-600 font-black">{{ reportes|length }}</span> registro(s) encontrado(s)
+                {% else %}
+                    <i class="fas fa-info-circle text-gray-500 mr-2"></i>
+                    Selecciona el tipo de reporte y la unidad, luego presiona <strong>Consultar</strong>
+                {% endif %}
+            </p>
+            {% if filtros_aplicados %}
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'exportar_reportes_admin_excel' %}{{ query_reportes }}"
+                   class="btn-accion bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-200">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+                <a href="{% url 'exportar_reportes_admin_pdf' %}{{ query_reportes }}"
+                   class="btn-accion bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-200">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card-soft bg-white overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="tabla-reportes w-full text-left border-collapse">
+                <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
+                    <tr class="text-gray-600">
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Fecha</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Unidad</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 col-alumno">Alumno</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Materia</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Grupo</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Ciclo</th>
+                        {% if reporte_tipo == 'asistencias' %}
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Horario</th>
+                        {% endif %}
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">
+                            {% if reporte_tipo == 'calificaciones' %}Calificación{% else %}Estatus{% endif %}
+                        </th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% if reportes %}
+                        {% for reporte in reportes %}
+                        <tr class="hover:bg-blue-50/40 transition-colors">
+                            <td class="p-3 sm:p-4 text-gray-700 font-semibold whitespace-nowrap">{{ reporte.fecha }}</td>
+                            <td class="p-3 sm:p-4 text-center">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-700">
+                                    U{{ reporte.unidad }}
+                                </span>
+                            </td>
+                            <td class="p-3 sm:p-4 col-alumno">
+                                <div class="font-bold text-gray-800">{{ reporte.alumno }}</div>
+                                <div class="text-xs text-gray-500 font-mono">{{ reporte.matricula }}</div>
+                            </td>
+                            <td class="p-3 sm:p-4 font-semibold text-gray-800">{{ reporte.materia }}</td>
+                            <td class="p-3 sm:p-4 text-center text-gray-700 font-semibold">{{ reporte.grupo }}</td>
+                            <td class="p-3 sm:p-4 text-center text-gray-600 text-sm">{{ reporte.ciclo }}</td>
+                            {% if reporte.tipo == 'asistencia' %}
+                            <td class="p-3 sm:p-4 text-center text-gray-600 text-sm">{{ reporte.detalle }}</td>
+                            {% endif %}
+                            <td class="p-3 sm:p-4 text-center">
+                                {% if reporte.tipo == 'asistencia' %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black uppercase
+                                        {% if reporte.estado == 'Presente' %} bg-green-100 text-green-700
+                                        {% elif reporte.estado == 'Ausente' %} bg-red-100 text-red-700
+                                        {% elif reporte.estado == 'Tarde' %} bg-yellow-100 text-yellow-700
+                                        {% elif reporte.estado == 'Justificado' %} bg-blue-100 text-blue-700
+                                        {% else %} bg-gray-100 text-gray-700 {% endif %}">
+                                        {{ reporte.estado }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-indigo-100 text-indigo-700">
+                                        {{ reporte.detalle }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="p-3 sm:p-4 text-gray-600 text-sm max-w-xs">
+                                {% if reporte.observaciones %}
+                                    <span class="break-words">{{ reporte.observaciones }}</span>
+                                {% else %}
+                                    <span class="text-empty">---</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="{% if reporte_tipo == 'calificaciones' %}8{% else %}9{% endif %}" class="p-12 sm:p-16 text-center text-gray-400">
+                                <i class="fas fa-search mb-3 text-4xl opacity-25 block"></i>
+                                <p class="font-semibold text-sm sm:text-base">
+                                    {% if filtros_aplicados %}
+                                        No se encontraron registros con los filtros seleccionados
+                                    {% else %}
+                                        Usa los filtros y presiona Consultar para ver los resultados
+                                    {% endif %}
+                                </p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const ASIGNACIONES = JSON.parse(document.getElementById('asignaciones-reportes-data').textContent);
+    const ALUMNOS = JSON.parse(document.getElementById('alumnos-reportes-data').textContent);
+    const ASIGNACION_INICIAL = '{{ filtro_asignacion_id|escapejs }}';
+    const CICLO_INICIAL = '{{ filtro_ciclo_id|escapejs }}';
+    const GRUPO_INICIAL = '{{ filtro_grupo_id|escapejs }}';
+    const ALUMNO_INICIAL = '{{ filtro_alumno_id|escapejs }}';
+
+    const asignacionIdInput = document.getElementById('asignacionIdInput');
+    const cicloIdInput = document.getElementById('cicloIdInput');
+    const grupoIdInput = document.getElementById('grupoIdInput');
+    const cicloSelect = document.getElementById('cicloSelect');
+    const grupoSelect = document.getElementById('grupoSelect');
+    const materiaSelect = document.getElementById('materiaSelect');
+    const alumnoSelect = document.getElementById('alumnoSelect');
+    const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
+    const formReportesAdmin = document.getElementById('formReportesAdmin');
+
+    function llenarSelect(select, opciones, placeholder) {
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        opciones.forEach(({ value, label }) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        });
+        select.disabled = opciones.length === 0;
+    }
+
+    function construirOpcionesCiclos() {
+        const ciclos = [];
+        const vistos = new Set();
+        ASIGNACIONES.forEach(item => {
+            const key = String(item.ciclo_id);
+            if (vistos.has(key)) return;
+            vistos.add(key);
+            ciclos.push({ value: key, label: item.ciclo });
+        });
+        return ciclos.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function construirOpcionesGrupos(cicloId) {
+        const grupos = [];
+        const vistos = new Set();
+        ASIGNACIONES
+            .filter(item => !cicloId || String(item.ciclo_id) === String(cicloId))
+            .forEach(item => {
+                const key = String(item.grupo_id);
+                if (vistos.has(key)) return;
+                vistos.add(key);
+                grupos.push({
+                    value: key,
+                    label: `${item.grupo} - ${item.grupo_nombre}`,
+                });
+            });
+        return grupos.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function construirOpcionesMaterias(cicloId, grupoId) {
+        const materias = [];
+        const vistos = new Set();
+        ASIGNACIONES
+            .filter(item =>
+                (!cicloId || String(item.ciclo_id) === String(cicloId)) &&
+                (!grupoId || String(item.grupo_id) === String(grupoId))
+            )
+            .forEach(item => {
+                const key = String(item.materia_id);
+                if (vistos.has(key)) return;
+                vistos.add(key);
+                materias.push({
+                    value: key,
+                    label: `${item.materia_clave} - ${item.materia_nombre}`,
+                });
+            });
+        return materias.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function construirOpcionesAlumnos(grupoId) {
+        const alumnos = [];
+        const vistos = new Set();
+        ALUMNOS
+            .filter(item => !grupoId || String(item.grupo_id) === String(grupoId))
+            .forEach(item => {
+                const key = String(item.id);
+                if (vistos.has(key)) return;
+                vistos.add(key);
+                alumnos.push({
+                    value: key,
+                    label: `${item.matricula} - ${item.nombre}`,
+                });
+            });
+        return alumnos.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function obtenerAsignacionId() {
+        const cicloId = cicloSelect.value;
+        const grupoId = grupoSelect.value;
+        const materiaId = materiaSelect.value;
+        if (!cicloId || !grupoId || !materiaId) return '';
+        const asignacion = ASIGNACIONES.find(item =>
+            String(item.ciclo_id) === String(cicloId) &&
+            String(item.grupo_id) === String(grupoId) &&
+            String(item.materia_id) === String(materiaId)
+        );
+        return asignacion ? String(asignacion.id) : '';
+    }
+
+    function sincronizarCamposOcultos() {
+        cicloIdInput.value = cicloSelect.value;
+        grupoIdInput.value = grupoSelect.value;
+        asignacionIdInput.value = obtenerAsignacionId();
+    }
+
+    function refrescarGrupos(preservar = true) {
+        const valorPrevio = preservar ? grupoSelect.value : '';
+        const opciones = construirOpcionesGrupos(cicloSelect.value);
+        llenarSelect(grupoSelect, opciones, 'Todos los grupos');
+        if (valorPrevio && opciones.some(op => op.value === valorPrevio)) {
+            grupoSelect.value = valorPrevio;
+        }
+        refrescarMaterias(preservar);
+    }
+
+    function refrescarMaterias(preservar = true) {
+        const valorPrevio = preservar ? materiaSelect.value : '';
+        const opciones = construirOpcionesMaterias(cicloSelect.value, grupoSelect.value);
+        llenarSelect(materiaSelect, opciones, 'Todas las materias');
+        if (valorPrevio && opciones.some(op => op.value === valorPrevio)) {
+            materiaSelect.value = valorPrevio;
+        }
+        refrescarAlumnos(preservar);
+        sincronizarCamposOcultos();
+    }
+
+    function refrescarAlumnos(preservar = true) {
+        const valorPrevio = preservar ? alumnoSelect.value : '';
+        const opciones = construirOpcionesAlumnos(grupoSelect.value);
+        llenarSelect(alumnoSelect, opciones, 'Todos los alumnos');
+        alumnoSelect.disabled = false;
+        if (valorPrevio && opciones.some(op => op.value === valorPrevio)) {
+            alumnoSelect.value = valorPrevio;
+        }
+    }
+
+    function restaurarSeleccionInicial() {
+        llenarSelect(cicloSelect, construirOpcionesCiclos(), 'Todos los ciclos');
+        if (CICLO_INICIAL) {
+            cicloSelect.value = CICLO_INICIAL;
+        }
+        refrescarGrupos(true);
+        if (GRUPO_INICIAL) {
+            grupoSelect.value = GRUPO_INICIAL;
+        }
+        refrescarMaterias(true);
+        if (ASIGNACION_INICIAL) {
+            const asignacion = ASIGNACIONES.find(item => String(item.id) === String(ASIGNACION_INICIAL));
+            if (asignacion) {
+                materiaSelect.value = String(asignacion.materia_id);
+            }
+        }
+        refrescarAlumnos(true);
+        if (ALUMNO_INICIAL) {
+            alumnoSelect.value = ALUMNO_INICIAL;
+        }
+        sincronizarCamposOcultos();
+    }
+
+    cicloSelect.addEventListener('change', () => {
+        refrescarGrupos(false);
+    });
+    grupoSelect.addEventListener('change', () => {
+        refrescarMaterias(false);
+    });
+    materiaSelect.addEventListener('change', sincronizarCamposOcultos);
+    formReportesAdmin.addEventListener('submit', sincronizarCamposOcultos);
+    btnLimpiarFiltros.addEventListener('click', () => {
+        window.location.href = '{% url "admin_reportes" %}';
+    });
+
+    restaurarSeleccionInicial();
+</script>
 {% endblock %}

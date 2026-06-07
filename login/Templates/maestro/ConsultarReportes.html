@@ -2,153 +2,662 @@
 
 {% block title %}SchoolTrack - Consultar Reportes{% endblock %}
 
+{% block extra_css %}
+<style>
+        .card-soft {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .04);
+        }
+        .card-filtros {
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 55%, #eef2ff 100%);
+            border: 2px solid #bfdbfe;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, .08);
+        }
+        .filtro-label {
+            display: flex;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .filtro-select, .filtro-input {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 0.75rem 1rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #fff;
+            font-weight: 600;
+            color: #1f2937;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .filtro-select:focus, .filtro-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+        .filtro-select:disabled, .filtro-input:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .filtros-reporte { min-width: 0; }
+        .filtros-reporte .filtro-campo { min-width: 0; }
+        .btn-accion {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 800;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+        }
+        .btn-accion:hover { transform: translateY(-1px); }
+        .tabla-reportes thead th {
+            font-size: 0.65rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .tabla-reportes .col-alumno { min-width: 11rem; }
+        .vista-toggle {
+            display: inline-flex;
+            border: 2px solid #bfdbfe;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: #fff;
+        }
+        .vista-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.65rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            cursor: pointer;
+            transition: background-color .12s ease, color .12s ease;
+        }
+        .vista-toggle input { display: none; }
+        .vista-toggle input:checked + span {
+            background: #2563eb;
+            color: #fff;
+        }
+        .vista-toggle label span {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.65rem 1rem;
+            border-radius: 0.55rem;
+        }
+        .sesion-cabecera {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .badge-conteo {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+        }
+        .badge-presente { background: #dcfce7; color: #15803d; }
+        .badge-ausente { background: #fee2e2; color: #b91c1c; }
+        .badge-tarde { background: #fef9c3; color: #a16207; }
+        .badge-justificado { background: #dbeafe; color: #1d4ed8; }
+        .badge-sin-registro { background: #f1f5f9; color: #64748b; }
+        .campos-sesion.hidden { display: none; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto">
-                <div class="mb-12 text-center">
-                    <h1 class="text-4xl font-black text-gray-800 uppercase tracking-tighter mb-3">📊 Reportes Académicos</h1>
-                    <p class="text-lg text-gray-600 font-semibold">Genera reportes de asistencias y calificaciones por unidad</p>
+<div class="max-w-7xl mx-auto px-1 sm:px-0">
+    <div class="text-center mb-8 sm:mb-10">
+        <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Consultar Reportes</h2>
+        <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
+            Consulta asistencias o calificaciones por unidad y asignación
+        </p>
+    </div>
+
+    <form method="get" id="formReportes" class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+        <div class="mb-5">
+            <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Filtros de consulta</h3>
+            <p class="text-xs text-gray-500 font-medium">Elige el tipo, la unidad y opcionalmente una asignación</p>
+        </div>
+
+        <input type="hidden" name="asignacion_id" id="asignacionIdInput" value="{{ filtro_asignacion_id }}">
+        <input type="hidden" name="vista" id="vistaInput" value="{{ vista_asistencias }}">
+
+        <div class="filtros-reporte grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div class="filtro-campo">
+                <label class="filtro-label" for="tipoSelect">Tipo de reporte</label>
+                <select name="tipo" id="tipoSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="asistencias" {% if reporte_tipo == 'asistencias' %}selected{% endif %}>Asistencias</option>
+                    <option value="calificaciones" {% if reporte_tipo == 'calificaciones' %}selected{% endif %}>Calificaciones</option>
+                </select>
+            </div>
+            <div class="filtro-campo" id="campoVistaAsistencias" {% if reporte_tipo != 'asistencias' %}style="display:none"{% endif %}>
+                <span class="filtro-label">Vista de asistencias</span>
+                <div class="vista-toggle w-full sm:w-auto">
+                    <label>
+                        <input type="radio" name="vistaRadio" value="lista" {% if vista_asistencias == 'lista' %}checked{% endif %}>
+                        <span><i class="fas fa-list"></i> Lista detallada</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="vistaRadio" value="sesion" {% if vista_asistencias == 'sesion' %}checked{% endif %}>
+                        <span><i class="fas fa-users"></i> Por sesión</span>
+                    </label>
                 </div>
+            </div>
+            <div class="filtro-campo">
+                <label class="filtro-label" for="unidadSelect">Unidad</label>
+                <select name="unidad" id="unidadSelect" class="filtro-select text-sm sm:text-base" required>
+                    <option value="">Selecciona unidad...</option>
+                    <option value="1" {% if filtro_unidad == '1' %}selected{% endif %}>Unidad 1</option>
+                    <option value="2" {% if filtro_unidad == '2' %}selected{% endif %}>Unidad 2</option>
+                    <option value="3" {% if filtro_unidad == '3' %}selected{% endif %}>Unidad 3</option>
+                    <option value="4" {% if filtro_unidad == '4' %}selected{% endif %}>Unidad 4</option>
+                    <option value="5" {% if filtro_unidad == '5' %}selected{% endif %}>Unidad 5</option>
+                    <option value="6" {% if filtro_unidad == '6' %}selected{% endif %}>Unidad 6</option>
+                </select>
+            </div>
+            <div class="filtro-campo campos-sesion {% if reporte_tipo != 'asistencias' or vista_asistencias != 'sesion' %}hidden{% endif %}" id="campoFechaSesion">
+                <label class="filtro-label" for="fechaSesionInput">Fecha de la sesión</label>
+                <input type="date" name="fecha" id="fechaSesionInput" class="filtro-input text-sm sm:text-base" value="{{ filtro_fecha }}">
+            </div>
+            <div class="filtro-campo">
+                <label class="filtro-label" for="cicloSelect">Ciclo escolar</label>
+                <select id="cicloSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="">Todos los ciclos</option>
+                </select>
+            </div>
+            <div class="filtro-campo">
+                <label class="filtro-label" for="grupoSelect">Grupo</label>
+                <select id="grupoSelect" class="filtro-select text-sm sm:text-base" disabled>
+                    <option value="">Todos los grupos</option>
+                </select>
+            </div>
+            <div class="filtro-campo sm:col-span-2">
+                <label class="filtro-label" for="materiaSelect">Materia</label>
+                <select id="materiaSelect" class="filtro-select text-sm sm:text-base" disabled>
+                    <option value="">Todas las materias</option>
+                </select>
+            </div>
+            <div class="filtro-campo sm:col-span-2 campos-sesion {% if reporte_tipo != 'asistencias' or vista_asistencias != 'sesion' %}hidden{% endif %}" id="campoHorarioSesion">
+                <label class="filtro-label" for="horarioSesionSelect">Horario de la sesión</label>
+                <select name="horario_id" id="horarioSesionSelect" class="filtro-select text-sm sm:text-base">
+                    <option value="">{% if sesion_consulta and sesion_consulta.horarios %}Selecciona horario...{% else %}Consulta para ver horarios{% endif %}</option>
+                    {% if sesion_consulta %}
+                        {% for horario in sesion_consulta.horarios %}
+                        <option value="{{ horario.id_horario }}" {% if filtro_horario_id == horario.id_horario|stringformat:"s" or not filtro_horario_id and sesion_consulta.horario_id == horario.id_horario %}selected{% endif %}>
+                            {{ horario.dia_semana }} {{ horario.hora_inicio }}-{{ horario.hora_fin }}
+                        </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            <div class="filtro-campo sm:col-span-2 flex flex-col sm:flex-row gap-3">
+                <button type="submit" class="btn-accion w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200">
+                    <i class="fas fa-search"></i> Consultar
+                </button>
+                <button type="button" id="btnLimpiarFiltros" class="btn-accion w-full sm:w-auto bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400">
+                    <i class="fas fa-eraser"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </form>
 
-                <form method="get" class="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-2xl border-2 border-blue-200 mb-8 shadow-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                        <div class="flex flex-col gap-2">
-                            <label class="font-black text-gray-700 uppercase text-sm tracking-wide">Tipo de Reporte:</label>
-                            <select name="tipo" class="p-4 border-2 border-blue-300 rounded-xl bg-white font-bold text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition" onchange="this.form.submit()">
-                                <option value="asistencias" {% if reporte_tipo == 'asistencias' %}selected{% endif %}>📋 Asistencias</option>
-                                <option value="calificaciones" {% if reporte_tipo == 'calificaciones' %}selected{% endif %}>⭐ Calificaciones</option>
-                            </select>
-                        </div>
+    {{ asignaciones_reportes|json_script:"asignaciones-reportes-data" }}
 
-                        <div class="flex flex-col gap-2">
-                            <label class="font-black text-gray-700 uppercase text-sm tracking-wide">Asignación (Grupo):</label>
-                            <select name="asignacion_id" class="p-4 border-2 border-blue-300 rounded-xl bg-white font-bold text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                                <option value="">-- Todos los grupos --</option>
-                                {% for asignacion in asignaciones_docente %}
-                                    <option value="{{ asignacion.id_asignacion_materia }}" {% if filtro_asignacion_id == asignacion.id_asignacion_materia|stringformat:'s' %}selected{% endif %}>
-                                        {{ asignacion.id_materia.clave }} - {{ asignacion.id_grupo.clave }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+    <div class="mb-4 p-4 rounded-xl border-2 {% if filtros_aplicados %}bg-blue-50 border-blue-200{% else %}bg-gray-50 border-gray-200{% endif %}">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <p class="font-bold text-gray-700 text-sm">
+                {% if filtros_aplicados %}
+                    <i class="fas fa-check-circle text-blue-600 mr-2"></i>
+                    {% if reporte_tipo == 'asistencias' and vista_asistencias == 'sesion' and sesion_consulta and sesion_consulta.horario_id %}
+                        Sesión: <span class="text-blue-600 font-black">{{ sesion_consulta.total_registrados }}</span> de
+                        <span class="text-blue-600 font-black">{{ sesion_consulta.total_alumnos }}</span> alumno(s) con registro
+                    {% else %}
+                        Resultados: <span class="text-blue-600 font-black">{{ reportes|length }}</span> registro(s) encontrado(s)
+                    {% endif %}
+                {% else %}
+                    <i class="fas fa-info-circle text-gray-500 mr-2"></i>
+                    {% if reporte_tipo == 'asistencias' and vista_asistencias == 'sesion' %}
+                        Selecciona unidad, materia y fecha, luego presiona <strong>Consultar</strong>
+                    {% else %}
+                        Selecciona el tipo de reporte y la unidad, luego presiona <strong>Consultar</strong>
+                    {% endif %}
+                {% endif %}
+            </p>
+            {% if filtros_aplicados and reporte_tipo == 'calificaciones' or filtros_aplicados and vista_asistencias == 'lista' or filtros_aplicados and vista_asistencias == 'sesion' and sesion_consulta and sesion_consulta.horario_id %}
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'exportar_reportes_maestro_excel' %}{{ query_reportes }}"
+                   class="btn-accion bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-200">
+                    <i class="fas fa-file-excel"></i>
+                    {% if vista_asistencias == 'sesion' %}Excel sesión{% else %}Exportar Excel{% endif %}
+                </a>
+                <a href="{% url 'exportar_reportes_maestro_pdf' %}{{ query_reportes }}"
+                   class="btn-accion bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-200">
+                    <i class="fas fa-file-pdf"></i>
+                    {% if vista_asistencias == 'sesion' %}PDF sesión{% else %}Exportar PDF{% endif %}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
-                        <div class="flex flex-col gap-2">
-                            <label class="font-black text-gray-700 uppercase text-sm tracking-wide">Selecciona la Unidad:</label>
-                            <select name="unidad" class="p-4 border-2 border-blue-300 rounded-xl bg-white font-bold text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition">
-                                <option value="">-- Selecciona unidad --</option>
-                                <option value="1" {% if filtro_unidad == '1' %}selected{% endif %}>Unidad 1</option>
-                                <option value="2" {% if filtro_unidad == '2' %}selected{% endif %}>Unidad 2</option>
-                                <option value="3" {% if filtro_unidad == '3' %}selected{% endif %}>Unidad 3</option>
-                                <option value="4" {% if filtro_unidad == '4' %}selected{% endif %}>Unidad 4</option>
-                                <option value="5" {% if filtro_unidad == '5' %}selected{% endif %}>Unidad 5</option>
-                                <option value="6" {% if filtro_unidad == '6' %}selected{% endif %}>Unidad 6</option>
-                            </select>
-                        </div>
-
-                        <div class="flex gap-3">
-                            <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl font-black hover:from-blue-700 hover:to-blue-800 transition shadow-lg uppercase text-sm tracking-wide transform hover:scale-105">
-                                <i class="fas fa-search mr-2"></i>Generar Reporte
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                <div class="mb-6 p-4 rounded-xl bg-blue-50 border-2 border-blue-200">
-                    <p class="font-bold text-gray-700">
-                        {% if filtros_aplicados %}
-                            <i class="fas fa-check-circle text-blue-600 mr-2"></i>
-                            Resultados: <span class="text-blue-600 font-black">{{ reportes|length }}</span> registro(s) encontrado(s)
-                        {% else %}
-                            <i class="fas fa-info-circle text-gray-500 mr-2"></i>
-                            Selecciona unidad y tipo de reporte para ver resultados
-                        {% endif %}
+    {% if reporte_tipo == 'asistencias' and vista_asistencias == 'sesion' %}
+    <div class="card-soft bg-white overflow-hidden">
+        {% if sesion_error %}
+        <div class="p-6 sm:p-8 text-center text-amber-800 bg-amber-50 border-b border-amber-100">
+            <i class="fas fa-exclamation-triangle mb-2 text-2xl opacity-70 block"></i>
+            <p class="font-bold text-sm sm:text-base">{{ sesion_error }}</p>
+        </div>
+        {% endif %}
+        {% if sesion_aviso %}
+        <div class="p-4 sm:p-5 text-blue-800 bg-blue-50 border-b border-blue-100">
+            <p class="font-semibold text-sm"><i class="fas fa-info-circle mr-2"></i>{{ sesion_aviso }}</p>
+        </div>
+        {% endif %}
+        {% if sesion_consulta and sesion_consulta.horario_id %}
+        <div class="sesion-cabecera p-4 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">Pase de lista · Solo lectura</p>
+                    <h3 class="text-lg sm:text-xl font-black text-gray-800">
+                        {{ sesion_consulta.asignacion.materia.codigo }} - {{ sesion_consulta.asignacion.materia.nombre }}
+                    </h3>
+                    <p class="text-sm font-semibold text-gray-600 mt-1">
+                        Grupo {{ sesion_consulta.asignacion.grupo.clave }} · {{ sesion_consulta.fecha }} ({{ sesion_consulta.dia_semana }})
+                        · Unidad {{ sesion_consulta.unidad }}
+                        {% if sesion_consulta.horario_texto %}· {{ sesion_consulta.horario_texto }}{% endif %}
                     </p>
                 </div>
-
-                <div class="table-container table-scroll bg-white shadow-2xl rounded-xl overflow-hidden border-2 border-blue-100">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gradient-to-r from-blue-600 to-blue-700">
-                            <tr class="text-white text-xs font-black uppercase tracking-widest">
-                                <th class="p-4">📅 Fecha</th>
-                                <th class="p-4 text-center">📚 Unidad</th>
-                                <th class="p-4">👤 Alumno</th>
-                                <th class="p-4">📖 Materia</th>
-                                <th class="p-4 text-center">🏫 Grupo</th>
-                                {% if reporte_tipo == 'asistencias' %}
-                                <th class="p-4 text-center">🕐 Horario</th>
-                                {% endif %}
-                                <th class="p-4 text-center">{% if reporte_tipo == 'calificaciones' %}⭐ Calificación{% else %}📋 Estatus{% endif %}</th>
-                                <th class="p-4">📝 Observaciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            {% if reportes %}
-                                {% for reporte in reportes %}
-                                <tr class="hover:bg-blue-50 transition font-medium">
-                                    <td class="p-4 text-gray-700 text-center font-bold">{{ reporte.fecha }}</td>
-                                    <td class="p-4 text-center">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-black bg-blue-100 text-blue-700">
-                                            U{{ reporte.unidad }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4">
-                                        <div class="font-bold text-gray-800">{{ reporte.alumno }}</div>
-                                        <div class="text-xs text-gray-500 uppercase tracking-wider font-mono">{{ reporte.matricula }}</div>
-                                    </td>
-                                    <td class="p-4 font-bold text-gray-800">{{ reporte.materia }}</td>
-                                    <td class="p-4 text-center text-gray-700 font-bold">{{ reporte.grupo }}</td>
-                                    {% if reporte.tipo == 'asistencia' %}
-                                    <td class="p-4 text-center text-gray-600">{{ reporte.detalle }}</td>
-                                    {% endif %}
-                                    <td class="p-4 text-center">
-                                        {% if reporte.tipo == 'asistencia' %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest
-                                                {% if reporte.estado == 'Presente' %} bg-green-100 text-green-700
-                                                {% elif reporte.estado == 'Ausente' %} bg-red-100 text-red-700
-                                                {% elif reporte.estado == 'Tarde' %} bg-yellow-100 text-yellow-700
-                                                {% elif reporte.estado == 'Justificado' %} bg-blue-100 text-blue-700
-                                                {% else %} bg-gray-100 text-gray-700 {% endif %}">
-                                                {{ reporte.estado }}
-                                            </span>
-                                        {% else %}
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-indigo-100 text-indigo-700">
-                                                {{ reporte.detalle }}
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="p-4 text-left text-gray-600 max-w-xs">
-                                        <span class="break-words">{{ reporte.observaciones|default:'—' }}</span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="{% if reporte_tipo == 'calificaciones' %}7{% else %}8{% endif %}" class="p-20 text-center text-gray-400">
-                                        <div class="flex flex-col items-center justify-center">
-                                            <i class="fas fa-file-search mb-4 text-6xl opacity-20"></i>
-                                            <p class="text-lg font-bold">
-                                                {% if filtros_aplicados %}
-                                                    No se encontraron reportes con los filtros seleccionados
-                                                {% else %}
-                                                    Selecciona un tipo de reporte, unidad y grupo para generar los resultados
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                <div class="flex flex-wrap gap-2">
+                    <span class="badge-conteo badge-presente">{{ sesion_consulta.conteos.Presente }} Presente</span>
+                    <span class="badge-conteo badge-ausente">{{ sesion_consulta.conteos.Ausente }} Ausente</span>
+                    <span class="badge-conteo badge-tarde">{{ sesion_consulta.conteos.Tarde }} Tarde</span>
+                    <span class="badge-conteo badge-justificado">{{ sesion_consulta.conteos.Justificado }} Justificado</span>
+                    {% if sesion_consulta.sin_registro %}
+                    <span class="badge-conteo badge-sin-registro">{{ sesion_consulta.sin_registro }} Sin registro</span>
+                    {% endif %}
                 </div>
-
-                {% if reportes %}
-                <div class="mt-12 flex justify-center gap-4">
-                    <button class="bg-gradient-to-r from-green-600 to-green-700 text-white px-12 py-4 rounded-xl font-black hover:from-green-700 hover:to-green-800 transition shadow-2xl uppercase tracking-widest transform hover:scale-105 flex items-center gap-2">
-                        <i class="fas fa-file-pdf"></i> Descargar PDF
-                    </button>
-                    <button class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-12 py-4 rounded-xl font-black hover:from-blue-700 hover:to-blue-800 transition shadow-2xl uppercase tracking-widest transform hover:scale-105 flex items-center gap-2">
-                        <i class="fas fa-file-excel"></i> Descargar Excel
-                    </button>
-                </div>
-                {% endif %}
             </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="tabla-reportes w-full text-left border-collapse">
+                <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
+                    <tr class="text-gray-600">
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center w-12">#</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 col-alumno">Alumno</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Estatus</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for alumno in sesion_consulta.alumnos %}
+                    <tr class="hover:bg-blue-50/40 transition-colors">
+                        <td class="p-3 sm:p-4 text-center text-gray-400 font-bold text-sm">{{ forloop.counter }}</td>
+                        <td class="p-3 sm:p-4 col-alumno">
+                            <div class="font-bold text-gray-800">{{ alumno.nombre }}</div>
+                            <div class="text-xs text-gray-500 font-mono">{{ alumno.matricula }}</div>
+                        </td>
+                        <td class="p-3 sm:p-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black uppercase
+                                {% if alumno.estado == 'Presente' %} badge-presente
+                                {% elif alumno.estado == 'Ausente' %} badge-ausente
+                                {% elif alumno.estado == 'Tarde' %} badge-tarde
+                                {% elif alumno.estado == 'Justificado' %} badge-justificado
+                                {% else %} badge-sin-registro {% endif %}">
+                                {{ alumno.estado }}
+                            </span>
+                        </td>
+                        <td class="p-3 sm:p-4 text-gray-600 text-sm max-w-xs">
+                            <span class="break-words">{{ alumno.observaciones|default:'—' }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-12 text-center text-gray-400 font-semibold">No hay alumnos inscritos en este grupo</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% elif not sesion_error %}
+        <div class="p-12 sm:p-16 text-center text-gray-400">
+            <i class="fas fa-calendar-day mb-3 text-4xl opacity-25 block"></i>
+            <p class="font-semibold text-sm sm:text-base">
+                {% if filtros_aplicados %}
+                    Completa ciclo, grupo, materia y fecha, luego presiona <strong>Consultar</strong>
+                {% else %}
+                    Usa la vista <strong>Por sesión</strong> con unidad, materia y fecha
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="card-soft bg-white overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="tabla-reportes w-full text-left border-collapse">
+                <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
+                    <tr class="text-gray-600">
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Fecha</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Unidad</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 col-alumno">Alumno</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Materia</th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Grupo</th>
+                        {% if reporte_tipo == 'asistencias' %}
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">Horario</th>
+                        {% endif %}
+                        <th class="p-3 sm:p-4 border-b border-gray-200 text-center">
+                            {% if reporte_tipo == 'calificaciones' %}Calificación{% else %}Estatus{% endif %}
+                        </th>
+                        <th class="p-3 sm:p-4 border-b border-gray-200">Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% if reportes %}
+                        {% for reporte in reportes %}
+                        <tr class="hover:bg-blue-50/40 transition-colors">
+                            <td class="p-3 sm:p-4 text-gray-700 font-semibold whitespace-nowrap">{{ reporte.fecha }}</td>
+                            <td class="p-3 sm:p-4 text-center">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-blue-100 text-blue-700">
+                                    U{{ reporte.unidad }}
+                                </span>
+                            </td>
+                            <td class="p-3 sm:p-4 col-alumno">
+                                <div class="font-bold text-gray-800">{{ reporte.alumno }}</div>
+                                <div class="text-xs text-gray-500 font-mono">{{ reporte.matricula }}</div>
+                            </td>
+                            <td class="p-3 sm:p-4 font-semibold text-gray-800">{{ reporte.materia }}</td>
+                            <td class="p-3 sm:p-4 text-center text-gray-700 font-semibold">{{ reporte.grupo }}</td>
+                            {% if reporte.tipo == 'asistencia' %}
+                            <td class="p-3 sm:p-4 text-center text-gray-600 text-sm">{{ reporte.detalle }}</td>
+                            {% endif %}
+                            <td class="p-3 sm:p-4 text-center">
+                                {% if reporte.tipo == 'asistencia' %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black uppercase
+                                        {% if reporte.estado == 'Presente' %} bg-green-100 text-green-700
+                                        {% elif reporte.estado == 'Ausente' %} bg-red-100 text-red-700
+                                        {% elif reporte.estado == 'Tarde' %} bg-yellow-100 text-yellow-700
+                                        {% elif reporte.estado == 'Justificado' %} bg-blue-100 text-blue-700
+                                        {% else %} bg-gray-100 text-gray-700 {% endif %}">
+                                        {{ reporte.estado }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-indigo-100 text-indigo-700">
+                                        {{ reporte.detalle }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="p-3 sm:p-4 text-gray-600 text-sm max-w-xs">
+                                <span class="break-words">{{ reporte.observaciones|default:'—' }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="{% if reporte_tipo == 'calificaciones' %}7{% else %}8{% endif %}" class="p-12 sm:p-16 text-center text-gray-400">
+                                <i class="fas fa-search mb-3 text-4xl opacity-25 block"></i>
+                                <p class="font-semibold text-sm sm:text-base">
+                                    {% if filtros_aplicados %}
+                                        No se encontraron registros con los filtros seleccionados
+                                    {% else %}
+                                        Usa los filtros y presiona Consultar para ver los resultados
+                                    {% endif %}
+                                </p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const ASIGNACIONES = JSON.parse(document.getElementById('asignaciones-reportes-data').textContent);
+    const ASIGNACION_INICIAL = '{{ filtro_asignacion_id|escapejs }}';
+    const formReportes = document.getElementById('formReportes');
+    const asignacionIdInput = document.getElementById('asignacionIdInput');
+    const vistaInput = document.getElementById('vistaInput');
+    const tipoSelect = document.getElementById('tipoSelect');
+    const campoVistaAsistencias = document.getElementById('campoVistaAsistencias');
+    const camposSesion = document.querySelectorAll('.campos-sesion');
+    const cicloSelect = document.getElementById('cicloSelect');
+    const grupoSelect = document.getElementById('grupoSelect');
+    const materiaSelect = document.getElementById('materiaSelect');
+    const btnLimpiarFiltros = document.getElementById('btnLimpiarFiltros');
+    const vistaRadios = document.querySelectorAll('input[name="vistaRadio"]');
+
+    function obtenerVistaActual() {
+        const seleccionada = document.querySelector('input[name="vistaRadio"]:checked');
+        return seleccionada ? seleccionada.value : 'lista';
+    }
+
+    function actualizarVisibilidadVista() {
+        const esAsistencias = tipoSelect.value === 'asistencias';
+        const vistaSesion = esAsistencias && obtenerVistaActual() === 'sesion';
+
+        campoVistaAsistencias.style.display = esAsistencias ? '' : 'none';
+        camposSesion.forEach(campo => {
+            campo.classList.toggle('hidden', !vistaSesion);
+        });
+        vistaInput.value = esAsistencias ? obtenerVistaActual() : 'lista';
+    }
+
+    function sincronizarFormularioSesion() {
+        actualizarAsignacionOculta();
+        vistaInput.value = tipoSelect.value === 'asistencias' ? obtenerVistaActual() : 'lista';
+    }
+
+    function llenarSelect(select, opciones, placeholder) {
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        opciones.forEach(({ value, label }) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        });
+        select.disabled = opciones.length === 0;
+    }
+
+    function construirOpcionesGrupos(ciclo) {
+        const grupos = [];
+        const vistos = new Set();
+        ASIGNACIONES
+            .filter(item => !ciclo || item.ciclo === ciclo)
+            .forEach(item => {
+                if (vistos.has(item.grupo)) return;
+                vistos.add(item.grupo);
+                grupos.push({
+                    value: item.grupo,
+                    label: `${item.grupo} - ${item.grupo_nombre}`,
+                });
+            });
+        return grupos.sort((a, b) => a.value.localeCompare(b.value, 'es'));
+    }
+
+    function construirOpcionesMaterias(ciclo, grupo) {
+        const materias = [];
+        const vistos = new Set();
+        ASIGNACIONES
+            .filter(item => (!ciclo || item.ciclo === ciclo) && (!grupo || item.grupo === grupo))
+            .forEach(item => {
+                const key = String(item.materia_id);
+                if (vistos.has(key)) return;
+                vistos.add(key);
+                materias.push({
+                    value: key,
+                    label: `${item.materia_clave} - ${item.materia_nombre}`,
+                });
+            });
+        return materias.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    }
+
+    function obtenerAsignacionId() {
+        const ciclo = cicloSelect.value;
+        const grupo = grupoSelect.value;
+        const materiaId = materiaSelect.value;
+        if (!ciclo || !grupo || !materiaId) return '';
+        const asignacion = ASIGNACIONES.find(item =>
+            item.ciclo === ciclo &&
+            item.grupo === grupo &&
+            String(item.materia_id) === String(materiaId)
+        );
+        return asignacion ? String(asignacion.id) : '';
+    }
+
+    function actualizarAsignacionOculta() {
+        asignacionIdInput.value = obtenerAsignacionId();
+    }
+
+    function actualizarGrupos(grupoSeleccionado = '', materiaSeleccionada = '') {
+        const ciclo = cicloSelect.value;
+        grupoSelect.value = '';
+        materiaSelect.value = '';
+
+        if (!ciclo) {
+            llenarSelect(grupoSelect, construirOpcionesGrupos(''), 'Todos los grupos');
+            llenarSelect(materiaSelect, construirOpcionesMaterias('', ''), 'Todas las materias');
+            actualizarAsignacionOculta();
+            return;
+        }
+
+        const grupos = construirOpcionesGrupos(ciclo);
+        llenarSelect(grupoSelect, grupos, 'Todos los grupos');
+
+        if (grupoSeleccionado && grupos.some(grupo => grupo.value === grupoSeleccionado)) {
+            grupoSelect.value = grupoSeleccionado;
+            actualizarMaterias(materiaSeleccionada);
+            return;
+        }
+
+        llenarSelect(materiaSelect, [], 'Todas las materias');
+        materiaSelect.disabled = true;
+        actualizarAsignacionOculta();
+    }
+
+    function actualizarMaterias(materiaSeleccionada = '') {
+        const ciclo = cicloSelect.value;
+        const grupo = grupoSelect.value;
+        materiaSelect.value = '';
+
+        if (!grupo) {
+            llenarSelect(materiaSelect, construirOpcionesMaterias(ciclo, ''), 'Todas las materias');
+            actualizarAsignacionOculta();
+            return;
+        }
+
+        const materias = construirOpcionesMaterias(ciclo, grupo);
+        llenarSelect(materiaSelect, materias, 'Todas las materias');
+
+        if (materiaSeleccionada && materias.some(materia => materia.value === String(materiaSeleccionada))) {
+            materiaSelect.value = String(materiaSeleccionada);
+        }
+
+        actualizarAsignacionOculta();
+    }
+
+    function inicializarFiltrosAsignacion() {
+        const ciclos = [...new Set(ASIGNACIONES.map(item => item.ciclo))].sort().reverse();
+        llenarSelect(cicloSelect, ciclos.map(ciclo => ({ value: ciclo, label: ciclo })), 'Todos los ciclos');
+        llenarSelect(grupoSelect, construirOpcionesGrupos(''), 'Todos los grupos');
+        llenarSelect(materiaSelect, construirOpcionesMaterias('', ''), 'Todas las materias');
+
+        if (!ASIGNACION_INICIAL) {
+            actualizarAsignacionOculta();
+            return;
+        }
+
+        const asignacion = ASIGNACIONES.find(item => String(item.id) === String(ASIGNACION_INICIAL));
+        if (!asignacion) {
+            actualizarAsignacionOculta();
+            return;
+        }
+
+        cicloSelect.value = asignacion.ciclo;
+        actualizarGrupos(asignacion.grupo, String(asignacion.materia_id));
+        sincronizarFormularioSesion();
+    }
+
+    function limpiarFiltrosAsignacion() {
+        cicloSelect.value = '';
+        grupoSelect.value = '';
+        materiaSelect.value = '';
+        asignacionIdInput.value = '';
+        llenarSelect(grupoSelect, construirOpcionesGrupos(''), 'Todos los grupos');
+        llenarSelect(materiaSelect, construirOpcionesMaterias('', ''), 'Todas las materias');
+    }
+
+    cicloSelect.addEventListener('change', () => {
+        actualizarGrupos();
+        sincronizarFormularioSesion();
+    });
+    grupoSelect.addEventListener('change', () => {
+        actualizarMaterias();
+        sincronizarFormularioSesion();
+    });
+    materiaSelect.addEventListener('change', sincronizarFormularioSesion);
+    tipoSelect.addEventListener('change', () => {
+        actualizarVisibilidadVista();
+        sincronizarFormularioSesion();
+    });
+    vistaRadios.forEach(radio => radio.addEventListener('change', () => {
+        actualizarVisibilidadVista();
+        sincronizarFormularioSesion();
+    }));
+
+    formReportes.addEventListener('submit', (event) => {
+        sincronizarFormularioSesion();
+
+        const unidad = document.getElementById('unidadSelect').value;
+        if (!unidad) {
+            event.preventDefault();
+            alert('Selecciona una unidad para consultar.');
+            return;
+        }
+
+        if (tipoSelect.value === 'asistencias' && obtenerVistaActual() === 'sesion') {
+            const asignacionId = asignacionIdInput.value;
+            const fecha = document.getElementById('fechaSesionInput').value;
+            if (!asignacionId) {
+                event.preventDefault();
+                alert('En vista por sesión debes seleccionar ciclo, grupo y materia.');
+                return;
+            }
+            if (!fecha) {
+                event.preventDefault();
+                alert('Selecciona la fecha de la sesión.');
+                return;
+            }
+        }
+    });
+
+    btnLimpiarFiltros.addEventListener('click', () => {
+        const tipo = tipoSelect.value;
+        window.location.href = `{% url 'consultar_reportes' %}?tipo=${encodeURIComponent(tipo)}`;
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        inicializarFiltrosAsignacion();
+        actualizarVisibilidadVista();
+        sincronizarFormularioSesion();
+    });
+</script>
 {% endblock %}

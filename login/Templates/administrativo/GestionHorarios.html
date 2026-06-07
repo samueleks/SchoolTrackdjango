@@ -2,11 +2,20 @@
 
 {% block title %}SchoolTrack - Gestión de Horarios{% endblock %}
 
+{% block extra_css %}
+<style>
+    #lista-materias-horario .materia-opcion-activa {
+        background-color: #eff6ff;
+        color: #1d4ed8;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-6xl mx-auto">
-                <div class="text-center mb-10">
+                <div class="text-center mb-8">
                     <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Gestión de Horarios</h2>
-                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Administrar horarios académicos</p>
+                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Registrar y consultar clases por grupo</p>
                 </div>
 
                 <!-- Modal de Confirmación Éxito -->
@@ -76,44 +85,83 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
-                    <!-- Barra de búsqueda y contador -->
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <div class="flex items-center gap-4">
-                            <span class="text-gray-600 text-sm font-bold uppercase tracking-wider">
-                                {% if grupo_filtro %}{{ total_horarios }} Horarios registrados{% else %}Selecciona un ciclo y grupo para ver horarios{% endif %}
-                            </span>
+                <!-- PASO 1: Consultar -->
+                <section class="bg-white border-2 border-blue-100 rounded-2xl p-6 mb-6 shadow-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <span class="w-9 h-9 rounded-full bg-blue-600 text-white font-black flex items-center justify-center text-sm shrink-0">1</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Ver horario de un grupo</h3>
+                            <p class="text-sm text-gray-500">Elige ciclo y grupo para cargar la tabla semanal.</p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <input type="text" id="busqueda-horarios" placeholder="Buscar por materia, docente o aula..." 
-                                   class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none w-full sm:w-64"
-                                   onkeyup="filtrarHorarios()">
-                            <select id="filtro-ciclo" onchange="filtrarPorCiclo()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
-                                <option value="" selected>Seleccionar ciclo...</option>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="filtro-ciclo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ciclo escolar</label>
+                            <select id="filtro-ciclo" onchange="filtrarPorCiclo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
+                                <option value="" {% if not ciclo_filtro %}selected{% endif %}>— Seleccionar ciclo —</option>
                                 {% for ciclo in ciclos_escolares %}
                                 <option value="{{ ciclo.nombre_ciclo }}" {% if ciclo_filtro == ciclo.nombre_ciclo %}selected{% endif %}>{{ ciclo.nombre_ciclo }}</option>
                                 {% endfor %}
                             </select>
-                            <select id="filtro-grupo" onchange="filtrarPorGrupo()" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
-                                <option value="" selected>Seleccionar grupo...</option>
+                        </div>
+                        <div class="flex-1 min-w-[180px]">
+                            <label for="filtro-grupo" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Grupo</label>
+                            <select id="filtro-grupo" onchange="filtrarPorGrupo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none" {% if not ciclo_filtro %}disabled{% endif %}>
+                                <option value="" {% if not grupo_filtro %}selected{% endif %}>{% if ciclo_filtro %}— Seleccionar grupo —{% else %}Primero elige un ciclo{% endif %}</option>
                                 {% for grupo in grupos %}
-                                <option value="{{ grupo.clave }}" {% if grupo_filtro|upper == grupo.clave|upper %}selected{% endif %}>{{ grupo.clave }} - {{ grupo.nombre }}</option>
+                                <option value="{{ grupo.clave }}" {% if grupo_filtro|upper == grupo.clave|upper %}selected{% endif %}>{{ grupo.clave }} — {{ grupo.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="flex-1 min-w-[200px]">
+                            <label for="busqueda-horarios" class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Buscar en tabla</label>
+                            <input type="text" id="busqueda-horarios" placeholder="Materia, docente o aula..."
+                                   class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none"
+                                   onkeyup="filtrarHorarios()">
+                        </div>
                     </div>
-                        
+                    <div id="aviso-seleccion" class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4 {% if ciclo_filtro and grupo_filtro %}hidden{% endif %}">
+                        <i class="fas fa-hand-point-down mr-1"></i> Selecciona <strong>ciclo</strong> y <strong>grupo</strong> para ver y registrar horarios.
+                    </div>
+                    {% if ciclo_filtro and grupo_filtro %}
+                    <div class="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Viendo <strong>{{ ciclo_filtro }}</strong> · Grupo <strong>{{ grupo_filtro }}</strong> · <strong>{{ total_horarios }}</strong> bloque(s) de clase
+                    </div>
+                    {% endif %}
+                </section>
+
+                <!-- PASO 2: Registrar -->
+                <section class="bg-white border-2 border-green-100 rounded-2xl p-6 mb-8 shadow-sm">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-9 h-9 rounded-full bg-green-600 text-white font-black flex items-center justify-center text-sm shrink-0">2</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Registrar nueva clase</h3>
+                            <p class="text-sm text-gray-500">Se guardará para el ciclo y grupo del Paso 1.</p>
+                        </div>
+                    </div>
+                    <div id="contexto-registro" class="flex flex-wrap gap-2 mb-5 ml-12">
+                        <span id="chip-ciclo" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Ciclo: <span id="chip-ciclo-val">{% if ciclo_filtro %}{{ ciclo_filtro }}{% else %}sin elegir{% endif %}</span></span>
+                        <span id="chip-grupo" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Grupo: <span id="chip-grupo-val">{% if grupo_filtro %}{{ grupo_filtro }}{% else %}sin elegir{% endif %}</span></span>
+                    </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <!-- Columna 1 -->
                             <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Materia</label>
-                                    <select id="materia" class="input-sie w-full p-3 text-sm">
-                                        <option value="">Seleccionar materia...</option>
-                                        {% for materia in materias %}
-                                        <option value="{{ materia.id_materia }}">{{ materia.clave }} - {{ materia.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="relative" id="wrap-materia-horario">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2" for="buscar-materia">Materia</label>
+                                    <input type="hidden" id="materia" value="">
+                                    <div class="relative">
+                                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                                        <input type="text" id="buscar-materia" placeholder="Buscar por clave o nombre..."
+                                               class="input-sie w-full p-3 pl-10 text-sm" autocomplete="off" spellcheck="false">
+                                    </div>
+                                    <div id="lista-materias-horario"
+                                         class="absolute z-30 left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border-2 border-gray-300 rounded-lg shadow-lg hidden">
+                                    </div>
+                                    <p id="materia-seleccionada-label" class="text-xs text-gray-500 mt-1.5 hidden">
+                                        Seleccionada: <span id="materia-seleccionada-texto" class="font-semibold text-green-700"></span>
+                                    </p>
                                 </div>
                                 
                                 <div>
@@ -126,39 +174,25 @@
                                     </select>
                                 </div>
                                 
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Grupo</label>
-                                    <select id="grupo" class="input-sie w-full p-3 text-sm">
-                                        <option value="">Seleccionar grupo...</option>
-                                        {% for grupo in grupos %}
-                                        <option value="{{ grupo.clave }}">{{ grupo.clave }} - {{ grupo.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
                             </div>
                             
                             <!-- Columna 2 -->
                             <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Aula</label>
-                                    <select id="aula" class="input-sie w-full p-3 text-sm">
-                                        <option value="">Seleccionar aula...</option>
-                                        {% for aula in aulas %}
-                                        <option value="{{ aula }}">{{ aula }}</option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="relative" id="wrap-aula-horario">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2" for="aula">Aula</label>
+                                    <div class="relative">
+                                        <i class="fas fa-door-open absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                                        <input type="text" id="aula" placeholder="Escribe o elige un aula..."
+                                               class="input-sie w-full p-3 pl-10 text-sm" autocomplete="off" spellcheck="false" maxlength="50">
+                                    </div>
+                                    <div id="lista-aulas-horario"
+                                         class="absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border-2 border-gray-300 rounded-lg shadow-lg hidden">
+                                    </div>
                                 </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Ciclo Escolar</label>
-                                    <select id="ciclo-escolar" class="input-sie w-full p-3 text-sm">
-                                        <option value="">Seleccionar ciclo escolar...</option>
-                                        {% for ciclo in ciclos_escolares %}
-                                        <option value="{{ ciclo.nombre_ciclo }}">{{ ciclo.nombre_ciclo }}</option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-xs text-gray-500 leading-relaxed">
+                                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                                    El <strong>grupo</strong> y el <strong>ciclo</strong> se toman automáticamente del Paso 1. No hace falta volver a elegirlos aquí.
                                 </div>
-                                
                             </div>
                             
                             <!-- Columna 3 -->
@@ -186,6 +220,7 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Hora de Término</label>
                                     <input type="time" id="hora-fin" 
                                            class="input-sie w-full p-3 text-sm">
+                                    <p class="text-xs text-gray-400 mt-1">Después del mediodía usa <strong>p.m.</strong> (ej. 12:30 p.m., no 12:30 a.m.).</p>
                                 </div>
                             </div>
                         </div>
@@ -195,71 +230,53 @@
 
                         <!-- Horarios Added List -->
                         <div id="lista-horarios-pendientes" class="mt-6 hidden">
-                            <div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                                <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <i class="fas fa-list text-blue-600"></i>
-                                    Horarios Pendientes por Guardar
+                            <div class="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                                    <i class="fas fa-list-ol text-green-600"></i>
+                                    Paso 3 — Lista antes de guardar
                                 </h4>
+                                <p class="text-xs text-gray-500 mb-2">Materia, docente y aula se mantienen fijos. Solo cambias <strong>día y horas</strong> para agregar otro bloque.</p>
+                                <div id="resumen-clase-pendiente" class="text-xs bg-white border border-green-200 rounded-lg p-3 mb-3 text-gray-700 hidden"></div>
                                 <div id="contenido-lista-horarios" class="space-y-2"></div>
                             </div>
                         </div>
                         
-                        <!-- Action Buttons -->
-                        <div class="flex gap-4 mt-6">
+                        <div class="flex flex-wrap gap-3 mt-6">
                             <button id="btn-agregar-horario-individual" class="btn-primary-sie px-6 py-3 flex items-center gap-2">
                                 <i class="fas fa-plus-circle"></i>
-                                Agregar Horario
+                                Añadir a la lista
                             </button>
-                            <button type="button" id="btn-guardar-todos" class="hidden px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                                <i class="fas fa-save"></i>
-                                Guardar Todos los Horarios
+                            <button type="button" id="btn-guardar-todos" class="hidden px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors flex items-center gap-2 shadow-md">
+                                <i class="fas fa-database"></i>
+                                Guardar en base de datos
                             </button>
                             <button type="button" id="btn-limpiar" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                                 <i class="fas fa-eraser mr-2"></i>
-                                Limpiar Formulario
+                                Limpiar formulario
                             </button>
                         </div>
-                    </div>
+                        <p id="hint-guardar" class="text-xs text-gray-400 mt-3 hidden">Agrega al menos un día y hora con <strong>Añadir a la lista</strong> para habilitar el guardado.</p>
                 </section>
 
 
 
-                <!-- Calendar Section -->
-                <section class="mb-8">
+                <!-- Tabla semanal -->
+                <section class="mb-8 bg-white border-2 border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <div class="calendar-grid p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                            <i class="fas fa-calendar-alt text-blue-600"></i>
-                            Vista de Horario Semanal
+                        <div class="flex flex-wrap items-center gap-3 mb-6">
+                            <span class="w-9 h-9 rounded-full bg-gray-700 text-white font-black flex items-center justify-center text-sm shrink-0">3</span>
+                            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2 flex-1">
+                                <i class="fas fa-calendar-alt text-blue-600"></i>
+                                Horario semanal
+                            </h3>
                             {% if ciclo_filtro and grupo_filtro %}
-                            <button onclick="exportarHorarioPDF()" class="ml-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm">
+                            <button onclick="exportarHorarioPDF()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm">
                                 <i class="fas fa-file-pdf"></i>
                                 Exportar PDF
                             </button>
                             {% endif %}
-                        </h3>
-
-                        <!-- Debug info -->
-                        {% if ciclo_filtro and grupo_filtro %}
-                        <div class="bg-yellow-100 border border-yellow-400 rounded-lg p-4 mb-4">
-                            <p class="text-sm font-semibold text-yellow-800">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Ciclo: {{ ciclo_filtro }} | Grupo: {{ grupo_filtro }} | Total horarios: {{ total_horarios }}
-                            </p>
-                            <p class="text-xs text-yellow-700 mt-1">
-                                Lunes: {{ horarios_por_dia.lunes|length }} |
-                                Martes: {{ horarios_por_dia.martes|length }} |
-                                Miércoles: {{ horarios_por_dia.miercoles|length }} |
-                                Jueves: {{ horarios_por_dia.jueves|length }} |
-                                Viernes: {{ horarios_por_dia.viernes|length }}
-                            </p>
                         </div>
-                        {% endif %}
-                        
-                        <!-- Date selector -->
-                        <div class="mb-6 flex items-center gap-4">
-                            <label class="block text-sm font-medium text-gray-700">Selecciona una fecha:</label>
-                            <input type="date" id="selectorFecha" class="px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-medium focus:border-blue-500 outline-none">
-                        </div>
+                        <p class="text-sm text-gray-500 mb-4 -mt-2 ml-12">Pasa el cursor sobre una clase para <strong>editar</strong> o <strong>eliminar</strong>.</p>
 
                         <!-- Tabla de horarios semanal -->
                         <div class="overflow-x-auto" id="contenedor-tabla-horario">
@@ -275,6 +292,21 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {% if not ciclo_filtro or not grupo_filtro %}
+                                    <tr>
+                                        <td colspan="6" class="border border-gray-300 p-10 text-center text-gray-500">
+                                            <i class="fas fa-filter text-3xl text-gray-300 mb-3 block"></i>
+                                            Elige <strong>ciclo</strong> y <strong>grupo</strong> en el Paso 1 para ver el horario aquí.
+                                        </td>
+                                    </tr>
+                                    {% elif not horarios_tabla %}
+                                    <tr>
+                                        <td colspan="6" class="border border-gray-300 p-10 text-center text-gray-500">
+                                            <i class="fas fa-calendar-plus text-3xl text-gray-300 mb-3 block"></i>
+                                            Este grupo aún no tiene clases. Usa el <strong>Paso 2</strong> para registrar la primera.
+                                        </td>
+                                    </tr>
+                                    {% endif %}
                                     {% for fila in horarios_tabla %}
                                     <tr>
                                         <td class="border border-gray-300 p-2 text-center font-semibold bg-gray-50">
@@ -376,26 +408,6 @@
                             </table>
                         </div>
 
-                        <!-- Schedules list for selected day -->
-                        <div id="listaHorarios" class="mt-6 hidden">
-                            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-                                <h4 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <i class="fas fa-list text-blue-600"></i>
-                                    Horarios para <span id="fechaSeleccionada" class="text-blue-600 font-bold"></span>
-                                </h4>
-                                <div id="contenidoHorarios" class="space-y-3"></div>
-                            </div>
-                        </div>
-
-                        <!-- No schedules message -->
-                        <div id="sinHorarios" class="mt-6 hidden">
-                            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8 text-center">
-                                <i class="fas fa-calendar-times text-4xl text-yellow-400 mb-3"></i>
-                                <p class="text-gray-700 font-semibold">No hay horarios asignados para esta fecha</p>
-                                <p class="text-gray-500 text-sm mt-2">Selecciona otro día para ver los horarios disponibles</p>
-                            </div>
-                        </div>
-                        
                     </div>
                 </section>
 
@@ -514,6 +526,221 @@
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+        let horariosDelSistema = {{ horarios|safe }};
+        const materiasCatalogoHorario = [
+            {% for materia in materias %}
+            { id: "{{ materia.id_materia }}", texto: "{{ materia.clave|escapejs }} - {{ materia.nombre|escapejs }}" },
+            {% endfor %}
+        ];
+        const aulasSugeridasHorario = [
+            {% for aula in aulas %}
+            "{{ aula|escapejs }}",
+            {% endfor %}
+        ];
+
+        function normalizarHoraHM(hora) {
+            const valor = (hora || '').trim();
+            if (!valor) return '';
+            const partes = valor.split(':');
+            if (partes.length < 2) return valor;
+            const h = parseInt(partes[0], 10);
+            const m = parseInt(partes[1], 10);
+            if (Number.isNaN(h) || Number.isNaN(m)) return valor;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function minutosDesdeMedianoche(hora) {
+            const hm = normalizarHoraHM(hora);
+            if (!hm || !hm.includes(':')) return null;
+            const [h, m] = hm.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            return h * 60 + m;
+        }
+
+        function horaFinEsPosterior(inicio, fin) {
+            const ini = minutosDesdeMedianoche(inicio);
+            const finM = minutosDesdeMedianoche(fin);
+            if (ini === null || finM === null) return false;
+            return finM > ini;
+        }
+
+        function formatearHora12h(hora24) {
+            const hm = normalizarHoraHM(hora24);
+            if (!hm || !hm.includes(':')) return hora24 || '';
+            const [h, m] = hm.split(':').map(Number);
+            if (Number.isNaN(h) || Number.isNaN(m)) return hm;
+            const periodo = h < 12 ? 'a.m.' : 'p.m.';
+            const h12 = h % 12 || 12;
+            return `${h12}:${String(m).padStart(2, '0')} ${periodo}`;
+        }
+
+        function mensajeHorarioInvalido(inicio, fin) {
+            const ini = normalizarHoraHM(inicio);
+            const finH = normalizarHoraHM(fin);
+            const iniMin = minutosDesdeMedianoche(ini);
+            const finMin = minutosDesdeMedianoche(finH);
+            let msg = `La hora de término (${formatearHora12h(finH)}) debe ser posterior a la de inicio (${formatearHora12h(ini)}).`;
+
+            if (iniMin !== null && finMin !== null && finMin <= iniMin && iniMin >= 420 && finMin < 420) {
+                msg += ' Parece que elegiste a.m. en la hora de término; para una clase después de las 11:30 usa p.m. (ej. 12:30 p.m., no 12:30 a.m.).';
+            }
+            return msg;
+        }
+
+        function quitarAcentos(texto) {
+            return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function normalizarBusquedaMateria(texto) {
+            return quitarAcentos(texto).toLowerCase().trim();
+        }
+
+        function renderListaMateriasHorario(query) {
+            const lista = document.getElementById('lista-materias-horario');
+            const input = document.getElementById('buscar-materia');
+            if (!lista || !input) return;
+
+            const q = normalizarBusquedaMateria(query);
+            const coincidencias = q
+                ? materiasCatalogoHorario.filter(m => normalizarBusquedaMateria(m.texto).includes(q))
+                : materiasCatalogoHorario.slice(0, 30);
+
+            if (!coincidencias.length) {
+                lista.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">Sin resultados</p>';
+                lista.classList.remove('hidden');
+                return;
+            }
+
+            lista.innerHTML = coincidencias.map(m => {
+                const textoSeguro = m.texto
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+                return `<button type="button" class="materia-opcion-horario w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0" data-id="${m.id}">${textoSeguro}</button>`;
+            }).join('');
+            lista.classList.remove('hidden');
+        }
+
+        function seleccionarMateriaHorario(id, texto) {
+            const hidden = document.getElementById('materia');
+            const input = document.getElementById('buscar-materia');
+            const lista = document.getElementById('lista-materias-horario');
+            const labelWrap = document.getElementById('materia-seleccionada-label');
+            const labelText = document.getElementById('materia-seleccionada-texto');
+            if (hidden) hidden.value = id;
+            if (input) input.value = texto;
+            if (lista) lista.classList.add('hidden');
+            if (labelWrap && labelText) {
+                labelText.textContent = texto;
+                labelWrap.classList.remove('hidden');
+            }
+        }
+
+        function renderListaAulasHorario(query) {
+            const lista = document.getElementById('lista-aulas-horario');
+            if (!lista) return;
+
+            const texto = (query || '').trim();
+            const q = normalizarBusquedaMateria(texto);
+            const coincidencias = q
+                ? aulasSugeridasHorario.filter(a => normalizarBusquedaMateria(a).includes(q))
+                : aulasSugeridasHorario.slice();
+
+            const items = [];
+
+            if (texto) {
+                const yaExiste = coincidencias.some(a => normalizarBusquedaMateria(a) === q);
+                if (!yaExiste) {
+                    const textoSeguro = texto
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;');
+                    items.push(
+                        `<button type="button" class="aula-opcion-horario aula-opcion-nueva w-full text-left px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 border-b border-gray-100 font-medium text-blue-800">Usar: ${textoSeguro}</button>`
+                    );
+                }
+            }
+
+            coincidencias.forEach(a => {
+                const textoSeguro = a
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+                items.push(
+                    `<button type="button" class="aula-opcion-horario w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0">${textoSeguro}</button>`
+                );
+            });
+
+            if (!items.length) {
+                lista.innerHTML = texto
+                    ? '<p class="px-3 py-2 text-sm text-gray-500">Sin coincidencias. Pulsa Enter para usar lo escrito.</p>'
+                    : '<p class="px-3 py-2 text-sm text-gray-500">No hay aulas registradas aún. Escribe una nueva.</p>';
+            } else {
+                lista.innerHTML = items.join('');
+            }
+            lista.classList.remove('hidden');
+        }
+
+        function textoOpcionAulaHorario(btn) {
+            let valor = (btn?.textContent || '').trim();
+            if (valor.startsWith('Usar:')) {
+                valor = valor.slice(5).trim();
+            }
+            return valor;
+        }
+
+        function seleccionarAulaHorario(valor) {
+            const input = document.getElementById('aula');
+            const lista = document.getElementById('lista-aulas-horario');
+            if (input) input.value = valor;
+            if (lista) lista.classList.add('hidden');
+        }
+
+        function limpiarBuscadorMateriaHorario() {
+            const hidden = document.getElementById('materia');
+            const input = document.getElementById('buscar-materia');
+            const lista = document.getElementById('lista-materias-horario');
+            const labelWrap = document.getElementById('materia-seleccionada-label');
+            if (hidden) hidden.value = '';
+            if (input) input.value = '';
+            if (lista) {
+                lista.innerHTML = '';
+                lista.classList.add('hidden');
+            }
+            if (labelWrap) labelWrap.classList.add('hidden');
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function mostrarAlerta(mensaje, tipo) {
+            const alertaDiv = document.getElementById('alerta-horario');
+            if (!alertaDiv) return;
+            alertaDiv.textContent = mensaje;
+            alertaDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'border-green-400', 'bg-red-100', 'text-red-800', 'border-red-400');
+            if (tipo === 'success') {
+                alertaDiv.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-400', 'p-4', 'rounded-lg');
+            } else {
+                alertaDiv.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-400', 'p-4', 'rounded-lg');
+            }
+            setTimeout(() => alertaDiv.classList.add('hidden'), 5000);
+        }
+
         // Función global para filtrar por ciclo escolar (fuera de DOMContentLoaded)
         function filtrarPorCiclo() {
             const cicloSeleccionado = document.getElementById('filtro-ciclo').value;
@@ -547,19 +774,6 @@
             if (tabla) {
                 tabla.style.opacity = '0.5';
             }
-
-            document.querySelectorAll('.day-content').forEach(dayDiv => {
-                dayDiv.innerHTML = `
-                    <div class="text-center text-gray-400 text-sm mt-8">
-                        <i class="fas fa-calendar-day text-4xl mb-2"></i>
-                        <p>Cargando horarios...</p>
-                    </div>
-                `;
-            });
-            const listaHorarios = document.getElementById('listaHorarios');
-            const sinHorarios = document.getElementById('sinHorarios');
-            listaHorarios.classList.add('hidden');
-            sinHorarios.classList.add('hidden');
 
             const url = new URL(window.location);
             if (cicloSeleccionado) {
@@ -674,8 +888,8 @@
 
             document.getElementById('editar-horario-id').value = horarioId;
             document.getElementById('editar-aula').value = horario.aula || '';
-            document.getElementById('editar-hora-inicio').value = horario.hora_inicio;
-            document.getElementById('editar-hora-fin').value = horario.hora_fin;
+            document.getElementById('editar-hora-inicio').value = String(horario.hora_inicio || '').slice(0, 5);
+            document.getElementById('editar-hora-fin').value = String(horario.hora_fin || '').slice(0, 5);
 
             document.getElementById('modalEditarHorario').classList.remove('hidden');
         }
@@ -698,16 +912,16 @@
                 return;
             }
 
-            if (horaFin <= horaInicio) {
-                alert('La hora de término debe ser mayor a la hora de inicio');
+            if (!horaFinEsPosterior(horaInicio, horaFin)) {
+                alert(mensajeHorarioInvalido(horaInicio, horaFin));
                 return;
             }
 
             const formData = {
                 horario_id: horarioId,
                 aula: aula,
-                hora_inicio: horaInicio,
-                hora_fin: horaFin
+                hora_inicio: normalizarHoraHM(horaInicio),
+                hora_fin: normalizarHoraHM(horaFin)
             };
 
             fetch('{% url "editar_horario" %}', {
@@ -767,44 +981,79 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Limpiar filtros al recargar la página
-            if (performance.getEntriesByType("navigation")[0].type === 'reload') {
-                const url = new URL(window.location.href);
-                if (url.searchParams.has('ciclo') || url.searchParams.has('grupo')) {
-                    url.searchParams.delete('ciclo');
-                    url.searchParams.delete('grupo');
-                    window.location.href = url.toString();
-                    return;
-                }
+        function actualizarChipsContexto() {
+            const ciclo = document.getElementById('filtro-ciclo')?.value || '';
+            const grupo = document.getElementById('filtro-grupo')?.value || '';
+            const chipCiclo = document.getElementById('chip-ciclo-val');
+            const chipGrupo = document.getElementById('chip-grupo-val');
+            const chipCicloWrap = document.getElementById('chip-ciclo');
+            const chipGrupoWrap = document.getElementById('chip-grupo');
+            if (chipCiclo) chipCiclo.textContent = ciclo || 'sin elegir';
+            if (chipGrupo) chipGrupo.textContent = grupo || 'sin elegir';
+            if (chipCicloWrap) {
+                chipCicloWrap.className = ciclo
+                    ? 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800'
+                    : 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600';
             }
+            if (chipGrupoWrap) {
+                chipGrupoWrap.className = grupo
+                    ? 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800'
+                    : 'inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600';
+            }
+        }
 
-            // Toggle buttons for days
-            const dayToggles = document.querySelectorAll('.day-toggle');
+        document.addEventListener('DOMContentLoaded', function() {
             const btnAgregarIndividual = document.getElementById('btn-agregar-horario-individual');
             const btnGuardarTodos = document.getElementById('btn-guardar-todos');
             const btnLimpiar = document.getElementById('btn-limpiar');
-            const alertaDiv = document.getElementById('alerta-horario');
-            const selectorFecha = document.getElementById('selectorFecha');
-            const listaHorarios = document.getElementById('listaHorarios');
-            const sinHorarios = document.getElementById('sinHorarios');
-            const contenidoHorarios = document.getElementById('contenidoHorarios');
-            const fechaSeleccionada = document.getElementById('fechaSeleccionada');
             const listaHorariosPendientes = document.getElementById('lista-horarios-pendientes');
             const contenidoListaHorarios = document.getElementById('contenido-lista-horarios');
+            const hintGuardar = document.getElementById('hint-guardar');
             
             // Array para almacenar horarios pendientes
             let horariosPendientes = [];
+            let datosClasePendiente = null;
+
+            function obtenerDatosClaseFormulario() {
+                const docenteSelect = document.getElementById('docente');
+                const aulaInput = document.getElementById('aula');
+                const materiaTexto = document.getElementById('materia-seleccionada-texto')?.textContent?.trim()
+                    || document.getElementById('buscar-materia')?.value?.trim()
+                    || '';
+                const aulaValor = aulaInput?.value?.trim() || '';
+                return {
+                    materia: document.getElementById('materia')?.value || '',
+                    materiaTexto,
+                    docente: docenteSelect?.value || '',
+                    docenteTexto: docenteSelect?.options[docenteSelect.selectedIndex]?.text?.trim() || '',
+                    aula: aulaValor,
+                };
+            }
+
+            function bloquearDatosClasePendiente() {
+                const buscarMateria = document.getElementById('buscar-materia');
+                const docente = document.getElementById('docente');
+                const aula = document.getElementById('aula');
+                [buscarMateria, docente, aula].forEach(el => {
+                    if (!el) return;
+                    el.disabled = true;
+                    el.classList.add('opacity-60', 'cursor-not-allowed', 'bg-gray-100');
+                });
+            }
+
+            function desbloquearDatosClasePendiente() {
+                const buscarMateria = document.getElementById('buscar-materia');
+                const docente = document.getElementById('docente');
+                const aula = document.getElementById('aula');
+                [buscarMateria, docente, aula].forEach(el => {
+                    if (!el) return;
+                    el.disabled = false;
+                    el.classList.remove('opacity-60', 'cursor-not-allowed', 'bg-gray-100');
+                });
+                datosClasePendiente = null;
+                document.getElementById('resumen-clase-pendiente')?.classList.add('hidden');
+            }
             
-            // Poblar horariosDelSistema con los datos del servidor
-            let horariosDelSistema = {{ horarios|safe }};
-            let fechaActualmenteSelecionada = null;
-
-            console.log('Horarios del sistema cargados:', horariosDelSistema);
-            console.log('Tipo de horariosDelSistema:', typeof horariosDelSistema);
-            console.log('Longitud:', horariosDelSistema.length);
-            console.log('Primer horario:', horariosDelSistema[0] || 'Sin horarios');
-
             // Manejo inicial del select y estado según parámetros 'ciclo' y 'grupo' en la URL
             const filtroSelectCiclo = document.getElementById('filtro-ciclo');
             const filtroSelect = document.getElementById('filtro-grupo');
@@ -814,151 +1063,96 @@
 
             if (filtroSelectCiclo && cicloParam) {
                 filtroSelectCiclo.value = cicloParam;
-                logger.info('Ciclo seleccionado desde URL:', cicloParam);
+            }
+            if (filtroSelect && grupoParam) {
+                filtroSelect.value = grupoParam;
+            }
+            actualizarChipsContexto();
+
+            const buscarMateriaInput = document.getElementById('buscar-materia');
+            const listaMateriasHorario = document.getElementById('lista-materias-horario');
+            const wrapMateriaHorario = document.getElementById('wrap-materia-horario');
+
+            if (buscarMateriaInput) {
+                buscarMateriaInput.addEventListener('input', function() {
+                    document.getElementById('materia').value = '';
+                    document.getElementById('materia-seleccionada-label')?.classList.add('hidden');
+                    renderListaMateriasHorario(this.value);
+                });
+                buscarMateriaInput.addEventListener('focus', function() {
+                    renderListaMateriasHorario(this.value);
+                });
+                buscarMateriaInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        listaMateriasHorario?.classList.add('hidden');
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const primera = listaMateriasHorario?.querySelector('.materia-opcion-horario');
+                        if (primera) {
+                            seleccionarMateriaHorario(primera.dataset.id, primera.textContent.trim());
+                        }
+                    }
+                });
             }
 
-            if (filtroSelect) {
-                if (grupoParam) {
-                    filtroSelect.value = grupoParam;
-                    console.log('Grupo seleccionado desde URL:', grupoParam);
-                    console.log('Horarios cargados para este grupo:', horariosDelSistema.length);
-                } else {
-                    filtroSelect.value = '';
-                    document.querySelectorAll('.day-content').forEach(dayDiv => {
-                        dayDiv.innerHTML = `
-                            <div class="text-center text-gray-400 text-sm mt-8">
-                                <i class="fas fa-calendar-day text-4xl mb-2"></i>
-                                <p>Sin clases programadas</p>
-                            </div>
-                        `;
-                    });
-                    listaHorarios.classList.add('hidden');
-                    sinHorarios.classList.add('hidden');
-                }
-            }
-            
-            // Get day name in Spanish from date
-            function obtenerNombreDia(fecha) {
-                const dias = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-                const date = new Date(fecha + 'T00:00:00'); // Forzar hora local
-                return dias[date.getDay()];
-            }
-            
-            // Format date to Spanish
-            function formatearFecha(fecha) {
-                const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                return new Date(fecha).toLocaleDateString('es-ES', opciones);
-            }
-            
-            // Remove highlight from all days
-            function limpiarResaltados() {
-                document.querySelectorAll('.day-content').forEach(div => {
-                    div.classList.remove('bg-blue-100', 'border-2', 'border-blue-500');
-                    div.classList.add('bg-gray-50');
+            if (listaMateriasHorario) {
+                listaMateriasHorario.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.materia-opcion-horario');
+                    if (!btn) return;
+                    seleccionarMateriaHorario(btn.dataset.id, btn.textContent.trim());
                 });
             }
-            
-            // Highlight selected day
-            function resaltarDiaSeleccionado(fecha) {
-                limpiarResaltados();
-                const nombreDia = obtenerNombreDia(fecha);
-                const dayContent = document.querySelector(`.day-content[data-dia="${nombreDia}"]`);
-                
-                if (dayContent) {
-                    dayContent.classList.remove('bg-gray-50');
-                    dayContent.classList.add('bg-blue-100', 'border-2', 'border-blue-500');
+
+            document.addEventListener('click', function(e) {
+                if (!wrapMateriaHorario?.contains(e.target)) {
+                    listaMateriasHorario?.classList.add('hidden');
                 }
-            }
-            
-            // Show schedules for selected date
-            function mostrarHorariosDelDia(fecha) {
-                const nombreDia = obtenerNombreDia(fecha);
-                const horariosDelDia = horariosDelSistema.filter(h => h.dia === nombreDia);
-                
-                if (horariosDelDia.length === 0) {
-                    listaHorarios.classList.add('hidden');
-                    sinHorarios.classList.remove('hidden');
-                } else {
-                    sinHorarios.classList.add('hidden');
-                    listaHorarios.classList.remove('hidden');
-                    
-                    const fechaFormato = formatearFecha(fecha);
-                    fechaSeleccionada.textContent = fechaFormato;
-                    
-                    contenidoHorarios.innerHTML = horariosDelDia.map(horario => `
-                        <div class="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow-sm">
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <div class="font-semibold text-gray-900">${horario.materia}</div>
-                                    <div class="text-xs text-gray-500 mt-1">Docente: ${horario.docente}</div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-bold text-blue-600"><i class="fas fa-clock mr-1"></i>${horario.hora_inicio} - ${horario.hora_fin}</div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-3">
-                                <div><i class="fas fa-users mr-1 text-gray-400"></i> ${horario.grupo}</div>
-                                <div><i class="fas fa-door-open mr-1 text-gray-400"></i> ${horario.aula}</div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            }
-            
-            // Day click handler
-            document.querySelectorAll('.day-content').forEach(dayDiv => {
-                dayDiv.addEventListener('click', function() {
-                    const nombreDia = this.dataset.dia;
-                    
-                    // Find the next occurrence of this day
-                    let fecha = new Date();
-                    const dias = { 'lunes': 1, 'martes': 2, 'miercoles': 3, 'jueves': 4, 'viernes': 5, 'sabado': 6, 'domingo': 0 };
-                    const diaTarget = dias[nombreDia];
-                    let diaActual = fecha.getDay();
-                    
-                    let diferencia = diaTarget - diaActual;
-                    if (diferencia < 0) diferencia += 7;
-                    
-                    fecha.setDate(fecha.getDate() + diferencia);
-                    
-                    // Usar fecha local en lugar de UTC para evitar desfase de zona horaria
-                    const year = fecha.getFullYear();
-                    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-                    const day = String(fecha.getDate()).padStart(2, '0');
-                    const fechaString = `${year}-${month}-${day}`;
-                    
-                    selectorFecha.value = fechaString;
-                    fechaActualmenteSelecionada = fechaString;
-                    resaltarDiaSeleccionado(fechaString);
-                    mostrarHorariosDelDia(fechaString);
+            });
+
+            const aulaInput = document.getElementById('aula');
+            const listaAulasHorario = document.getElementById('lista-aulas-horario');
+            const wrapAulaHorario = document.getElementById('wrap-aula-horario');
+
+            if (aulaInput) {
+                aulaInput.addEventListener('input', function() {
+                    renderListaAulasHorario(this.value);
                 });
-            });
-            
-            // Date selector change
-            selectorFecha.addEventListener('change', function() {
-                if (this.value) {
-                    fechaActualmenteSelecionada = this.value;
-                    resaltarDiaSeleccionado(this.value);
-                    mostrarHorariosDelDia(this.value);
-                } else {
-                    limpiarResaltados();
-                    listaHorarios.classList.add('hidden');
-                    sinHorarios.classList.add('hidden');
+                aulaInput.addEventListener('focus', function() {
+                    renderListaAulasHorario(this.value);
+                });
+                aulaInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        listaAulasHorario?.classList.add('hidden');
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const primera = listaAulasHorario?.querySelector('.aula-opcion-horario');
+                        if (primera) {
+                            seleccionarAulaHorario(textoOpcionAulaHorario(primera));
+                        } else if (this.value.trim()) {
+                            listaAulasHorario?.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
+            if (listaAulasHorario) {
+                listaAulasHorario.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.aula-opcion-horario');
+                    if (!btn) return;
+                    seleccionarAulaHorario(textoOpcionAulaHorario(btn));
+                });
+            }
+
+            document.addEventListener('click', function(e) {
+                if (!wrapAulaHorario?.contains(e.target)) {
+                    listaAulasHorario?.classList.add('hidden');
                 }
             });
-            
-            // Initial setup - no date selected, nothing highlighted
-            limpiarResaltados();
-            listaHorarios.classList.add('hidden');
-            sinHorarios.classList.add('hidden');
-            
-            // Day toggle functionality
-            dayToggles.forEach(toggle => {
-                toggle.addEventListener('click', function() {
-                    this.classList.toggle('active');
-                });
-            });
-            
+
             // Clear form functionality
             btnLimpiar.addEventListener('click', function() {
                 limpiarFormulario();
@@ -967,9 +1161,15 @@
             
             // Agregar horario individual a la lista
             btnAgregarIndividual.addEventListener('click', function() {
+                const datosClase = obtenerDatosClaseFormulario();
                 const dia = document.getElementById('dia-horario').value;
                 const horaInicio = document.getElementById('hora-inicio').value;
                 const horaFin = document.getElementById('hora-fin').value;
+
+                if (!datosClase.materia || !datosClase.docente || !datosClase.aula) {
+                    mostrarAlerta('Primero selecciona materia, docente y aula', 'error');
+                    return;
+                }
                 
                 // Validaciones
                 if (!dia) {
@@ -982,35 +1182,52 @@
                     return;
                 }
                 
-                if (horaFin <= horaInicio) {
-                    mostrarAlerta('La hora de término debe ser mayor a la hora de inicio', 'error');
+                if (!horaFinEsPosterior(horaInicio, horaFin)) {
+                    mostrarAlerta(mensajeHorarioInvalido(horaInicio, horaFin), 'error');
                     return;
                 }
                 
-                // Agregar a la lista de pendientes
+                if (!datosClasePendiente) {
+                    datosClasePendiente = datosClase;
+                    bloquearDatosClasePendiente();
+                }
+
                 horariosPendientes.push({
                     dia: dia,
-                    hora_inicio: horaInicio,
-                    hora_fin: horaFin
+                    hora_inicio: normalizarHoraHM(horaInicio),
+                    hora_fin: normalizarHoraHM(horaFin)
                 });
                 
                 actualizarListaHorarios();
-                mostrarAlerta(`Horario agregado: ${dia} de ${horaInicio} a ${horaFin}`, 'success');
+                mostrarAlerta(`Agregado: ${dia} ${horaInicio}–${horaFin}. Materia, docente y aula se mantienen.`, 'success');
                 
-                // Limpiar campos
+                // Solo limpiar día y horas (no materia, docente ni aula)
                 document.getElementById('dia-horario').value = '';
                 document.getElementById('hora-inicio').value = '';
                 document.getElementById('hora-fin').value = '';
+                document.getElementById('dia-horario').focus();
             });
             
             // Actualizar lista de horarios pendientes
             function actualizarListaHorarios() {
+                const resumen = document.getElementById('resumen-clase-pendiente');
                 if (horariosPendientes.length === 0) {
                     listaHorariosPendientes.classList.add('hidden');
                     btnGuardarTodos.classList.add('hidden');
+                    if (hintGuardar) hintGuardar.classList.remove('hidden');
+                    desbloquearDatosClasePendiente();
                 } else {
                     listaHorariosPendientes.classList.remove('hidden');
                     btnGuardarTodos.classList.remove('hidden');
+                    if (hintGuardar) hintGuardar.classList.add('hidden');
+
+                    if (resumen && datosClasePendiente) {
+                        resumen.innerHTML = `
+                            <span class="font-bold text-green-800">Clase:</span>
+                            ${datosClasePendiente.materiaTexto} · ${datosClasePendiente.docenteTexto} · Aula ${datosClasePendiente.aula}
+                        `;
+                        resumen.classList.remove('hidden');
+                    }
                     
                     contenidoListaHorarios.innerHTML = horariosPendientes.map((h, idx) => `
                         <div class="bg-white p-3 rounded-lg flex justify-between items-center border-l-4 border-blue-500">
@@ -1035,19 +1252,31 @@
             
             // Guardar todos los horarios
             btnGuardarTodos.addEventListener('click', function() {
+                const cicloEscolar = document.getElementById('filtro-ciclo').value;
+                const grupoClave = document.getElementById('filtro-grupo').value;
                 const formData = {
                     horarios: horariosPendientes,
                     materia: document.getElementById('materia').value,
                     docente: document.getElementById('docente').value,
-                    grupo: document.getElementById('grupo').value,
-                    aula: document.getElementById('aula').value,
-                    ciclo_escolar: document.getElementById('ciclo-escolar').value
+                    grupo: grupoClave,
+                    aula: document.getElementById('aula').value.trim(),
+                    ciclo_escolar: cicloEscolar
                 };
                 
-                // Validaciones
-                if (!formData.materia || !formData.docente || !formData.grupo || 
-                    !formData.aula || !formData.ciclo_escolar) {
-                    mostrarAlerta('Todos los campos principales son obligatorios', 'error');
+                if (!cicloEscolar || !grupoClave) {
+                    mostrarAlerta('Primero elige ciclo y grupo en el Paso 1', 'error');
+                    return;
+                }
+                if (!formData.materia || !formData.docente || !formData.aula) {
+                    if (!formData.materia && document.getElementById('buscar-materia')?.value.trim()) {
+                        mostrarAlerta('Busca la materia y selecciónala de la lista desplegable', 'error');
+                    } else {
+                        mostrarAlerta('Completa materia, docente y aula', 'error');
+                    }
+                    return;
+                }
+                if (!horariosPendientes.length) {
+                    mostrarAlerta('Agrega al menos un día y hora con "Añadir a la lista"', 'error');
                     return;
                 }
                 
@@ -1092,166 +1321,24 @@
                 .finally(() => {
                     // Restore button state
                     btnGuardarTodos.disabled = false;
-                    btnGuardarTodos.innerHTML = '<i class="fas fa-save mr-2"></i>Guardar Todos los Horarios';
+                    btnGuardarTodos.innerHTML = '<i class="fas fa-database mr-2"></i>Guardar en base de datos';
                 });
             });
-            
-            function mostrarAlerta(mensaje, tipo) {
-                alertaDiv.textContent = mensaje;
-                alertaDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'border-green-400', 'bg-red-100', 'text-red-800', 'border-red-400');
-                
-                if (tipo === 'success') {
-                    alertaDiv.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-400', 'p-4', 'rounded-lg');
-                } else {
-                    alertaDiv.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-400', 'p-4', 'rounded-lg');
-                }
-                
-                // Auto hide after 5 seconds
-                setTimeout(() => {
-                    alertaDiv.classList.add('hidden');
-                }, 5000);
-            }
+
+            actualizarListaHorarios();
             
             function limpiarFormulario() {
-                // Clear day toggles
-                dayToggles.forEach(toggle => toggle.classList.remove('active'));
-                
-                // Clear form fields
-                document.getElementById('materia').value = '';
+                desbloquearDatosClasePendiente();
+                limpiarBuscadorMateriaHorario();
                 document.getElementById('docente').value = '';
-                document.getElementById('grupo').value = '';
                 document.getElementById('aula').value = '';
                 document.getElementById('dia-horario').value = '';
                 document.getElementById('hora-inicio').value = '';
                 document.getElementById('hora-fin').value = '';
-                document.getElementById('ciclo-escolar').value = '';
+                horariosPendientes = [];
+                actualizarListaHorarios();
             }
-            
-            function actualizarVistaHorarios(nuevosHorarios) {
-                // First, clear all day contents
-                document.querySelectorAll('.day-content').forEach(dayContent => {
-                    dayContent.innerHTML = '';
-                });
 
-                // Update calendar view with new schedules
-                nuevosHorarios.forEach(horario => {
-                    const dayContent = document.querySelector(`.day-content[data-dia="${horario.dia}"]`);
-                    if (dayContent) {
-                        // Create class card
-                        const classCard = document.createElement('div');
-                        classCard.className = 'class-card';
-                        classCard.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="font-semibold text-sm text-gray-900">${horario.materia}</div>
-                                <button onclick="eliminarHorario(this)" class="text-red-500 hover:text-red-700 text-xs">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <div class="text-xs text-gray-600 space-y-1">
-                                <div><i class="fas fa-clock mr-1"></i>${horario.hora_inicio} - ${horario.hora_fin}</div>
-                                <div><i class="fas fa-user mr-1"></i>${horario.docente}</div>
-                                <div><i class="fas fa-users mr-1"></i>${horario.grupo}</div>
-                                <div><i class="fas fa-door-open mr-1"></i>${horario.aula}</div>
-                            </div>
-                        `;
-
-                        dayContent.appendChild(classCard);
-                    }
-                });
-
-                // Add empty state for days with no schedules
-                const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-                dias.forEach(dia => {
-                    const dayContent = document.querySelector(`.day-content[data-dia="${dia}"]`);
-                    if (dayContent && dayContent.children.length === 0) {
-                        dayContent.innerHTML = `
-                            <div class="text-center text-gray-400 text-sm mt-8">
-                                <i class="fas fa-calendar-day text-4xl mb-2"></i>
-                                <p>Sin clases programadas</p>
-                            </div>
-                        `;
-                    }
-                });
-            }
-            
-            // Delete schedule function
-            window.eliminarHorario = function(button, horarioId) {
-                if (confirm('¿Estás seguro de eliminar este horario?')) {
-                    const card = button.closest('.class-card');
-                    
-                    // Send delete request to server
-                    fetch('{% url "eliminar_horario" %}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken')
-                        },
-                        body: JSON.stringify({ horario_id: horarioId })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            card.style.animation = 'slideOut 0.3s ease';
-                            setTimeout(() => {
-                                card.remove();
-                                // Check if day is empty and restore empty state
-                                const dayContent = card.parentElement;
-                                if (dayContent.children.length === 0) {
-                                    dayContent.innerHTML = `
-                                        <div class="text-center text-gray-400 text-sm mt-8">
-                                            <i class="fas fa-calendar-day text-4xl mb-2"></i>
-                                            <p>Sin clases programadas</p>
-                                        </div>
-                                    `;
-                                }
-                                // Reload page if group is selected to sync with server
-                                if (grupoFiltro) {
-                                    setTimeout(() => {
-                                        window.location.reload();
-                                    }, 500);
-                                }
-                            }, 300);
-                            mostrarAlerta('Horario eliminado correctamente', 'success');
-                        } else {
-                            mostrarAlerta(data.error || 'Error al eliminar horario', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        mostrarAlerta('Error de conexión con el servidor', 'error');
-                    });
-                }
-            };
-            
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-            
-            // Load existing schedules on page load
-            // We intentionally do NOT fetch schedules when no group is selected
-            const cicloFiltro = '{{ ciclo_filtro|default:"" }}';
-            const grupoFiltro = '{{ grupo_filtro|default:"" }}';
-            console.log('Initial cicloFiltro:', cicloFiltro);
-            console.log('Initial grupoFiltro:', grupoFiltro);
-            if (cicloFiltro && grupoFiltro) {
-                // Server already rendered filtered schedules when both filters exist;
-                // ensure the selects match the values (handled above)
-                console.log('Server rendered schedules for ciclo:', cicloFiltro, 'and grupo:', grupoFiltro);
-            } else {
-                console.log('No ciclo or grupo selected on load — calendar intentionally empty.');
-            }
-            // If both ciclo and grupo are selected, server already rendered schedules, don't touch them with JavaScript
         });
         
         // Add slide out animation

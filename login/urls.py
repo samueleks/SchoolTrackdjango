@@ -18,7 +18,9 @@ urlpatterns = [
     # Rutas usadas por el módulo del alumno
     path('alumno/', views.inicio_interfaces_alumnos, name='inicio_interfaces_alumnos'),
     path('alumno/calificaciones/', views.consultar_calificaciones, name='consultar_calificaciones'),
+    path('alumno/calificaciones/exportar-pdf/', views.exportar_boleta_calificaciones_alumno, name='exportar_boleta_calificaciones_alumno'),
     path('alumno/asistencias/', views.consultar_asistencias, name='consultar_asistencias'),
+    path('alumno/asistencias/exportar-pdf/', views.exportar_asistencias_alumno, name='exportar_asistencias_alumno'),
 
     # Rutas usadas por el módulo del maestro
     path('maestro/asistencia/', views.registrar_asistencia, name='registrar_asistencia'),
@@ -28,13 +30,18 @@ urlpatterns = [
     path('maestro/calificaciones/datos/', views.get_datos_calificaciones_maestro, name='get_datos_calificaciones_maestro'),
     path('maestro/calificaciones/guardar/', views.guardar_calificaciones_maestro, name='guardar_calificaciones_maestro'),
     path('maestro/reportes/', views.consultar_reportes, name='consultar_reportes'),
+    path('maestro/reportes/exportar/', views.exportar_reportes_maestro_excel, name='exportar_reportes_maestro_excel'),
+    path('maestro/reportes/exportar-pdf/', views.exportar_reportes_maestro_pdf, name='exportar_reportes_maestro_pdf'),
     path('maestro/materias-por-semestre/', views.get_materias_por_semestre, name='get_materias_por_semestre'),
     
     # Vistas de administrador
     path('administrativo/reportes/', views.admin_reportes, name='admin_reportes'),
+    path('administrativo/reportes/exportar-excel/', views.exportar_reportes_admin_excel, name='exportar_reportes_admin_excel'),
+    path('administrativo/reportes/exportar-pdf/', views.exportar_reportes_admin_pdf, name='exportar_reportes_admin_pdf'),
     path('administrativo/horarios/', views.admin_horarios, name='admin_horarios'),
     path('administrativo/materias/', views.admin_materias, name='admin_materias'),
     path('administrativo/materias/exportar-pdf/', views.exportar_materias_pdf, name='exportar_materias_pdf'),
+    path('administrativo/materias/exportar-excel/', views.exportar_materias_excel, name='exportar_materias_excel'),
     path('administrativo/materias/crear/', views.crear_materia, name='crear_materia'),
     path('administrativo/materias/editar/<int:materia_id>/', views.editar_materia, name='editar_materia'),
     path('administrativo/materias/eliminar/<int:materia_id>/', views.eliminar_materia, name='eliminar_materia'),

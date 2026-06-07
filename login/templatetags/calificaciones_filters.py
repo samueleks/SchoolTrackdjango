@@ -2,6 +2,8 @@ from django import template
 
 register = template.Library()
 
+_VALOR_VACIO = frozenset({'—', '---'})
+
 
 @register.filter
 def has_unit_below_70(unidades):
@@ -10,7 +12,7 @@ def has_unit_below_70(unidades):
     Retorna True si hay alguna unidad < 70, False en caso contrario.
     """
     for unidad in unidades:
-        if unidad != '—':
+        if unidad not in _VALOR_VACIO:
             try:
                 valor = float(unidad)
                 if valor < 70:
@@ -26,7 +28,7 @@ def get_promedio_display(promedio, unidades):
     Retorna 'NA' si alguna unidad es menor a 70, en caso contrario retorna el promedio.
     """
     for unidad in unidades:
-        if unidad != '—':
+        if unidad not in _VALOR_VACIO:
             try:
                 valor = float(unidad)
                 if valor < 70:
@@ -50,7 +52,7 @@ def calculate_general_average(calificaciones_rows):
 
         # Verificar si alguna unidad es menor a 70
         for unidad in row.get('unidades', []):
-            if unidad != '—':
+            if unidad not in _VALOR_VACIO:
                 try:
                     valor = float(unidad)
                     if valor < 70:

@@ -175,10 +175,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Semestre</label>
-                        <input type="number" name="semestre" min="1" max="12" value="{{ alumno_data.semestre|default:'' }}" class="w-full p-3 border-2 {% if errores_campos.semestre %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
-                        {% if errores_campos.semestre %}
-                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.semestre }}</p>
-                        {% endif %}
+                        <div class="campo-no-editable">
+                            <i class="fas fa-calculator"></i>
+                            <span>{{ alumno_data.semestre|default:'---' }}</span>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Se actualiza automáticamente según el periodo de ingreso y el periodo actual.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Periodo de Ingreso</label>
@@ -345,7 +346,10 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">Código Postal</label>
-                        <input type="text" name="cp" value="{{ direccion_data.cp|default:'' }}" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                        <input type="text" name="cp" value="{{ direccion_data.cp|default:'' }}" maxlength="5" inputmode="numeric" pattern="[0-9]{5}" placeholder="00000" class="w-full p-3 border-2 {% if errores_campos.cp %}border-red-500 focus:border-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none">
+                        {% if errores_campos.cp %}
+                            <p class="mt-1 text-xs text-red-600">{{ errores_campos.cp }}</p>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -587,6 +591,18 @@
                         irAlCampo(apellido);
                     }
                     return false;
+                }
+
+                // Validar código postal si está presente
+                const cpInput = document.querySelector('input[name="cp"]');
+                if (cpInput && cpInput.value.trim()) {
+                    const cpLimpio = cpInput.value.trim();
+                    if (!/^\d{5}$/.test(cpLimpio)) {
+                        alert('El código postal debe contener exactamente 5 dígitos numéricos.');
+                        e.preventDefault();
+                        irAlCampo(cpInput);
+                        return false;
+                    }
                 }
 
                 // Validar CURP si está presente

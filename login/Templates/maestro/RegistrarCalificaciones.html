@@ -4,122 +4,254 @@
 
 {% block extra_css %}
 <style>
-.card-soft { border: 1px solid #e5e7eb; border-radius: 1rem; box-shadow: 0 8px 30px rgba(0,0,0,.04); }
+        .card-soft {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .04);
+        }
+        .card-filtros {
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 55%, #eef2ff 100%);
+            border: 2px solid #bfdbfe;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, .08);
+        }
+        .filtro-label {
+            display: flex;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .filtro-select {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 0.75rem 1rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #fff;
+            font-weight: 600;
+            color: #1f2937;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .filtro-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+        .filtro-select:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .filtros-asignacion { min-width: 0; }
+        .filtros-asignacion .filtro-campo { min-width: 0; }
         .type-chip {
-            border: 1px solid #d1d5db;
-            background: white;
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
             border-radius: 9999px;
-            padding: 0.55rem 1rem;
-            font-weight: 700;
-            font-size: 0.75rem;
+            padding: 0.45rem 0.9rem;
+            font-weight: 800;
+            font-size: 0.68rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-        }
-        .type-chip.active {
-            background: #dbeafe;
-            border-color: #93c5fd;
             color: #1d4ed8;
         }
-        .unidad-btn-active {
-            background-color: #2b63d9 !important;
-            color: white !important;
-            border-color: #1e40af !important;
+        .badge-conteo {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #1e40af;
+            background: #dbeafe;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+        }
+        .tabla-calificaciones thead th {
+            font-size: 0.65rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .tabla-calificaciones thead th.th-unidad {
+            text-align: center;
+            min-width: 4.25rem;
+        }
+        .tabla-calificaciones .col-alumno {
+            min-width: 11rem;
+        }
+        .tabla-calificaciones .col-promedio {
+            background: #f8fafc;
+            font-weight: 800;
+            text-align: center;
+            min-width: 4.5rem;
+        }
+        .grade-input {
+            width: 100%;
+            min-width: 3.25rem;
+            padding: 0.5rem 0.35rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            font-weight: 800;
+            text-align: center;
+            color: #0f172a;
+            transition: border-color .15s ease, background-color .15s ease;
+        }
+        .grade-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .grade-input:disabled {
+            background: #f8fafc;
+            color: #334155;
         }
         .grade-saved {
             background-color: #f0fdf4 !important;
             border-color: #22c55e !important;
         }
+        .panel-acciones {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.85rem;
+            padding: 1rem 1.25rem;
+        }
+        .btn-accion {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 800;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+        }
+        .btn-accion:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+        .btn-accion:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Registrar Calificaciones</h2>
-                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Selecciona tu asignación y captura las calificaciones del grupo</p>
+<div class="max-w-7xl mx-auto px-1 sm:px-0">
+                <div class="text-center mb-8 sm:mb-10">
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Registrar Calificaciones</h2>
+                    <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
+                        Captura las calificaciones por unidad del grupo seleccionado
+                    </p>
                 </div>
 
-                <div id="alerta" class="hidden mb-6 p-4 rounded-xl font-bold text-sm"></div>
+                <div id="alerta" class="hidden mb-6 p-4 rounded-xl font-bold text-sm border"></div>
 
-                <div class="card-soft bg-white p-6 mb-8">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Mi asignación</label>
-                            <select id="asignacionSelect" class="w-full p-3 border-2 border-gray-200 rounded-xl bg-white focus:border-blue-500 outline-none font-semibold">
-                                <option value="">Selecciona una materia/grupo...</option>
-                                {% for asignacion in asignaciones_docente %}
-                                    <option value="{{ asignacion.id_asignacion_materia }}">
-                                        {{ asignacion.id_materia.clave }} - {{ asignacion.id_materia.nombre }} | {{ asignacion.id_grupo.clave }} | {{ asignacion.id_ciclo_escolar.nombre_ciclo }}
-                                    </option>
-                                {% endfor %}
+                <div class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                        <div class="min-w-0">
+                            <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Seleccionar asignación</h3>
+                            <p class="text-xs text-gray-500 font-medium">Ciclo → Grupo → Materia</p>
+                        </div>
+                        <button id="btnLimpiar" type="button" class="btn-accion w-full sm:w-auto shrink-0 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 text-sm">
+                            <i class="fas fa-eraser"></i> Limpiar filtros
+                        </button>
+                    </div>
+
+                    <div class="filtros-asignacion grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="filtro-campo">
+                            <label class="filtro-label">Ciclo escolar</label>
+                            <select id="cicloSelect" class="filtro-select text-sm sm:text-base">
+                                <option value="">Selecciona ciclo...</option>
                             </select>
                         </div>
-                        <div class="flex gap-3">
-                            <button id="btnCargar" type="button" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl transition">
-                                Cargar lista
-                            </button>
-                            <button id="btnLimpiar" type="button" class="flex-1 bg-gray-700 hover:bg-black text-white font-black py-3 rounded-xl transition">
-                                Limpiar
-                            </button>
+                        <div class="filtro-campo">
+                            <label class="filtro-label">Grupo</label>
+                            <select id="grupoSelect" class="filtro-select text-sm sm:text-base" disabled>
+                                <option value="">Selecciona grupo...</option>
+                            </select>
+                        </div>
+                        <div class="filtro-campo sm:col-span-2">
+                            <label class="filtro-label">Materia</label>
+                            <select id="materiaSelect" class="filtro-select text-sm sm:text-base" disabled>
+                                <option value="">Selecciona materia...</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div id="estadoInicial" class="card-soft bg-white p-8 text-center text-gray-500">
-                    <i class="fas fa-file-signature text-5xl mb-4 text-blue-400"></i>
-                    <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">Selecciona una asignación</h3>
-                    <p>El sistema cargará la lista de alumnos inscritos para capturar sus calificaciones.</p>
+                {{ asignaciones_calificaciones|json_script:"asignaciones-calificaciones-data" }}
+
+                <div id="estadoInicial" class="card-soft bg-white p-6 sm:p-10 text-center text-gray-500">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-500 mb-5">
+                            <i class="fas fa-users text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-black text-gray-800 uppercase tracking-wide mb-2">Listo para capturar calificaciones</h3>
+                        <p class="text-sm text-gray-500 font-medium">Completa los tres filtros y la lista de alumnos aparecerá automáticamente.</p>
+                    </div>
                 </div>
 
-                <div id="contenidoCalificaciones" class="hidden card-soft bg-white p-6">
-                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-                        <div>
-                            <h3 class="text-xl font-black text-gray-700 uppercase tracking-tighter">Lista de alumnos</h3>
-                            <p id="textoAsignacion" class="text-sm text-gray-500 font-semibold">---</p>
+                <div id="contenidoCalificaciones" class="hidden card-soft bg-white p-4 sm:p-6">
+                    <div class="flex flex-wrap items-start justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-lg sm:text-xl font-black text-gray-800 uppercase tracking-tight">Lista de alumnos</h3>
+                            <p id="textoAsignacion" class="mt-1 text-sm text-blue-700 font-semibold truncate">---</p>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span id="conteoAlumnos" class="text-xs font-black uppercase tracking-widest text-gray-600 bg-gray-100 px-3 py-1 rounded-full">0</span>
-                            <span id="chipTipo" class="type-chip active">Parcial</span>
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <span id="conteoAlumnos" class="badge-conteo">0</span>
+                            <span id="chipTipo" class="type-chip">Parcial</span>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto border border-gray-200 rounded-xl">
-                        <table class="w-full text-left border-collapse">
-                            <thead class="bg-gray-50">
-                                <tr class="text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
-                                    <th class="p-4 border-b border-gray-200">Matrícula</th>
-                                    <th class="p-4 border-b border-gray-200">Alumno</th>
-                                    <th class="p-4 border-b border-gray-200">U1</th>
-                                    <th class="p-4 border-b border-gray-200">U2</th>
-                                    <th class="p-4 border-b border-gray-200">U3</th>
-                                    <th class="p-4 border-b border-gray-200">U4</th>
-                                    <th class="p-4 border-b border-gray-200">U5</th>
-                                    <th class="p-4 border-b border-gray-200">U6</th>
-                                    <th class="p-4 border-b border-gray-200">Promedio</th>
+                    <p class="mb-3 text-xs text-gray-500 font-semibold">
+                        <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        Escala de calificación: <span class="font-black text-gray-700">0 a 100</span> por unidad
+                    </p>
+
+                    <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                        <table class="tabla-calificaciones w-full text-left border-collapse">
+                            <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
+                                <tr class="text-gray-600">
+                                    <th class="p-3 sm:p-4 border-b border-gray-200">Matrícula</th>
+                                    <th class="p-3 sm:p-4 border-b border-gray-200 col-alumno">Alumno</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U1</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U2</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U3</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U4</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U5</th>
+                                    <th class="p-2 sm:p-3 border-b border-gray-200 th-unidad">U6</th>
+                                    <th class="p-3 sm:p-4 border-b border-gray-200 col-promedio">Prom.</th>
                                 </tr>
                             </thead>
-                            <tbody id="tablaAlumnos" class="divide-y divide-gray-200">
+                            <tbody id="tablaAlumnos" class="divide-y divide-gray-100">
                                 <tr>
-                                    <td colspan="9" class="p-10 text-center text-gray-400">Selecciona una asignación para cargar la lista.</td>
+                                    <td colspan="9" class="p-10 text-center text-gray-400 font-medium">Selecciona una asignación para cargar la lista.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="flex flex-col items-end gap-2 mt-6">
-                        <p class="text-xs text-gray-500 font-semibold text-right">
-                            Si ya existe la calificación para esa unidad, se actualiza al volver a guardar.
-                        </p>
-                        <div class="flex gap-3">
-                            <button id="btnEditar" type="button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 px-6 rounded-xl transition shadow-lg">
-                                Editar
-                            </button>
-                            <button id="btnCancelar" type="button" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-black py-3 px-6 rounded-xl transition shadow-lg">
-                                Cancelar
-                            </button>
-                            <button id="btnGuardar" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-xl transition shadow-lg" disabled>
-                                Guardar Calificaciones
-                            </button>
+                    <div class="panel-acciones mt-5 sm:mt-6">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <p class="text-xs text-gray-500 font-medium leading-relaxed lg:max-w-md">
+                                <i class="fas fa-sync-alt text-blue-500 mr-1"></i>
+                                Si ya existe la calificación para esa unidad, se actualiza al volver a guardar.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
+                                <button id="btnEditar" type="button" class="btn-accion bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 w-full sm:w-auto">
+                                    <i class="fas fa-pen"></i> Editar
+                                </button>
+                                <button id="btnCancelar" type="button" class="hidden btn-accion bg-gray-500 hover:bg-gray-600 text-white shadow-md w-full sm:w-auto">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button id="btnGuardar" type="button" class="btn-accion bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 w-full sm:w-auto" disabled>
+                                    <i class="fas fa-save"></i> Guardar calificaciones
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,8 +260,11 @@
 
 {% block extra_js %}
 <script>
-        const asignacionSelect = document.getElementById('asignacionSelect');
-        const btnCargar = document.getElementById('btnCargar');
+        const ASIGNACIONES = JSON.parse(document.getElementById('asignaciones-calificaciones-data').textContent);
+        const PERIODO_ACTUAL = '{{ periodo_actual|escapejs }}';
+        const cicloSelect = document.getElementById('cicloSelect');
+        const grupoSelect = document.getElementById('grupoSelect');
+        const materiaSelect = document.getElementById('materiaSelect');
         const btnLimpiar = document.getElementById('btnLimpiar');
         const btnEditar = document.getElementById('btnEditar');
         const btnCancelar = document.getElementById('btnCancelar');
@@ -142,6 +277,7 @@
         const conteoAlumnos = document.getElementById('conteoAlumnos');
         const chipTipo = document.getElementById('chipTipo');
         const ESCALA_MAXIMA_CALIFICACION = 100;
+        const STORAGE_FILTROS_KEY = 'st_calificaciones_filtros';
 
         let estadoActual = {
             asignacion: null,
@@ -240,25 +376,24 @@
                 for (let u = 1; u <= 6; u++) {
                     const calActual = obtenerCalificacionUnidad(alumno, u);
                     filasUnidades += `
-                        <td class="p-1">
+                        <td class="p-1.5 sm:p-2">
                             <input type="number" step="0.01" min="0" max="100" inputmode="decimal" 
                                    value="${escapeHtml(calActual || '')}" 
-                                   class="w-full p-3 rounded-lg border-2 border-gray-200 outline-none focus:border-blue-500 focus:bg-blue-50 font-bold text-black text-center grade-input transition" 
+                                   class="grade-input" 
                                    data-index="${index}" data-unidad="${u}" placeholder="--" disabled>
-                            <small class="text-gray-400 text-xs mt-1 block text-center">0-100</small>
                         </td>
                     `;
                 }
 
                 return `
-                    <tr class="align-top hover:bg-gray-50 transition">
-                        <td class="p-4 font-mono font-black text-gray-700">${escapeHtml(alumno.matricula)}</td>
-                        <td class="p-4">
-                            <div class="font-bold text-gray-800">${escapeHtml(alumno.nombre_completo)}</div>
-                            <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">${escapeHtml(alumno.estatus_alumno)}</div>
+                    <tr class="align-top hover:bg-blue-50/40 transition-colors">
+                        <td class="p-3 sm:p-4 font-mono text-sm font-black text-gray-700 whitespace-nowrap">${escapeHtml(alumno.matricula)}</td>
+                        <td class="p-3 sm:p-4 col-alumno">
+                            <div class="font-bold text-gray-800 leading-snug">${escapeHtml(alumno.nombre_completo)}</div>
+                            <div class="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider mt-0.5">${escapeHtml(alumno.estatus_alumno)}</div>
                         </td>
                         ${filasUnidades}
-                        <td class="p-4 font-bold text-gray-800 text-center average-column" data-avg-index="${index}">${promedio}</td>
+                        <td class="p-3 sm:p-4 col-promedio average-column text-blue-800" data-avg-index="${index}">${promedio}</td>
                     </tr>
                 `;
             }).join('');
@@ -323,6 +458,269 @@
             });
         }
 
+        function llenarSelect(select, opciones, placeholder) {
+            select.innerHTML = `<option value="">${placeholder}</option>`;
+            opciones.forEach(({ value, label }) => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = label;
+                select.appendChild(option);
+            });
+            select.disabled = opciones.length === 0;
+        }
+
+        function leerFiltrosDesdeUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const ciclo = params.get('ciclo') || '';
+            const grupo = params.get('grupo') || '';
+            const materia = params.get('materia') || '';
+            if (!ciclo && !grupo && !materia) {
+                return null;
+            }
+            return { ciclo, grupo, materia };
+        }
+
+        function sincronizarUrlConFiltros() {
+            const params = new URLSearchParams();
+            if (cicloSelect.value) params.set('ciclo', cicloSelect.value);
+            if (grupoSelect.value) params.set('grupo', grupoSelect.value);
+            if (materiaSelect.value) params.set('materia', materiaSelect.value);
+
+            const query = params.toString();
+            const nuevaUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+            history.replaceState(null, '', nuevaUrl);
+        }
+
+        function leerFiltrosGuardados() {
+            try {
+                const raw = sessionStorage.getItem(STORAGE_FILTROS_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function obtenerFiltrosPersistidos() {
+            const desdeUrl = leerFiltrosDesdeUrl();
+            if (desdeUrl?.ciclo) {
+                return desdeUrl;
+            }
+            const guardados = leerFiltrosGuardados();
+            if (guardados?.ciclo) {
+                return guardados;
+            }
+            return null;
+        }
+
+        function guardarFiltrosEnSesion() {
+            sessionStorage.setItem(STORAGE_FILTROS_KEY, JSON.stringify({
+                ciclo: cicloSelect.value,
+                grupo: grupoSelect.value,
+                materia: materiaSelect.value,
+            }));
+            sincronizarUrlConFiltros();
+        }
+
+        function obtenerAsignacionId() {
+            const ciclo = cicloSelect.value;
+            const grupo = grupoSelect.value;
+            const materiaId = materiaSelect.value;
+            if (!ciclo || !grupo || !materiaId) {
+                return '';
+            }
+
+            const asignacion = ASIGNACIONES.find(item =>
+                item.ciclo === ciclo &&
+                item.grupo === grupo &&
+                String(item.materia_id) === String(materiaId)
+            );
+            return asignacion ? String(asignacion.id) : '';
+        }
+
+        function construirOpcionesGrupos(ciclo) {
+            const grupos = [];
+            const vistos = new Set();
+            ASIGNACIONES
+                .filter(item => item.ciclo === ciclo)
+                .forEach(item => {
+                    if (vistos.has(item.grupo)) {
+                        return;
+                    }
+                    vistos.add(item.grupo);
+                    grupos.push({
+                        value: item.grupo,
+                        label: `${item.grupo} - ${item.grupo_nombre}`,
+                    });
+                });
+
+            return grupos.sort((a, b) => a.value.localeCompare(b.value, 'es'));
+        }
+
+        function construirOpcionesMaterias(ciclo, grupo) {
+            const materias = [];
+            const vistos = new Set();
+            ASIGNACIONES
+                .filter(item => item.ciclo === ciclo && item.grupo === grupo)
+                .forEach(item => {
+                    const key = String(item.materia_id);
+                    if (vistos.has(key)) {
+                        return;
+                    }
+                    vistos.add(key);
+                    materias.push({
+                        value: key,
+                        label: `${item.materia_clave} - ${item.materia_nombre}`,
+                    });
+                });
+
+            return materias.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+        }
+
+        function inicializarFiltrosAsignacion() {
+            const ciclos = [...new Set(ASIGNACIONES.map(item => item.ciclo))].sort().reverse();
+            llenarSelect(cicloSelect, ciclos.map(ciclo => ({ value: ciclo, label: ciclo })), 'Selecciona ciclo...');
+
+            const persistidos = obtenerFiltrosPersistidos();
+            if (persistidos?.ciclo && ciclos.includes(persistidos.ciclo)) {
+                cicloSelect.value = persistidos.ciclo;
+                actualizarGrupos({
+                    grupoSeleccionado: persistidos.grupo || '',
+                    materiaSeleccionada: String(persistidos.materia || ''),
+                    restaurarSesion: true,
+                });
+                return;
+            }
+
+            if (PERIODO_ACTUAL && ciclos.includes(PERIODO_ACTUAL)) {
+                cicloSelect.value = PERIODO_ACTUAL;
+                actualizarGrupos({ soloPoblar: true });
+            }
+        }
+
+        function actualizarGrupos(opciones = {}) {
+            const {
+                soloPoblar = false,
+                grupoSeleccionado = '',
+                materiaSeleccionada = '',
+                restaurarSesion = false,
+            } = opciones;
+            const ciclo = cicloSelect.value;
+
+            if (!restaurarSesion) {
+                grupoSelect.value = '';
+                materiaSelect.value = '';
+            }
+
+            llenarSelect(materiaSelect, [], 'Selecciona materia...');
+            materiaSelect.disabled = true;
+
+            if (!ciclo) {
+                llenarSelect(grupoSelect, [], 'Selecciona grupo...');
+                grupoSelect.disabled = true;
+                if (!soloPoblar) {
+                    guardarFiltrosEnSesion();
+                    cargarDatos();
+                }
+                return;
+            }
+
+            const grupos = construirOpcionesGrupos(ciclo);
+            llenarSelect(grupoSelect, grupos, 'Selecciona grupo...');
+
+            if (grupoSeleccionado && grupos.some(grupo => grupo.value === grupoSeleccionado)) {
+                grupoSelect.value = grupoSeleccionado;
+                actualizarMaterias({ materiaSeleccionada, restaurarSesion: true });
+                return;
+            }
+
+            if (soloPoblar || restaurarSesion) {
+                guardarFiltrosEnSesion();
+                cargarDatos();
+                return;
+            }
+
+            if (grupos.length === 1) {
+                grupoSelect.value = grupos[0].value;
+                actualizarMaterias();
+                return;
+            }
+
+            guardarFiltrosEnSesion();
+            cargarDatos();
+        }
+
+        function actualizarMaterias(opciones = {}) {
+            const { materiaSeleccionada = '', restaurarSesion = false } = opciones;
+            const ciclo = cicloSelect.value;
+            const grupo = grupoSelect.value;
+
+            if (!restaurarSesion) {
+                materiaSelect.value = '';
+            }
+
+            if (!ciclo || !grupo) {
+                llenarSelect(materiaSelect, [], 'Selecciona materia...');
+                materiaSelect.disabled = true;
+                guardarFiltrosEnSesion();
+                cargarDatos();
+                return;
+            }
+
+            const materias = construirOpcionesMaterias(ciclo, grupo);
+            llenarSelect(materiaSelect, materias, 'Selecciona materia...');
+
+            if (materiaSeleccionada && materias.some(materia => materia.value === String(materiaSeleccionada))) {
+                materiaSelect.value = String(materiaSeleccionada);
+                guardarFiltrosEnSesion();
+                cargarDatos();
+                return;
+            }
+
+            if (restaurarSesion) {
+                materiaSelect.value = '';
+                guardarFiltrosEnSesion();
+                cargarDatos();
+                return;
+            }
+
+            if (materias.length === 1) {
+                materiaSelect.value = materias[0].value;
+                guardarFiltrosEnSesion();
+                cargarDatos();
+                return;
+            }
+
+            guardarFiltrosEnSesion();
+            cargarDatos();
+        }
+
+        function limpiarFiltrosAsignacion() {
+            cicloSelect.value = '';
+            grupoSelect.value = '';
+            materiaSelect.value = '';
+            llenarSelect(grupoSelect, [], 'Selecciona grupo...');
+            llenarSelect(materiaSelect, [], 'Selecciona materia...');
+            grupoSelect.disabled = true;
+            materiaSelect.disabled = true;
+            sessionStorage.removeItem(STORAGE_FILTROS_KEY);
+            history.replaceState(null, '', window.location.pathname);
+        }
+
+        function mostrarEstadoCarga() {
+            estadoInicial.classList.add('hidden');
+            contenidoCalificaciones.classList.remove('hidden');
+            textoAsignacion.textContent = 'Cargando asignación...';
+            conteoAlumnos.textContent = 'Cargando...';
+            tablaAlumnos.innerHTML = `
+                <tr>
+                    <td colspan="9" class="p-12 text-center text-gray-500 font-semibold">
+                        <i class="fas fa-spinner fa-spin text-blue-500 text-xl mb-2 block"></i>
+                        Cargando alumnos...
+                    </td>
+                </tr>
+            `;
+        }
+
         function actualizarCabecera() {
             if (estadoActual.asignacion) {
                 textoAsignacion.textContent = `${estadoActual.asignacion.materia.codigo} - ${estadoActual.asignacion.materia.nombre} · ${estadoActual.asignacion.grupo.clave} · ${estadoActual.asignacion.grupo.ciclo}`;
@@ -336,7 +734,7 @@
         }
 
         function cargarDatos() {
-            const asignacionId = asignacionSelect.value;
+            const asignacionId = obtenerAsignacionId();
 
             if (!asignacionId) {
                 estadoActual = { asignacion: null, alumnos: [] };
@@ -344,6 +742,8 @@
                 renderAlumnos();
                 return;
             }
+
+            mostrarEstadoCarga();
 
             const params = new URLSearchParams({ asignacion_id: asignacionId });
             fetch(`{% url 'get_datos_calificaciones_maestro' %}?${params.toString()}`, {
@@ -407,15 +807,25 @@
             });
         }
 
-        btnCargar.addEventListener('click', cargarDatos);
-        asignacionSelect.addEventListener('change', cargarDatos);
-        
+        cicloSelect.addEventListener('change', () => actualizarGrupos());
+        grupoSelect.addEventListener('change', () => actualizarMaterias());
+        materiaSelect.addEventListener('change', () => {
+            guardarFiltrosEnSesion();
+            cargarDatos();
+        });
+
         btnLimpiar.addEventListener('click', () => {
-            asignacionSelect.value = '';
+            limpiarFiltrosAsignacion();
             estadoActual = { asignacion: null, alumnos: [] };
             chipTipo.textContent = 'Todas las unidades';
             actualizarCabecera();
             renderAlumnos();
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (cicloSelect.value || grupoSelect.value || materiaSelect.value) {
+                guardarFiltrosEnSesion();
+            }
         });
 
         // Variable para guardar el estado antes de editar
@@ -459,8 +869,8 @@
         });
 
         btnGuardar.addEventListener('click', () => {
-            if (!asignacionSelect.value) {
-                mostrarAlerta('Selecciona una asignación', 'error');
+            if (!obtenerAsignacionId()) {
+                mostrarAlerta('Selecciona ciclo, grupo y materia', 'error');
                 return;
             }
 
@@ -521,7 +931,7 @@
                     'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '',
                 },
                 body: JSON.stringify({
-                    asignacion_id: asignacionSelect.value,
+                    asignacion_id: obtenerAsignacionId(),
                     registros: registros,
                 })
             })
@@ -532,7 +942,7 @@
                 }
                 
                 // Éxito: mostrar mensaje y recargar desde BD para sincronizar
-                mostrarAlerta(`✓ Se guardaron ${data.guardadas} calificación(es) correctamente en la BD`, 'success');
+                mostrarAlerta('Calificaciones guardadas correctamente', 'success');
                 
                 // Recargar para sincronizar con BD pero mantener campos editables
                 setTimeout(() => {
@@ -558,13 +968,16 @@
                 btnGuardar.disabled = false;
             })
             .finally(() => {
-                btnGuardar.textContent = 'Guardar Calificaciones';
+                btnGuardar.textContent = 'Guardar calificaciones';
             });
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            actualizarCabecera();
-            renderAlumnos();
+            inicializarFiltrosAsignacion();
+            if (!obtenerAsignacionId()) {
+                actualizarCabecera();
+                renderAlumnos();
+            }
         });
 
         // Sidebar toggle (mobile support)

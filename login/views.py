@@ -1,7 +1,9 @@
 import io
 import json
 import logging
+import os
 import re
+import unicodedata
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 
@@ -19,9 +21,20 @@ from django.db import transaction, models
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
-from fpdf import FPDF
+from urllib.parse import urlencode
 
 from .password_utils import LONGITUD_MINIMA_USUARIO, validar_contrasena_usuario
+from .admin_materias_export import generar_excel_catalogo_materias, generar_pdf_catalogo_materias
+from .alumno_asistencias_export import generar_pdf_asistencias_alumno
+from .alumno_boleta_export import generar_pdf_boleta_alumno
+from .maestro_reportes_export import (
+    generar_excel_reportes_maestro,
+    generar_excel_sesion_asistencia_maestro,
+    generar_pdf_reportes_maestro,
+    generar_pdf_sesion_asistencia_maestro,
+)
+from .datos_personales_utils import validar_datos_perfil_usuario
+from .periodo_utils import calcular_semestre_desde_ingreso, resolver_semestre_alumno
 from .models import (
     Usuarios,
     Alumnos,
@@ -46,6 +59,7 @@ logger = logging.getLogger(__name__)
 OCR_UPLOAD_MAX_BYTES = int(getattr(settings, 'OCR_UPLOAD_MAX_BYTES', 5 * 1024 * 1024))
 ESCALA_MAXIMA_CALIFICACION = Decimal('100')
 MINIMO_APROBATORIO_CALIFICACION = Decimal(str(getattr(settings, 'MINIMO_APROBATORIO_CALIFICACION', 70)))
+_VALOR_CALIFICACION_VACIA = '---'
 
 pytesseract.pytesseract.tesseract_cmd = getattr(
     settings,
@@ -63,12 +77,12 @@ def _safe_server_error(exc: BaseException) -> str:
 def _formatear_calificacion_visible(valor, *, decimals: int = 1, mostrar_na_si_menor: bool = True) -> str:
     """Convierte una calificación guardada a texto visible respetando el mínimo aprobatorio."""
     if valor is None:
-        return '—'
+        return _VALOR_CALIFICACION_VACIA
 
     try:
         numero = Decimal(str(valor))
     except (InvalidOperation, ValueError, TypeError):
-        return '—'
+        return _VALOR_CALIFICACION_VACIA
 
     if mostrar_na_si_menor and numero < MINIMO_APROBATORIO_CALIFICACION:
         return 'NA'
@@ -155,6 +169,79 @@ def _parse_fecha_iso(valor: str | None):
     return datetime.strptime(valor, '%Y-%m-%d').date()
 
 
+def _normalizar_hora_hm(valor: str) -> str:
+    """Convierte HH:MM o HH:MM:SS a HH:MM."""
+    valor = (valor or '').strip()
+    if not valor:
+        return ''
+    partes = valor.split(':')
+    if len(partes) < 2:
+        return valor
+    try:
+        horas = int(partes[0])
+        minutos = int(partes[1])
+    except ValueError:
+        return valor
+    return f'{horas:02d}:{minutos:02d}'
+
+
+def _minutos_desde_medianoche(hora_hm: str) -> int | None:
+    hora_hm = _normalizar_hora_hm(hora_hm)
+    if not hora_hm or ':' not in hora_hm:
+        return None
+    try:
+        horas, minutos = hora_hm.split(':')
+        return int(horas) * 60 + int(minutos)
+    except ValueError:
+        return None
+
+
+def _hora_fin_posterior(inicio: str, fin: str) -> bool:
+    ini = _minutos_desde_medianoche(inicio)
+    fin_m = _minutos_desde_medianoche(fin)
+    if ini is None or fin_m is None:
+        return False
+    return fin_m > ini
+
+
+def _formatear_hora_12h(hora_hm: str) -> str:
+    hora_hm = _normalizar_hora_hm(hora_hm)
+    if not hora_hm or ':' not in hora_hm:
+        return hora_hm
+    try:
+        horas, minutos = hora_hm.split(':')
+        h, m = int(horas), int(minutos)
+    except ValueError:
+        return hora_hm
+    periodo = 'a.m.' if h < 12 else 'p.m.'
+    h12 = h % 12 or 12
+    return f'{h12}:{m:02d} {periodo}'
+
+
+def _mensaje_horario_invalido(inicio: str, fin: str, dia: str | None = None) -> str:
+    ini = _normalizar_hora_hm(inicio)
+    fin_h = _normalizar_hora_hm(fin)
+    prefijo = f'En {dia}, l' if dia else 'L'
+    msg = (
+        f'{prefijo}a hora de término ({_formatear_hora_12h(fin_h)}) debe ser posterior '
+        f'a la de inicio ({_formatear_hora_12h(ini)}).'
+    )
+    ini_min = _minutos_desde_medianoche(ini)
+    fin_min = _minutos_desde_medianoche(fin_h)
+    if (
+        ini_min is not None
+        and fin_min is not None
+        and fin_min <= ini_min
+        and ini_min >= 7 * 60
+        and fin_min < 7 * 60
+    ):
+        msg += (
+            ' Revisa que la hora de término no esté en a.m.; '
+            'para clases de mañana o tarde usa p.m. (ej. 12:30 p.m.).'
+        )
+    return msg
+
+
 def _dia_semana_es(fecha_obj: date) -> str:
     dias = {
         0: 'Lunes',
@@ -166,6 +253,71 @@ def _dia_semana_es(fecha_obj: date) -> str:
         6: 'Domingo',
     }
     return dias[fecha_obj.weekday()]
+
+
+def _normalizar_dia_semana(valor: str) -> str:
+    """Compara días sin depender de acentos (BD: Miercoles vs UI: Miércoles)."""
+    if not valor:
+        return ''
+    texto = unicodedata.normalize('NFD', str(valor))
+    texto = ''.join(caracter for caracter in texto if unicodedata.category(caracter) != 'Mn')
+    return texto.strip().lower()
+
+
+def _dias_semana_coinciden(dia_horario: str, dia_fecha: str) -> bool:
+    return _normalizar_dia_semana(dia_horario) == _normalizar_dia_semana(dia_fecha)
+
+
+def _normalizar_orden_texto(texto: str) -> str:
+    if not texto:
+        return ''
+    texto = unicodedata.normalize('NFD', str(texto))
+    texto = ''.join(caracter for caracter in texto if unicodedata.category(caracter) != 'Mn')
+    return texto.casefold()
+
+
+def _partes_apellido_alumno(apellido: str) -> tuple[str, str]:
+    """Separa primer apellido del resto (p. ej. Arguelles | Ceballos)."""
+    partes = (apellido or '').strip().split()
+    if not partes:
+        return '', ''
+    return partes[0], ' '.join(partes[1:])
+
+
+def _clave_orden_primer_apellido_usuario(usuario) -> tuple[str, str, str]:
+    primer, resto = _partes_apellido_alumno(getattr(usuario, 'apellido', '') or '')
+    return (
+        _normalizar_orden_texto(primer),
+        _normalizar_orden_texto(resto),
+        _normalizar_orden_texto(getattr(usuario, 'nombre', '') or ''),
+    )
+
+
+def _campos_orden_alumno_usuario(usuario) -> dict:
+    primer, resto = _partes_apellido_alumno(usuario.apellido)
+    return {
+        'primer_apellido': primer,
+        'resto_apellido': resto,
+        'nombre_orden': usuario.nombre,
+    }
+
+
+def _ordenar_inscripciones_por_primer_apellido(inscripciones) -> list:
+    return sorted(
+        inscripciones,
+        key=lambda inscripcion: _clave_orden_primer_apellido_usuario(inscripcion.id_alumno.id_usuario),
+    )
+
+
+def _ordenar_lista_alumnos_dict(alumnos: list[dict]) -> list[dict]:
+    return sorted(
+        alumnos,
+        key=lambda alumno: (
+            _normalizar_orden_texto(alumno.get('primer_apellido', '')),
+            _normalizar_orden_texto(alumno.get('resto_apellido', '')),
+            _normalizar_orden_texto(alumno.get('nombre_orden', '')),
+        ),
+    )
 
 
 def _periodo_actual() -> str:
@@ -379,13 +531,17 @@ def _perfil_alumno(request):
     }
 
     if alumno:
+        semestre = resolver_semestre_alumno(
+            alumno.periodo_ingreso, alumno.semestre, _periodo_actual()
+        )
+
         perfil.update({
             'id_usuario': alumno.id_usuario.id_usuario,
             'matricula': alumno.id_usuario.matricula,
             'nombre_completo': f"{alumno.id_usuario.nombre} {alumno.id_usuario.apellido}",
             'foto_url': alumno.id_usuario.foto.url if alumno.id_usuario.foto else '',
             'carrera': str(alumno.id_carrera) if alumno.id_carrera else '---',
-            'semestre': alumno.semestre,
+            'semestre': semestre,
             'estatus': alumno.estatus,
             'periodo_ingreso': alumno.periodo_ingreso,
             'periodo_actual': _periodo_actual(),
@@ -859,6 +1015,7 @@ def inicio_interfaces_alumnos(request):
             datos_personales, _ = DatosPersonales.objects.get_or_create(id_usuario=usuario)
             
             # Obtener datos del formulario
+            correo_institucional = request.POST.get('correo_institucional', '').strip()
             telefono = request.POST.get('telefono', '').strip()
             calle = request.POST.get('calle', '').strip()
             numero_exterior = request.POST.get('numero_exterior', '').strip()
@@ -867,6 +1024,31 @@ def inicio_interfaces_alumnos(request):
             municipio = request.POST.get('municipio', '').strip()
             estado = request.POST.get('estado', '').strip()
             cp = request.POST.get('cp', '').strip()
+
+            errores_campos = validar_datos_perfil_usuario(
+                correo_institucional, telefono, cp, usuario.id_usuario
+            )
+            if errores_campos:
+                messages.error(request, 'Corrige los errores en el formulario.')
+                perfil_guardado = _perfil_alumno(request)
+                perfil = perfil_guardado.copy()
+                perfil.update({
+                    'correo_institucional': correo_institucional,
+                    'telefono': telefono,
+                    'calle': calle,
+                    'numero_exterior': numero_exterior,
+                    'numero_interior': numero_interior,
+                    'colonia': colonia,
+                    'municipio': municipio,
+                    'estado': estado,
+                    'cp': cp,
+                })
+                return render(request, 'alumno/alumno.html', {
+                    'perfil': perfil,
+                    'perfil_guardado': perfil_guardado,
+                    'errores_campos': errores_campos,
+                    'modo_edicion': True,
+                })
             
             # Construir dirección concatenada (igual que admin_views.construir_direccion)
             partes = [calle, numero_exterior, numero_interior, colonia, municipio, estado, cp]
@@ -874,6 +1056,7 @@ def inicio_interfaces_alumnos(request):
             direccion = ', '.join(partes) if partes else None
             
             # Actualizar campos
+            datos_personales.correo_inst = correo_institucional or None
             datos_personales.telefono = telefono
             datos_personales.direccion = direccion
             datos_personales.save()
@@ -886,77 +1069,294 @@ def inicio_interfaces_alumnos(request):
     return render(request, 'alumno/alumno.html', {'perfil': perfil})
 
 
+def _obtener_calificaciones_rows_alumno(alumno) -> list[dict]:
+    """Arma las filas de la boleta de calificaciones para un alumno."""
+    if not alumno:
+        return []
+
+    inscripciones = list(
+        Inscripcion.objects.select_related('id_grupo', 'id_ciclo_escolar')
+        .filter(id_alumno=alumno, estatus='Activa')
+        .order_by('id_grupo__clave')
+    )
+    inscripcion_por_grupo = {inscripcion.id_grupo_id: inscripcion for inscripcion in inscripciones}
+    grupos_ids = list(inscripcion_por_grupo.keys())
+
+    asignaciones = (
+        AsignacionMateria.objects.select_related('id_materia', 'id_grupo', 'id_ciclo_escolar')
+        .filter(id_grupo_id__in=grupos_ids, estatus='Activa')
+        .order_by('id_materia__nombre')
+    )
+
+    calificaciones_qs = Calificacion.objects.filter(
+        id_inscripcion__in=[inscripcion.id_inscripcion for inscripcion in inscripciones],
+        id_asignacion_materia__in=asignaciones,
+    ).select_related('id_inscripcion', 'id_asignacion_materia', 'id_asignacion_materia__id_materia')
+
+    calificaciones_por_asignacion = {}
+    for calificacion in calificaciones_qs:
+        calificaciones_por_asignacion.setdefault(calificacion.id_asignacion_materia_id, {})[calificacion.unidad] = calificacion
+
+    rows = []
+    for asignacion in asignaciones:
+        mapa_unidades = calificaciones_por_asignacion.get(asignacion.id_asignacion_materia, {})
+        valores = []
+        unidades = []
+        for unidad_num in range(1, 7):
+            calificacion = mapa_unidades.get(unidad_num)
+            if calificacion is not None:
+                valor = Decimal(str(calificacion.calificacion))
+                unidades.append(_formatear_calificacion_visible(valor))
+                valores.append(valor)
+            else:
+                unidades.append(_VALOR_CALIFICACION_VACIA)
+
+        promedio = sum(valores) / len(valores) if valores else None
+        tiene_unidad_menor_70 = any(v < MINIMO_APROBATORIO_CALIFICACION for v in valores)
+
+        rows.append({
+            'materia': asignacion.id_materia.nombre,
+            'codigo': asignacion.id_materia.clave,
+            'grupo': asignacion.id_grupo.clave,
+            'unidades': unidades,
+            'promedio': 'NA' if tiene_unidad_menor_70 else (
+                _formatear_calificacion_visible(promedio) if promedio is not None else _VALOR_CALIFICACION_VACIA
+            ),
+        })
+
+    return rows
+
+
+def _calcular_promedio_general_boleta(rows: list[dict]):
+    """Calcula el promedio general ignorando materias con NA (misma lógica que la plantilla)."""
+    suma_promedios = 0
+    contador_validos = 0
+
+    for row in rows:
+        tiene_unidad_menor_70 = False
+        for unidad in row.get('unidades', []):
+            if unidad not in ('—', _VALOR_CALIFICACION_VACIA):
+                try:
+                    if float(unidad) < float(MINIMO_APROBATORIO_CALIFICACION):
+                        tiene_unidad_menor_70 = True
+                        break
+                except (ValueError, TypeError):
+                    pass
+
+        if not tiene_unidad_menor_70:
+            try:
+                suma_promedios += float(row.get('promedio', 0))
+                contador_validos += 1
+            except (ValueError, TypeError):
+                pass
+
+    if contador_validos > 0:
+        return round(suma_promedios / contador_validos, 2)
+    return 0
+
+
+def _ruta_foto_alumno(alumno) -> str | None:
+    if not alumno or not alumno.id_usuario.foto:
+        return None
+    try:
+        ruta = alumno.id_usuario.foto.path
+    except Exception:
+        return None
+    return ruta if os.path.isfile(ruta) else None
+
+
 def consultar_calificaciones(request):
     if not sesion_roles_permitidas(request, ('alumno',)):
         return redirect('selector_rol')
 
     perfil = _perfil_alumno(request)
     alumno = Alumnos.objects.select_related('id_usuario').filter(pk=request.session.get('alumno_id')).first()
-    rows = []
-    promedio_general = None
-
-    if alumno:
-        inscripciones = list(
-            Inscripcion.objects.select_related('id_grupo', 'id_ciclo_escolar')
-            .filter(id_alumno=alumno, estatus='Activa')
-            .order_by('id_grupo__clave')
-        )
-        inscripcion_por_grupo = {inscripcion.id_grupo_id: inscripcion for inscripcion in inscripciones}
-        grupos_ids = list(inscripcion_por_grupo.keys())
-
-        asignaciones = (
-            AsignacionMateria.objects.select_related('id_materia', 'id_grupo', 'id_ciclo_escolar')
-            .filter(id_grupo_id__in=grupos_ids, estatus='Activa')
-            .order_by('id_materia__nombre')
-        )
-
-        calificaciones_qs = Calificacion.objects.filter(
-            id_inscripcion__in=[inscripcion.id_inscripcion for inscripcion in inscripciones],
-            id_asignacion_materia__in=asignaciones,
-        ).select_related('id_inscripcion', 'id_asignacion_materia', 'id_asignacion_materia__id_materia')
-
-        calificaciones_por_asignacion = {}
-        for calificacion in calificaciones_qs:
-            calificaciones_por_asignacion.setdefault(calificacion.id_asignacion_materia_id, {})[calificacion.unidad] = calificacion
-
-        promedios = []
-        for asignacion in asignaciones:
-            mapa_unidades = calificaciones_por_asignacion.get(asignacion.id_asignacion_materia, {})
-            valores = []
-            unidades = []
-            for unidad_num in range(1, 7):
-                calificacion = mapa_unidades.get(unidad_num)
-                if calificacion is not None:
-                    valor = Decimal(str(calificacion.calificacion))
-                    unidades.append(_formatear_calificacion_visible(valor))
-                    valores.append(valor)
-                else:
-                    unidades.append('—')
-
-            promedio = sum(valores) / len(valores) if valores else None
-            tiene_unidad_menor_70 = any(v < MINIMO_APROBATORIO_CALIFICACION for v in valores)
-
-            if promedio is not None and not tiene_unidad_menor_70:
-                promedios.append(promedio)
-
-            rows.append({
-                'materia': asignacion.id_materia.nombre,
-                'codigo': asignacion.id_materia.clave,
-                'grupo': asignacion.id_grupo.clave,
-                'unidades': unidades,
-                'promedio': 'NA' if tiene_unidad_menor_70 else (_formatear_calificacion_visible(promedio) if promedio is not None else '—'),
-            })
-
-        if promedios:
-            promedio_general = sum(promedios) / len(promedios)
+    rows = _obtener_calificaciones_rows_alumno(alumno)
 
     context = {
         'perfil': perfil,
         'calificaciones_rows': rows,
-        'promedio_general': _formatear_calificacion_visible(promedio_general, mostrar_na_si_menor=True) if promedio_general is not None else '0.0',
+        'promedio_general': _formatear_calificacion_visible(
+            _calcular_promedio_general_boleta(rows) if rows else None,
+            mostrar_na_si_menor=True,
+        ) if rows else '0.0',
         'hay_calificaciones': bool(rows),
     }
     return render(request, 'alumno/calificaciones.html', context)
+
+
+def exportar_boleta_calificaciones_alumno(request):
+    if not sesion_roles_permitidas(request, ('alumno',)):
+        return redirect('selector_rol')
+
+    perfil = _perfil_alumno(request)
+    alumno = Alumnos.objects.select_related('id_usuario').filter(pk=request.session.get('alumno_id')).first()
+    rows = _obtener_calificaciones_rows_alumno(alumno)
+    promedio_general = str(_calcular_promedio_general_boleta(rows))
+    ahora = datetime.now()
+
+    pdf_bytes = generar_pdf_boleta_alumno(
+        perfil=perfil,
+        rows=rows,
+        promedio_general=promedio_general,
+        ahora=ahora,
+        foto_ruta=_ruta_foto_alumno(alumno),
+    )
+
+    matricula = perfil.get('matricula') or 'alumno'
+    nombre_archivo = f'boleta_calificaciones_{matricula}_{ahora.strftime("%Y%m%d_%H%M%S")}.pdf'
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
+
+
+def _resumen_asistencias_vacio() -> dict:
+    return {
+        'total': 0,
+        'presentes': 0,
+        'ausentes': 0,
+        'tarde': 0,
+        'justificado': 0,
+        'porcentaje': '0.0',
+    }
+
+
+def _obtener_datos_asistencias_alumno(
+    alumno,
+    *,
+    asignacion_id: str = '',
+    unidad_str: str = '',
+    fecha_inicio_str: str = '',
+    fecha_fin_str: str = '',
+    limite: int = 250,
+) -> tuple[list[dict], dict, list]:
+    rows = []
+    total_registros = 0
+    total_presentes = 0
+    total_ausentes = 0
+    total_tarde = 0
+    total_justificado = 0
+    asignaciones = []
+
+    if not alumno:
+        return rows, _resumen_asistencias_vacio(), asignaciones
+
+    inscripciones = list(
+        Inscripcion.objects.select_related('id_grupo', 'id_ciclo_escolar')
+        .filter(id_alumno=alumno, estatus='Activa')
+        .order_by('id_grupo__clave')
+    )
+    grupos_ids = [inscripcion.id_grupo_id for inscripcion in inscripciones]
+    asignaciones = list(
+        AsignacionMateria.objects.select_related('id_materia', 'id_grupo', 'id_ciclo_escolar', 'id_maestro__id_usuario')
+        .filter(id_grupo_id__in=grupos_ids, estatus='Activa')
+        .order_by('id_materia__nombre')
+    )
+
+    asistencias_qs = (
+        Asistencia.objects.select_related(
+            'id_inscripcion__id_alumno__id_usuario',
+            'id_horario__id_asignacion_materia__id_materia',
+            'id_horario__id_asignacion_materia__id_grupo',
+            'id_horario__id_asignacion_materia__id_maestro__id_usuario',
+        )
+        .filter(
+            id_inscripcion__in=[inscripcion.id_inscripcion for inscripcion in inscripciones],
+            id_horario__id_asignacion_materia__in=asignaciones,
+        )
+        .order_by('-fecha_asistencia', '-unidad', 'id_horario__id_asignacion_materia__id_materia__nombre')
+    )
+
+    if asignacion_id:
+        asistencias_qs = asistencias_qs.filter(id_horario__id_asignacion_materia__pk=asignacion_id)
+    if unidad_str:
+        try:
+            asistencias_qs = asistencias_qs.filter(unidad=int(unidad_str))
+        except ValueError:
+            pass
+    fecha_inicio = _parse_fecha_iso(fecha_inicio_str)
+    fecha_fin = _parse_fecha_iso(fecha_fin_str)
+    if fecha_inicio:
+        asistencias_qs = asistencias_qs.filter(fecha_asistencia__gte=fecha_inicio)
+    if fecha_fin:
+        asistencias_qs = asistencias_qs.filter(fecha_asistencia__lte=fecha_fin)
+
+    for asistencia in asistencias_qs[:limite]:
+        asignacion = asistencia.id_horario.id_asignacion_materia
+        total_registros += 1
+        if asistencia.estatus == 'Presente':
+            total_presentes += 1
+        elif asistencia.estatus == 'Ausente':
+            total_ausentes += 1
+        elif asistencia.estatus == 'Tarde':
+            total_tarde += 1
+        elif asistencia.estatus == 'Justificado':
+            total_justificado += 1
+
+        rows.append({
+            'fecha': asistencia.fecha_asistencia.strftime('%d/%m/%Y'),
+            'unidad': asistencia.unidad,
+            'materia': asignacion.id_materia.nombre,
+            'materia_clave': asignacion.id_materia.clave,
+            'grupo': asignacion.id_grupo.clave,
+            'horario': (
+                f'{asistencia.id_horario.dia_semana} '
+                f'{asistencia.id_horario.hora_inicio.strftime("%H:%M")} - '
+                f'{asistencia.id_horario.hora_fin.strftime("%H:%M")}'
+            ),
+            'estatus': asistencia.estatus,
+            'observaciones': asistencia.observaciones or '',
+            'maestro': f'{asignacion.id_maestro.id_usuario.nombre} {asignacion.id_maestro.id_usuario.apellido}',
+        })
+
+    porcentaje = (total_presentes / total_registros * 100) if total_registros else 0
+    resumen = {
+        'total': total_registros,
+        'presentes': total_presentes,
+        'ausentes': total_ausentes,
+        'tarde': total_tarde,
+        'justificado': total_justificado,
+        'porcentaje': f'{porcentaje:.1f}',
+    }
+    return rows, resumen, asignaciones
+
+
+def _filtros_texto_asistencias_alumno(
+    *,
+    asignacion_id: str,
+    unidad_str: str,
+    fecha_inicio_str: str,
+    fecha_fin_str: str,
+    asignaciones: list,
+) -> list[str]:
+    filtros = []
+    if asignacion_id:
+        asignacion = next(
+            (item for item in asignaciones if str(item.id_asignacion_materia) == asignacion_id),
+            None,
+        )
+        if asignacion:
+            filtros.append(
+                f'Materia: {asignacion.id_materia.clave} - {asignacion.id_materia.nombre}'
+            )
+    if unidad_str:
+        filtros.append(f'Unidad: {unidad_str}')
+    if fecha_inicio_str:
+        filtros.append(f'Desde: {fecha_inicio_str}')
+    if fecha_fin_str:
+        filtros.append(f'Hasta: {fecha_fin_str}')
+    return filtros
+
+
+def _query_exportar_asistencias_alumno(request) -> str:
+    params = {
+        clave: request.GET.get(clave, '').strip()
+        for clave in ('asignacion_id', 'unidad', 'fecha_inicio', 'fecha_fin')
+        if request.GET.get(clave, '').strip()
+    }
+    query = urlencode(params)
+    base = reverse('exportar_asistencias_alumno')
+    return f'{base}?{query}' if query else base
 
 
 def consultar_asistencias(request):
@@ -965,12 +1365,6 @@ def consultar_asistencias(request):
 
     perfil = _perfil_alumno(request)
     alumno = Alumnos.objects.select_related('id_usuario').filter(pk=request.session.get('alumno_id')).first()
-    rows = []
-    total_registros = 0
-    total_presentes = 0
-    total_ausentes = 0
-    total_tarde = 0
-    total_justificado = 0
 
     asignacion_id = request.GET.get('asignacion_id', '').strip()
     unidad_str = request.GET.get('unidad', '').strip()
@@ -978,72 +1372,14 @@ def consultar_asistencias(request):
     fecha_fin_str = request.GET.get('fecha_fin', '').strip()
     reporte_solicitado = bool(request.GET)
 
-    if alumno:
-        inscripciones = list(
-            Inscripcion.objects.select_related('id_grupo', 'id_ciclo_escolar')
-            .filter(id_alumno=alumno, estatus='Activa')
-            .order_by('id_grupo__clave')
-        )
-        grupos_ids = [inscripcion.id_grupo_id for inscripcion in inscripciones]
-        asignaciones = (
-            AsignacionMateria.objects.select_related('id_materia', 'id_grupo', 'id_ciclo_escolar')
-            .filter(id_grupo_id__in=grupos_ids, estatus='Activa')
-            .order_by('id_materia__nombre')
-        )
+    rows, resumen, asignaciones = _obtener_datos_asistencias_alumno(
+        alumno,
+        asignacion_id=asignacion_id,
+        unidad_str=unidad_str,
+        fecha_inicio_str=fecha_inicio_str,
+        fecha_fin_str=fecha_fin_str,
+    )
 
-        asistencias_qs = (
-            Asistencia.objects.select_related(
-                'id_inscripcion__id_alumno__id_usuario',
-                'id_horario__id_asignacion_materia__id_materia',
-                'id_horario__id_asignacion_materia__id_grupo',
-                'id_horario__id_asignacion_materia__id_maestro__id_usuario',
-            )
-            .filter(
-                id_inscripcion__in=[inscripcion.id_inscripcion for inscripcion in inscripciones],
-                id_horario__id_asignacion_materia__in=asignaciones,
-            )
-            .order_by('-fecha_asistencia', '-unidad', 'id_horario__id_asignacion_materia__id_materia__nombre')
-        )
-
-        if asignacion_id:
-            asistencias_qs = asistencias_qs.filter(id_horario__id_asignacion_materia__pk=asignacion_id)
-        if unidad_str:
-            try:
-                asistencias_qs = asistencias_qs.filter(unidad=int(unidad_str))
-            except ValueError:
-                pass
-        fecha_inicio = _parse_fecha_iso(fecha_inicio_str)
-        fecha_fin = _parse_fecha_iso(fecha_fin_str)
-        if fecha_inicio:
-            asistencias_qs = asistencias_qs.filter(fecha_asistencia__gte=fecha_inicio)
-        if fecha_fin:
-            asistencias_qs = asistencias_qs.filter(fecha_asistencia__lte=fecha_fin)
-
-        for asistencia in asistencias_qs[:250]:
-            usuario_alumno = asistencia.id_inscripcion.id_alumno.id_usuario
-            asignacion = asistencia.id_horario.id_asignacion_materia
-            total_registros += 1
-            if asistencia.estatus == 'Presente':
-                total_presentes += 1
-            elif asistencia.estatus == 'Ausente':
-                total_ausentes += 1
-            elif asistencia.estatus == 'Tarde':
-                total_tarde += 1
-            elif asistencia.estatus == 'Justificado':
-                total_justificado += 1
-
-            rows.append({
-                'fecha': asistencia.fecha_asistencia.strftime('%d/%m/%Y'),
-                'unidad': asistencia.unidad,
-                'materia': f'{asignacion.id_materia.clave} - {asignacion.id_materia.nombre}',
-                'grupo': asignacion.id_grupo.clave,
-                'horario': f'{asistencia.id_horario.dia_semana} {asistencia.id_horario.hora_inicio.strftime("%H:%M")} - {asistencia.id_horario.hora_fin.strftime("%H:%M")}',
-                'estatus': asistencia.estatus,
-                'observaciones': asistencia.observaciones or '',
-                'maestro': f'{asignacion.id_maestro.id_usuario.nombre} {asignacion.id_maestro.id_usuario.apellido}',
-            })
-
-    porcentaje = (total_presentes / total_registros * 100) if total_registros else 0
     context = {
         'perfil': perfil,
         'asistencias_rows': rows,
@@ -1053,17 +1389,56 @@ def consultar_asistencias(request):
         'filtro_fecha_inicio': fecha_inicio_str,
         'filtro_fecha_fin': fecha_fin_str,
         'reporte_solicitado': reporte_solicitado,
-        'asignaciones_disponibles': asignaciones if alumno else [],
-        'resumen_asistencias': {
-            'total': total_registros,
-            'presentes': total_presentes,
-            'ausentes': total_ausentes,
-            'tarde': total_tarde,
-            'justificado': total_justificado,
-            'porcentaje': f'{porcentaje:.1f}',
-        },
+        'asignaciones_disponibles': asignaciones,
+        'resumen_asistencias': resumen,
+        'exportar_pdf_url': _query_exportar_asistencias_alumno(request),
     }
     return render(request, 'alumno/asistencias.html', context)
+
+
+def exportar_asistencias_alumno(request):
+    if not sesion_roles_permitidas(request, ('alumno',)):
+        return redirect('selector_rol')
+
+    perfil = _perfil_alumno(request)
+    alumno = Alumnos.objects.select_related('id_usuario').filter(pk=request.session.get('alumno_id')).first()
+
+    asignacion_id = request.GET.get('asignacion_id', '').strip()
+    unidad_str = request.GET.get('unidad', '').strip()
+    fecha_inicio_str = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin_str = request.GET.get('fecha_fin', '').strip()
+
+    rows, resumen, asignaciones = _obtener_datos_asistencias_alumno(
+        alumno,
+        asignacion_id=asignacion_id,
+        unidad_str=unidad_str,
+        fecha_inicio_str=fecha_inicio_str,
+        fecha_fin_str=fecha_fin_str,
+        limite=500,
+    )
+    filtros = _filtros_texto_asistencias_alumno(
+        asignacion_id=asignacion_id,
+        unidad_str=unidad_str,
+        fecha_inicio_str=fecha_inicio_str,
+        fecha_fin_str=fecha_fin_str,
+        asignaciones=asignaciones,
+    )
+    ahora = datetime.now()
+
+    pdf_bytes = generar_pdf_asistencias_alumno(
+        perfil=perfil,
+        rows=rows,
+        resumen=resumen,
+        filtros=filtros or None,
+        ahora=ahora,
+        foto_ruta=_ruta_foto_alumno(alumno),
+    )
+
+    matricula = perfil.get('matricula') or 'alumno'
+    nombre_archivo = f'reporte_asistencias_{matricula}_{ahora.strftime("%Y%m%d_%H%M%S")}.pdf'
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
 
 
 def dashboard_maestro(request):
@@ -1090,6 +1465,31 @@ def dashboard_maestro(request):
             cp = request.POST.get('cp', '').strip()
             correo_institucional = request.POST.get('correo_institucional', '').strip()
             curp = request.POST.get('curp', '').strip()
+
+            errores_campos = validar_datos_perfil_usuario(
+                correo_institucional, telefono, cp, usuario.id_usuario
+            )
+            if errores_campos:
+                messages.error(request, 'Corrige los errores en el formulario.')
+                perfil_guardado = _perfil_maestro(request)
+                perfil = perfil_guardado.copy()
+                perfil.update({
+                    'correo_institucional': correo_institucional,
+                    'telefono': telefono,
+                    'calle': calle,
+                    'numero_exterior': numero_exterior,
+                    'numero_interior': numero_interior,
+                    'colonia': colonia,
+                    'ciudad': ciudad,
+                    'estado': estado,
+                    'cp': cp,
+                })
+                return render(request, 'maestro/maestro.html', {
+                    'perfil': perfil,
+                    'perfil_guardado': perfil_guardado,
+                    'errores_campos': errores_campos,
+                    'modo_edicion': True,
+                })
             
             # Construir dirección concatenada (igual que admin_views.construir_direccion)
             partes = [calle, numero_exterior, numero_interior, colonia, ciudad, estado, cp]
@@ -1099,7 +1499,7 @@ def dashboard_maestro(request):
             # Actualizar campos
             datos_personales.telefono = telefono
             datos_personales.direccion = direccion
-            datos_personales.correo_inst = correo_institucional
+            datos_personales.correo_inst = correo_institucional or None
             if curp:
                 datos_personales.curp = curp
             datos_personales.save()
@@ -1123,7 +1523,11 @@ def registrar_calificaciones(request):
     if not sesion_roles_permitidas(request, ('maestro',)):
         return redirect('selector_rol')
 
-    return render(request, 'maestro/RegistrarCalificaciones.html', _contexto_maestro(request))
+    contexto = _contexto_maestro(request)
+    asignaciones_docente = contexto.get('asignaciones_docente', [])
+    contexto['periodo_actual'] = _periodo_actual()
+    contexto['asignaciones_calificaciones'] = _asignaciones_maestro_serializadas(asignaciones_docente)
+    return render(request, 'maestro/RegistrarCalificaciones.html', contexto)
 
 
 def _obtener_datos_calificaciones_maestro(maestro: Maestros, asignacion_id: str, unidad: int = None) -> dict:
@@ -1139,10 +1543,11 @@ def _obtener_datos_calificaciones_maestro(maestro: Maestros, asignacion_id: str,
         estatus='Activa',
     )
 
-    inscripciones = (
-        Inscripcion.objects.select_related('id_alumno__id_usuario')
-        .filter(id_grupo=asignacion.id_grupo, estatus='Activa')
-        .order_by('id_alumno__id_usuario__apellido', 'id_alumno__id_usuario__nombre')
+    inscripciones = _ordenar_inscripciones_por_primer_apellido(
+        Inscripcion.objects.select_related('id_alumno__id_usuario').filter(
+            id_grupo=asignacion.id_grupo,
+            estatus='Activa',
+        )
     )
 
     # Obtener TODAS las calificaciones de TODAS las unidades para cada alumno
@@ -1171,6 +1576,7 @@ def _obtener_datos_calificaciones_maestro(maestro: Maestros, asignacion_id: str,
             'nombre_completo': f'{usuario.nombre} {usuario.apellido}',
             'estatus_alumno': inscripcion.estatus,
             'todas_calificaciones': todas_calificaciones,
+            **_campos_orden_alumno_usuario(usuario),
         })
 
     return {
@@ -1190,7 +1596,7 @@ def _obtener_datos_calificaciones_maestro(maestro: Maestros, asignacion_id: str,
             },
         },
         'unidad': unidad or 1,
-        'alumnos': alumnos,
+        'alumnos': _ordenar_lista_alumnos_dict(alumnos),
     }
 
 
@@ -1341,111 +1747,572 @@ def guardar_calificaciones_maestro(request):
     return JsonResponse({'success': True, 'guardadas': guardadas})
 
 
-def consultar_reportes(request):
-    if not sesion_roles_permitidas(request, ('maestro',)):
-        return redirect('selector_rol')
+def _asignaciones_maestro_serializadas(asignaciones_docente) -> list[dict]:
+    return [
+        {
+            'id': asignacion.id_asignacion_materia,
+            'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+            'grupo': asignacion.id_grupo.clave,
+            'grupo_nombre': asignacion.id_grupo.nombre,
+            'materia_id': asignacion.id_materia.id_materia,
+            'materia_clave': asignacion.id_materia.clave,
+            'materia_nombre': asignacion.id_materia.nombre,
+        }
+        for asignacion in asignaciones_docente
+    ]
 
-    contexto = _contexto_maestro(request)
-    maestro = contexto.get('maestro')
-    asignaciones_docente = contexto.get('asignaciones_docente', [])
 
+def _parse_filtros_reportes_maestro(request) -> tuple[str, str, int | None, bool]:
     reporte_tipo = request.GET.get('tipo', 'asistencias').strip().lower()
     asignacion_id = request.GET.get('asignacion_id', '').strip()
     unidad_str = request.GET.get('unidad', '').strip()
 
-    reportes = []
     if reporte_tipo not in ('asistencias', 'calificaciones'):
         reporte_tipo = 'asistencias'
 
-    filtros_aplicados = any([asignacion_id, unidad_str])
-    
-    unidad = None
-    if unidad_str:
-        try:
-            unidad = int(unidad_str)
-        except ValueError:
-            unidad = None
+    if not unidad_str:
+        return reporte_tipo, asignacion_id, None, False
+
+    try:
+        return reporte_tipo, asignacion_id, int(unidad_str), True
+    except ValueError:
+        return reporte_tipo, asignacion_id, None, False
+
+
+def _query_reportes_maestro(request) -> str:
+    reporte_tipo, asignacion_id, unidad, valido = _parse_filtros_reportes_maestro(request)
+    if not valido:
+        return ''
+    params = {'tipo': reporte_tipo, 'unidad': str(unidad)}
+    if asignacion_id:
+        params['asignacion_id'] = asignacion_id
+    vista = request.GET.get('vista', '').strip()
+    if vista and vista != 'lista':
+        params['vista'] = vista
+    fecha = request.GET.get('fecha', '').strip()
+    if fecha:
+        params['fecha'] = fecha
+    horario_id = request.GET.get('horario_id', '').strip()
+    if horario_id:
+        params['horario_id'] = horario_id
+    return '?' + urlencode(params)
+
+
+def _vista_asistencias_reporte(request, reporte_tipo: str) -> str:
+    vista = request.GET.get('vista', 'lista').strip().lower()
+    if reporte_tipo != 'asistencias' or vista not in ('lista', 'sesion'):
+        return 'lista'
+    return vista
+
+
+def _obtener_consulta_asistencia_sesion(
+    maestro: Maestros,
+    asignacion_id: str,
+    fecha_obj: date,
+    unidad: int,
+    horario_id: str | None = None,
+) -> dict | None:
+    """Pase de lista por sesión (solo lectura). No asume Presente si no hay registro."""
+    asignacion = (
+        AsignacionMateria.objects.select_related(
+            'id_materia',
+            'id_grupo__id_ciclo_escolar',
+            'id_maestro__id_usuario',
+        )
+        .filter(pk=asignacion_id, id_maestro=maestro, estatus='Activa')
+        .first()
+    )
+    if not asignacion:
+        return None
+
+    try:
+        datos = _obtener_datos_asistencia_maestro(
+            maestro,
+            asignacion_id,
+            fecha_obj,
+            unidad,
+            horario_id,
+        )
+    except Exception:
+        return None
+
+    horario_sugerido_id = datos.get('horario_sugerido_id')
+    asistencias_existentes: dict[int, dict] = {}
+    if horario_sugerido_id:
+        for asistencia in Asistencia.objects.filter(
+            id_horario_id=horario_sugerido_id,
+            fecha_asistencia=fecha_obj,
+            unidad=unidad,
+        ):
+            asistencias_existentes[asistencia.id_inscripcion_id] = {
+                'estatus': asistencia.estatus,
+                'observaciones': asistencia.observaciones or '',
+            }
+
+    horario_sel = None
+    for horario in datos.get('horarios', []):
+        if horario.get('id_horario') == horario_sugerido_id:
+            horario_sel = horario
+            break
+
+    horarios_del_dia = [h for h in datos.get('horarios', []) if h.get('es_del_dia')]
+    conteos = {
+        'Presente': 0,
+        'Ausente': 0,
+        'Tarde': 0,
+        'Justificado': 0,
+        'Sin registro': 0,
+    }
+    alumnos_sesion = []
+    for alumno in datos.get('alumnos', []):
+        id_inscripcion = alumno['id_inscripcion']
+        if id_inscripcion in asistencias_existentes:
+            registro = asistencias_existentes[id_inscripcion]
+            estatus = registro['estatus']
+            observaciones = registro['observaciones']
+            registrado = True
+        else:
+            estatus = 'Sin registro'
+            observaciones = ''
+            registrado = False
+
+        conteos[estatus] = conteos.get(estatus, 0) + 1
+        alumnos_sesion.append({
+            'matricula': alumno['matricula'],
+            'nombre': alumno['nombre_completo'],
+            'estado': estatus,
+            'observaciones': observaciones,
+            'registrado': registrado,
+            'primer_apellido': alumno.get('primer_apellido', ''),
+            'resto_apellido': alumno.get('resto_apellido', ''),
+            'nombre_orden': alumno.get('nombre_orden', ''),
+        })
+
+    alumnos_sesion = _ordenar_lista_alumnos_dict(alumnos_sesion)
+
+    horario_texto = ''
+    if horario_sel:
+        horario_texto = (
+            f"{horario_sel['dia_semana']} "
+            f"{horario_sel['hora_inicio']}-{horario_sel['hora_fin']}"
+        )
+
+    return {
+        'fecha': fecha_obj.strftime('%d/%m/%Y'),
+        'fecha_iso': fecha_obj.isoformat(),
+        'dia_semana': datos.get('dia_semana', _dia_semana_es(fecha_obj)),
+        'unidad': unidad,
+        'asignacion': datos.get('asignacion', {}),
+        'horario_id': horario_sugerido_id,
+        'horario_texto': horario_texto,
+        'horarios': horarios_del_dia,
+        'alumnos': alumnos_sesion,
+        'conteos': conteos,
+        'total_alumnos': len(alumnos_sesion),
+        'total_registrados': sum(1 for alumno in alumnos_sesion if alumno['registrado']),
+        'sin_registro': conteos.get('Sin registro', 0),
+    }
+
+
+def _etiqueta_asignacion_reporte(asignacion_id: str) -> str | None:
+    if not asignacion_id:
+        return None
+    asignacion = (
+        AsignacionMateria.objects.select_related(
+            'id_materia',
+            'id_grupo',
+            'id_ciclo_escolar',
+        )
+        .filter(pk=asignacion_id)
+        .first()
+    )
+    if not asignacion:
+        return f'Asignación #{asignacion_id}'
+    return (
+        f'{asignacion.id_materia.clave} - {asignacion.id_grupo.clave} '
+        f'({asignacion.id_ciclo_escolar.nombre_ciclo})'
+    )
+
+
+def _filtros_texto_sesion_asistencia(sesion_consulta: dict) -> list[str]:
+    asignacion = sesion_consulta.get('asignacion', {})
+    materia = asignacion.get('materia', {})
+    grupo = asignacion.get('grupo', {})
+    return [
+        f"Materia: {materia.get('codigo', '')} - {materia.get('nombre', '')}",
+        f"Grupo: {grupo.get('clave', '')}",
+        f"Fecha: {sesion_consulta.get('fecha', '')} ({sesion_consulta.get('dia_semana', '')})",
+        f"Horario: {sesion_consulta.get('horario_texto', '')}",
+        f"Unidad: {sesion_consulta.get('unidad', '')}",
+    ]
+
+
+def _obtener_sesion_exportable(request, maestro: Maestros) -> tuple[dict | None, str | None]:
+    reporte_tipo, asignacion_id, unidad, valido = _parse_filtros_reportes_maestro(request)
+    if not valido or unidad is None:
+        return None, 'Selecciona una unidad válida para exportar.'
+    if _vista_asistencias_reporte(request, reporte_tipo) != 'sesion':
+        return None, None
+
+    filtro_fecha = request.GET.get('fecha', '').strip()
+    filtro_horario_id = request.GET.get('horario_id', '').strip()
+    if not asignacion_id:
+        return None, 'Selecciona ciclo, grupo y materia para exportar la sesión.'
+    if not filtro_fecha:
+        return None, 'Selecciona la fecha de la sesión para exportar.'
+
+    try:
+        fecha_obj = _parse_fecha_iso(filtro_fecha)
+    except ValueError:
+        fecha_obj = None
+    if fecha_obj is None:
+        return None, 'La fecha seleccionada no es válida.'
+
+    sesion_consulta = _obtener_consulta_asistencia_sesion(
+        maestro,
+        asignacion_id,
+        fecha_obj,
+        unidad,
+        filtro_horario_id or None,
+    )
+    if sesion_consulta is None:
+        return None, 'No se encontró la asignación seleccionada.'
+    if not sesion_consulta.get('horarios'):
+        return None, (
+            f'No hay clase programada el {sesion_consulta.get("dia_semana", "")} '
+            f'para esta materia.'
+        )
+    if not sesion_consulta.get('horario_id'):
+        return None, 'Selecciona el horario de la sesión para exportar.'
+
+    return sesion_consulta, None
+
+
+def _nombre_archivo_sesion_asistencia(sesion_consulta: dict, extension: str, ahora: datetime) -> str:
+    materia = sesion_consulta.get('asignacion', {}).get('materia', {})
+    codigo = re.sub(r'[^\w\-]+', '_', str(materia.get('codigo', 'materia')))
+    fecha_slug = str(sesion_consulta.get('fecha_iso', '')).replace('-', '')
+    unidad = sesion_consulta.get('unidad', '')
+    return (
+        f'pase_lista_{codigo}_{fecha_slug}_u{unidad}_{ahora.strftime("%Y%m%d_%H%M%S")}.{extension}'
+    )
+
+
+def _filtros_texto_reportes_maestro(
+    reporte_tipo: str,
+    unidad: int | None,
+    asignacion_id: str,
+) -> list[str]:
+    filtros = [
+        f'Tipo: {"Asistencias" if reporte_tipo == "asistencias" else "Calificaciones"}',
+        f'Unidad: {unidad}',
+    ]
+    etiqueta_asignacion = _etiqueta_asignacion_reporte(asignacion_id)
+    if etiqueta_asignacion:
+        filtros.append(f'Asignación: {etiqueta_asignacion}')
+    else:
+        filtros.append('Asignación: Todas')
+    return filtros
+
+
+def _obtener_reportes_maestro(
+    maestro: Maestros,
+    reporte_tipo: str,
+    asignacion_id: str,
+    unidad: int,
+    *,
+    limite: int | None = 500,
+) -> list[dict]:
+    reportes: list[dict] = []
 
     if reporte_tipo == 'asistencias':
-        # Base query
         asistencias_qs = Asistencia.objects.select_related(
             'id_inscripcion__id_alumno__id_usuario',
             'id_horario__id_asignacion_materia__id_materia',
             'id_horario__id_asignacion_materia__id_grupo',
+            'id_horario__id_asignacion_materia__id_ciclo_escolar',
             'id_horario__id_asignacion_materia__id_maestro__id_usuario',
         ).filter(id_horario__id_asignacion_materia__id_maestro=maestro)
 
-        # Aplicar filtros
         if asignacion_id:
             asistencias_qs = asistencias_qs.filter(id_horario__id_asignacion_materia__pk=asignacion_id)
+        asistencias = list(asistencias_qs.filter(unidad=unidad))
+        asistencias.sort(
+            key=lambda asistencia: (
+                -asistencia.fecha_asistencia.toordinal(),
+                -asistencia.unidad,
+                *_clave_orden_primer_apellido_usuario(asistencia.id_inscripcion.id_alumno.id_usuario),
+            )
+        )
 
-        if unidad:
-            asistencias_qs = asistencias_qs.filter(unidad=unidad)
+        if limite is not None:
+            asistencias = asistencias[:limite]
 
-        # Ordenar
-        asistencias_qs = asistencias_qs.order_by('-fecha_asistencia', '-unidad')
-
-        # Iterar resultados
-        for asistencia in asistencias_qs[:500]:
+        for asistencia in asistencias:
             usuario_alumno = asistencia.id_inscripcion.id_alumno.id_usuario
             asignacion = asistencia.id_horario.id_asignacion_materia
+            horario = asistencia.id_horario
+            horario_texto = (
+                f'{horario.dia_semana} '
+                f'{horario.hora_inicio.strftime("%H:%M")}-{horario.hora_fin.strftime("%H:%M")}'
+            )
+            materia_texto = f'{asignacion.id_materia.clave} - {asignacion.id_materia.nombre}'
             reportes.append({
                 'tipo': 'asistencia',
                 'fecha': asistencia.fecha_asistencia.strftime('%d/%m/%Y'),
                 'unidad': asistencia.unidad,
                 'alumno': f'{usuario_alumno.nombre} {usuario_alumno.apellido}',
                 'matricula': usuario_alumno.matricula,
-                'materia': f'{asignacion.id_materia.clave}',
+                'materia': materia_texto,
                 'grupo': asignacion.id_grupo.clave,
-                'detalle': f'{asistencia.id_horario.dia_semana} {asistencia.id_horario.hora_inicio.strftime("%H:%M")}',
+                'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+                'horario': horario_texto,
+                'detalle': horario_texto,
                 'estado': asistencia.estatus,
                 'observaciones': asistencia.observaciones or '',
             })
+        return reportes
+
+    calificaciones_qs = Calificacion.objects.select_related(
+        'id_inscripcion__id_alumno__id_usuario',
+        'id_asignacion_materia__id_materia',
+        'id_asignacion_materia__id_grupo',
+        'id_asignacion_materia__id_ciclo_escolar',
+        'id_asignacion_materia__id_maestro__id_usuario',
+    ).filter(id_asignacion_materia__id_maestro=maestro)
+
+    if asignacion_id:
+        calificaciones_qs = calificaciones_qs.filter(id_asignacion_materia__pk=asignacion_id)
+    calificaciones = list(calificaciones_qs.filter(unidad=unidad))
+    calificaciones.sort(
+        key=lambda calificacion: (
+            -calificacion.fecha_registro.toordinal() if calificacion.fecha_registro else 0,
+            -calificacion.unidad,
+            *_clave_orden_primer_apellido_usuario(calificacion.id_inscripcion.id_alumno.id_usuario),
+        )
+    )
+
+    if limite is not None:
+        calificaciones = calificaciones[:limite]
+
+    for calificacion in calificaciones:
+        usuario_alumno = calificacion.id_inscripcion.id_alumno.id_usuario
+        asignacion = calificacion.id_asignacion_materia
+        calificacion_texto = _formatear_calificacion_visible(calificacion.calificacion)
+        materia_texto = f'{asignacion.id_materia.clave} - {asignacion.id_materia.nombre}'
+        reportes.append({
+            'tipo': 'calificacion',
+            'fecha': calificacion.fecha_registro.strftime('%d/%m/%Y'),
+            'unidad': calificacion.unidad,
+            'alumno': f'{usuario_alumno.nombre} {usuario_alumno.apellido}',
+            'matricula': usuario_alumno.matricula,
+            'materia': materia_texto,
+            'grupo': asignacion.id_grupo.clave,
+            'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+            'calificacion': calificacion_texto,
+            'detalle': calificacion_texto,
+            'estado': 'Calificación',
+            'observaciones': calificacion.observaciones or '',
+        })
+
+    return reportes
+
+
+def _maestro_sesion_o_redirect(request):
+    if not sesion_roles_permitidas(request, ('maestro',)):
+        return None, redirect('selector_rol')
+    maestro = Maestros.objects.select_related('id_usuario').filter(pk=request.session.get('maestro_id')).first()
+    if not maestro:
+        return None, redirect('selector_rol')
+    return maestro, None
+
+
+def consultar_reportes(request):
+    maestro, redirect_resp = _maestro_sesion_o_redirect(request)
+    if redirect_resp:
+        return redirect_resp
+
+    contexto = _contexto_maestro(request)
+    asignaciones_docente = contexto.get('asignaciones_docente', [])
+
+    reporte_tipo, asignacion_id, unidad, consulta_solicitada = _parse_filtros_reportes_maestro(request)
+    vista_asistencias = _vista_asistencias_reporte(request, reporte_tipo)
+    filtro_fecha = request.GET.get('fecha', '').strip()
+    filtro_horario_id = request.GET.get('horario_id', '').strip()
+
+    reportes = []
+    sesion_consulta = None
+    sesion_error = None
+    sesion_aviso = None
+
+    if reporte_tipo == 'asistencias' and vista_asistencias == 'sesion':
+        filtros_aplicados = consulta_solicitada
+        if consulta_solicitada and unidad is not None:
+            if not asignacion_id:
+                sesion_error = 'Selecciona ciclo, grupo y materia para consultar por sesión.'
+            elif not filtro_fecha:
+                sesion_error = 'Selecciona la fecha de la sesión.'
+            else:
+                try:
+                    fecha_obj = _parse_fecha_iso(filtro_fecha)
+                except ValueError:
+                    fecha_obj = None
+                if fecha_obj is None:
+                    sesion_error = 'La fecha seleccionada no es válida.'
+                else:
+                    sesion_consulta = _obtener_consulta_asistencia_sesion(
+                        maestro,
+                        asignacion_id,
+                        fecha_obj,
+                        unidad,
+                        filtro_horario_id or None,
+                    )
+                    if sesion_consulta is None:
+                        sesion_error = 'No se encontró la asignación seleccionada.'
+                    elif not sesion_consulta['horarios']:
+                        sesion_error = (
+                            f'No hay clase programada el {sesion_consulta["dia_semana"]} '
+                            f'para esta materia. Elige otra fecha.'
+                        )
+                    elif not sesion_consulta['horario_id']:
+                        sesion_error = 'No se pudo determinar el horario de la sesión.'
+                    elif len(sesion_consulta['horarios']) > 1 and not filtro_horario_id:
+                        sesion_aviso = (
+                            'Hay varios horarios este día. Se muestra el primero; '
+                            'cambia el horario arriba y vuelve a consultar si necesitas otro.'
+                        )
     else:
-        # Base query
-        calificaciones_qs = Calificacion.objects.select_related(
-            'id_inscripcion__id_alumno__id_usuario',
-            'id_asignacion_materia__id_materia',
-            'id_asignacion_materia__id_grupo',
-            'id_asignacion_materia__id_maestro__id_usuario',
-        ).filter(id_asignacion_materia__id_maestro=maestro)
-
-        # Aplicar filtros
-        if asignacion_id:
-            calificaciones_qs = calificaciones_qs.filter(id_asignacion_materia__pk=asignacion_id)
-
-        if unidad:
-            calificaciones_qs = calificaciones_qs.filter(unidad=unidad)
-
-        # Ordenar
-        calificaciones_qs = calificaciones_qs.order_by('-fecha_registro', '-unidad')
-
-        # Iterar resultados
-        for calificacion in calificaciones_qs[:500]:
-            usuario_alumno = calificacion.id_inscripcion.id_alumno.id_usuario
-            asignacion = calificacion.id_asignacion_materia
-            reportes.append({
-                'tipo': 'calificacion',
-                'fecha': calificacion.fecha_registro.strftime('%d/%m/%Y'),
-                'unidad': calificacion.unidad,
-                'alumno': f'{usuario_alumno.nombre} {usuario_alumno.apellido}',
-                'matricula': usuario_alumno.matricula,
-                'materia': f'{asignacion.id_materia.clave}',
-                'grupo': asignacion.id_grupo.clave,
-                'detalle': _formatear_calificacion_visible(calificacion.calificacion),
-                'estado': 'Calificación',
-                'observaciones': calificacion.observaciones or '',
-            })
+        filtros_aplicados = consulta_solicitada
+        if consulta_solicitada and unidad is not None:
+            reportes = _obtener_reportes_maestro(
+                maestro,
+                reporte_tipo,
+                asignacion_id,
+                unidad,
+                limite=500,
+            )
 
     context = {
         **contexto,
         'reportes': reportes,
+        'sesion_consulta': sesion_consulta,
+        'sesion_error': sesion_error,
+        'sesion_aviso': sesion_aviso,
         'filtros_aplicados': filtros_aplicados,
         'reporte_tipo': reporte_tipo,
+        'vista_asistencias': vista_asistencias,
         'filtro_asignacion_id': asignacion_id,
-        'filtro_unidad': unidad_str,
+        'filtro_unidad': request.GET.get('unidad', '').strip(),
+        'filtro_fecha': filtro_fecha,
+        'filtro_horario_id': filtro_horario_id,
+        'periodo_actual': _periodo_actual(),
+        'asignaciones_reportes': _asignaciones_maestro_serializadas(asignaciones_docente),
+        'query_reportes': _query_reportes_maestro(request),
     }
     return render(request, 'maestro/ConsultarReportes.html', context)
+
+
+def exportar_reportes_maestro_excel(request):
+    maestro, redirect_resp = _maestro_sesion_o_redirect(request)
+    if redirect_resp:
+        return redirect_resp
+
+    reporte_tipo, asignacion_id, unidad, valido = _parse_filtros_reportes_maestro(request)
+    if not valido or unidad is None:
+        messages.error(request, 'Selecciona una unidad válida para exportar el reporte.')
+        return redirect(reverse('consultar_reportes') + _query_reportes_maestro(request))
+
+    usuario = maestro.id_usuario
+    maestro_nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+    ahora = datetime.now()
+
+    sesion_consulta, error_sesion = _obtener_sesion_exportable(request, maestro)
+    if error_sesion:
+        messages.error(request, error_sesion)
+        return redirect(reverse('consultar_reportes') + _query_reportes_maestro(request))
+
+    if sesion_consulta is not None:
+        output = generar_excel_sesion_asistencia_maestro(
+            sesion_consulta,
+            maestro_nombre=maestro_nombre,
+            filtros=_filtros_texto_sesion_asistencia(sesion_consulta),
+            ahora=ahora,
+        )
+        nombre_archivo = _nombre_archivo_sesion_asistencia(sesion_consulta, 'xlsx', ahora)
+    else:
+        reportes = _obtener_reportes_maestro(
+            maestro,
+            reporte_tipo,
+            asignacion_id,
+            unidad,
+            limite=None,
+        )
+        output = generar_excel_reportes_maestro(
+            reportes,
+            reporte_tipo=reporte_tipo,
+            maestro_nombre=maestro_nombre,
+            filtros=_filtros_texto_reportes_maestro(reporte_tipo, unidad, asignacion_id),
+            ahora=ahora,
+        )
+        prefijo = 'asistencias' if reporte_tipo == 'asistencias' else 'calificaciones'
+        nombre_archivo = f'reporte_{prefijo}_u{unidad}_{ahora.strftime("%Y%m%d_%H%M%S")}.xlsx'
+
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
+
+
+def exportar_reportes_maestro_pdf(request):
+    maestro, redirect_resp = _maestro_sesion_o_redirect(request)
+    if redirect_resp:
+        return redirect_resp
+
+    reporte_tipo, asignacion_id, unidad, valido = _parse_filtros_reportes_maestro(request)
+    if not valido or unidad is None:
+        messages.error(request, 'Selecciona una unidad válida para exportar el reporte.')
+        return redirect(reverse('consultar_reportes') + _query_reportes_maestro(request))
+
+    usuario = maestro.id_usuario
+    maestro_nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+    ahora = datetime.now()
+
+    sesion_consulta, error_sesion = _obtener_sesion_exportable(request, maestro)
+    if error_sesion:
+        messages.error(request, error_sesion)
+        return redirect(reverse('consultar_reportes') + _query_reportes_maestro(request))
+
+    if sesion_consulta is not None:
+        pdf_bytes = generar_pdf_sesion_asistencia_maestro(
+            sesion_consulta,
+            maestro_nombre=maestro_nombre,
+            filtros=_filtros_texto_sesion_asistencia(sesion_consulta),
+            ahora=ahora,
+        )
+        nombre_archivo = _nombre_archivo_sesion_asistencia(sesion_consulta, 'pdf', ahora)
+    else:
+        reportes = _obtener_reportes_maestro(
+            maestro,
+            reporte_tipo,
+            asignacion_id,
+            unidad,
+            limite=None,
+        )
+        pdf_bytes = generar_pdf_reportes_maestro(
+            reportes,
+            reporte_tipo=reporte_tipo,
+            maestro_nombre=maestro_nombre,
+            filtros=_filtros_texto_reportes_maestro(reporte_tipo, unidad, asignacion_id),
+            ahora=ahora,
+        )
+        prefijo = 'asistencias' if reporte_tipo == 'asistencias' else 'calificaciones'
+        nombre_archivo = f'reporte_{prefijo}_u{unidad}_{ahora.strftime("%Y%m%d_%H%M%S")}.pdf'
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
 
 
 def get_materias_por_semestre(request):
@@ -1470,10 +2337,11 @@ def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fec
         estatus='Activa',
     )
 
-    inscripciones = (
-        Inscripcion.objects.select_related('id_alumno__id_usuario')
-        .filter(id_grupo=asignacion.id_grupo, estatus='Activa')
-        .order_by('id_alumno__id_usuario__apellido', 'id_alumno__id_usuario__nombre')
+    inscripciones = _ordenar_inscripciones_por_primer_apellido(
+        Inscripcion.objects.select_related('id_alumno__id_usuario').filter(
+            id_grupo=asignacion.id_grupo,
+            estatus='Activa',
+        )
     )
 
     horarios_qs = (
@@ -1488,7 +2356,7 @@ def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fec
 
     for horario in horarios_qs:
         serializado = _serializar_horario(horario)
-        serializado['es_del_dia'] = horario.dia_semana == dia_seleccionado
+        serializado['es_del_dia'] = _dias_semana_coinciden(horario.dia_semana, dia_seleccionado)
         horarios_serializados.append(serializado)
 
     if horario_id:
@@ -1509,6 +2377,7 @@ def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fec
             asistencias_existentes[asistencia.id_inscripcion_id] = {
                 'estatus': asistencia.estatus,
                 'observaciones': asistencia.observaciones or '',
+                'guardada': True,
             }
 
     alumnos = []
@@ -1519,8 +2388,16 @@ def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fec
             'matricula': usuario.matricula,
             'nombre_completo': f'{usuario.nombre} {usuario.apellido}',
             'estatus_alumno': inscripcion.estatus,
-            'asistencia': asistencias_existentes.get(inscripcion.id_inscripcion, {'estatus': 'Presente', 'observaciones': ''}),
+            'asistencia': asistencias_existentes.get(
+                inscripcion.id_inscripcion,
+                {'estatus': 'Presente', 'observaciones': '', 'guardada': False},
+            ),
+            **_campos_orden_alumno_usuario(usuario),
         })
+
+    total_registrados = len(asistencias_existentes)
+    hoy = timezone.localdate()
+    captura_permitida = fecha_obj <= hoy
 
     return {
         'asignacion': {
@@ -1542,8 +2419,18 @@ def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fec
         'unidad': unidad,
         'horario_sugerido_id': horario_sugerido_id,
         'horarios': horarios_serializados,
-        'alumnos': alumnos,
+        'alumnos': _ordenar_lista_alumnos_dict(alumnos),
+        'lista_guardada': total_registrados > 0,
+        'total_registrados': total_registrados,
+        'total_alumnos': len(alumnos),
+        'captura_permitida': captura_permitida,
     }
+
+
+def _validar_fecha_captura_asistencia(fecha_obj: date, **_) -> str | None:
+    if fecha_obj > timezone.localdate():
+        return 'No puedes registrar asistencia en fechas futuras.'
+    return None
 
 
 def get_datos_asistencia_maestro(request):
@@ -1608,6 +2495,14 @@ def guardar_asistencia_maestro(request):
     except ValueError:
         return JsonResponse({'success': False, 'error': 'La unidad debe ser un número entero'}, status=400)
 
+    error_fecha = _validar_fecha_captura_asistencia(
+        fecha_obj,
+        horario_id=int(horario_id),
+        unidad=unidad,
+    )
+    if error_fecha:
+        return JsonResponse({'success': False, 'error': error_fecha}, status=400)
+
     asignacion = get_object_or_404(
         AsignacionMateria.objects.select_related('id_grupo'),
         pk=asignacion_id,
@@ -1666,16 +2561,357 @@ def dashboard_administrativo(request):
     return render(request, 'administrativo/administrativo.html', context)
 
 
+def _asignaciones_admin_serializadas() -> list[dict]:
+    asignaciones = (
+        AsignacionMateria.objects.select_related('id_materia', 'id_grupo', 'id_ciclo_escolar')
+        .filter(estatus='Activa')
+        .order_by('id_grupo__clave', 'id_materia__nombre')
+    )
+    return [
+        {
+            'id': asignacion.id_asignacion_materia,
+            'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+            'ciclo_id': asignacion.id_ciclo_escolar_id,
+            'grupo': asignacion.id_grupo.clave,
+            'grupo_id': asignacion.id_grupo_id,
+            'grupo_nombre': asignacion.id_grupo.nombre,
+            'materia_id': asignacion.id_materia.id_materia,
+            'materia_clave': asignacion.id_materia.clave,
+            'materia_nombre': asignacion.id_materia.nombre,
+        }
+        for asignacion in asignaciones
+    ]
+
+
+def _alumnos_admin_reportes_serializados() -> list[dict]:
+    inscripciones = (
+        Inscripcion.objects.select_related('id_alumno__id_usuario', 'id_grupo')
+        .filter(estatus='Activa')
+        .order_by('id_grupo__clave', 'id_alumno__id_usuario__apellido', 'id_alumno__id_usuario__nombre')
+    )
+    return [
+        {
+            'id': inscripcion.id_alumno_id,
+            'grupo_id': inscripcion.id_grupo_id,
+            'grupo': inscripcion.id_grupo.clave,
+            'nombre': (
+                f'{inscripcion.id_alumno.id_usuario.nombre} '
+                f'{inscripcion.id_alumno.id_usuario.apellido}'
+            ).strip(),
+            'matricula': inscripcion.id_alumno.id_usuario.matricula,
+        }
+        for inscripcion in inscripciones
+    ]
+
+
+def _parse_filtros_reportes_admin(request) -> tuple[str, str, str, str, str, int | None, bool]:
+    reporte_tipo = request.GET.get('tipo', 'asistencias').strip().lower()
+    asignacion_id = request.GET.get('asignacion_id', '').strip()
+    grupo_id = request.GET.get('grupo_id', '').strip()
+    alumno_id = request.GET.get('alumno_id', '').strip()
+    ciclo_id = request.GET.get('ciclo_id', '').strip()
+    unidad_str = request.GET.get('unidad', '').strip()
+
+    if reporte_tipo not in ('asistencias', 'calificaciones'):
+        reporte_tipo = 'asistencias'
+
+    if not unidad_str:
+        return reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, None, False
+
+    try:
+        return reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, int(unidad_str), True
+    except ValueError:
+        return reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, None, False
+
+
+def _query_reportes_admin(request) -> str:
+    reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, unidad, valido = (
+        _parse_filtros_reportes_admin(request)
+    )
+    if not valido or unidad is None:
+        return ''
+    params = {'tipo': reporte_tipo, 'unidad': str(unidad)}
+    if asignacion_id:
+        params['asignacion_id'] = asignacion_id
+    if grupo_id:
+        params['grupo_id'] = grupo_id
+    if alumno_id:
+        params['alumno_id'] = alumno_id
+    if ciclo_id:
+        params['ciclo_id'] = ciclo_id
+    return '?' + urlencode(params)
+
+
+def _filtros_texto_reportes_admin(
+    reporte_tipo: str,
+    unidad: int | None,
+    asignacion_id: str,
+    grupo_id: str,
+    alumno_id: str,
+    ciclo_id: str,
+) -> list[str]:
+    filtros = [
+        f'Tipo: {"Asistencias" if reporte_tipo == "asistencias" else "Calificaciones"}',
+        f'Unidad: {unidad}',
+    ]
+    if ciclo_id:
+        ciclo = CicloEscolar.objects.filter(pk=ciclo_id).first()
+        filtros.append(f'Ciclo: {ciclo.nombre_ciclo if ciclo else ciclo_id}')
+    if grupo_id:
+        grupo = Grupo.objects.filter(pk=grupo_id).first()
+        filtros.append(f'Grupo: {grupo.clave if grupo else grupo_id}')
+    if alumno_id:
+        alumno = Alumnos.objects.select_related('id_usuario').filter(pk=alumno_id).first()
+        if alumno:
+            filtros.append(
+                f'Alumno: {alumno.id_usuario.matricula} - '
+                f'{alumno.id_usuario.nombre} {alumno.id_usuario.apellido}'
+            )
+        else:
+            filtros.append(f'Alumno: {alumno_id}')
+    etiqueta_asignacion = _etiqueta_asignacion_reporte(asignacion_id)
+    if etiqueta_asignacion:
+        filtros.append(f'Materia: {etiqueta_asignacion}')
+    return filtros
+
+
+def _obtener_reportes_admin(
+    reporte_tipo: str,
+    unidad: int,
+    *,
+    asignacion_id: str = '',
+    grupo_id: str = '',
+    alumno_id: str = '',
+    ciclo_id: str = '',
+    limite: int | None = 500,
+) -> list[dict]:
+    reportes: list[dict] = []
+
+    if reporte_tipo == 'asistencias':
+        asistencias_qs = Asistencia.objects.select_related(
+            'id_inscripcion__id_alumno__id_usuario',
+            'id_horario__id_asignacion_materia__id_materia',
+            'id_horario__id_asignacion_materia__id_grupo',
+            'id_horario__id_asignacion_materia__id_ciclo_escolar',
+            'id_horario__id_asignacion_materia__id_maestro__id_usuario',
+        ).filter(unidad=unidad)
+
+        if asignacion_id:
+            asistencias_qs = asistencias_qs.filter(id_horario__id_asignacion_materia__pk=asignacion_id)
+        if grupo_id:
+            asistencias_qs = asistencias_qs.filter(id_horario__id_asignacion_materia__id_grupo_id=grupo_id)
+        if ciclo_id:
+            asistencias_qs = asistencias_qs.filter(
+                id_horario__id_asignacion_materia__id_ciclo_escolar_id=ciclo_id
+            )
+        if alumno_id:
+            asistencias_qs = asistencias_qs.filter(id_inscripcion__id_alumno_id=alumno_id)
+
+        asistencias = list(asistencias_qs)
+        asistencias.sort(
+            key=lambda asistencia: (
+                -asistencia.fecha_asistencia.toordinal(),
+                -asistencia.unidad,
+                *_clave_orden_primer_apellido_usuario(asistencia.id_inscripcion.id_alumno.id_usuario),
+            )
+        )
+        if limite is not None:
+            asistencias = asistencias[:limite]
+
+        for asistencia in asistencias:
+            usuario_alumno = asistencia.id_inscripcion.id_alumno.id_usuario
+            asignacion = asistencia.id_horario.id_asignacion_materia
+            horario = asistencia.id_horario
+            horario_texto = (
+                f'{horario.dia_semana} '
+                f'{horario.hora_inicio.strftime("%H:%M")}-{horario.hora_fin.strftime("%H:%M")}'
+            )
+            materia_texto = f'{asignacion.id_materia.clave} - {asignacion.id_materia.nombre}'
+            reportes.append({
+                'tipo': 'asistencia',
+                'fecha': asistencia.fecha_asistencia.strftime('%d/%m/%Y'),
+                'unidad': asistencia.unidad,
+                'alumno': f'{usuario_alumno.nombre} {usuario_alumno.apellido}',
+                'matricula': usuario_alumno.matricula,
+                'materia': materia_texto,
+                'grupo': asignacion.id_grupo.clave,
+                'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+                'horario': horario_texto,
+                'detalle': horario_texto,
+                'estado': asistencia.estatus,
+                'observaciones': asistencia.observaciones or '',
+            })
+        return reportes
+
+    calificaciones_qs = Calificacion.objects.select_related(
+        'id_inscripcion__id_alumno__id_usuario',
+        'id_asignacion_materia__id_materia',
+        'id_asignacion_materia__id_grupo',
+        'id_asignacion_materia__id_ciclo_escolar',
+        'id_asignacion_materia__id_maestro__id_usuario',
+    ).filter(unidad=unidad)
+
+    if asignacion_id:
+        calificaciones_qs = calificaciones_qs.filter(id_asignacion_materia__pk=asignacion_id)
+    if grupo_id:
+        calificaciones_qs = calificaciones_qs.filter(id_asignacion_materia__id_grupo_id=grupo_id)
+    if ciclo_id:
+        calificaciones_qs = calificaciones_qs.filter(
+            id_asignacion_materia__id_ciclo_escolar_id=ciclo_id
+        )
+    if alumno_id:
+        calificaciones_qs = calificaciones_qs.filter(id_inscripcion__id_alumno_id=alumno_id)
+
+    calificaciones = list(calificaciones_qs)
+    calificaciones.sort(
+        key=lambda calificacion: (
+            -calificacion.fecha_registro.toordinal() if calificacion.fecha_registro else 0,
+            -calificacion.unidad,
+            *_clave_orden_primer_apellido_usuario(calificacion.id_inscripcion.id_alumno.id_usuario),
+        )
+    )
+    if limite is not None:
+        calificaciones = calificaciones[:limite]
+
+    for calificacion in calificaciones:
+        usuario_alumno = calificacion.id_inscripcion.id_alumno.id_usuario
+        asignacion = calificacion.id_asignacion_materia
+        calificacion_texto = _formatear_calificacion_visible(calificacion.calificacion)
+        materia_texto = f'{asignacion.id_materia.clave} - {asignacion.id_materia.nombre}'
+        reportes.append({
+            'tipo': 'calificacion',
+            'fecha': calificacion.fecha_registro.strftime('%d/%m/%Y'),
+            'unidad': calificacion.unidad,
+            'alumno': f'{usuario_alumno.nombre} {usuario_alumno.apellido}',
+            'matricula': usuario_alumno.matricula,
+            'materia': materia_texto,
+            'grupo': asignacion.id_grupo.clave,
+            'ciclo': asignacion.id_ciclo_escolar.nombre_ciclo,
+            'calificacion': calificacion_texto,
+            'detalle': calificacion_texto,
+            'estado': 'Calificación',
+            'observaciones': calificacion.observaciones or '',
+        })
+
+    return reportes
+
+
 def admin_reportes(request):
     if not sesion_roles_permitidas(request, ('administrativo',)):
         return redirect('selector_rol')
 
+    reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, unidad, consulta_solicitada = (
+        _parse_filtros_reportes_admin(request)
+    )
+    reportes = []
+    if consulta_solicitada and unidad is not None:
+        reportes = _obtener_reportes_admin(
+            reporte_tipo,
+            unidad,
+            asignacion_id=asignacion_id,
+            grupo_id=grupo_id,
+            alumno_id=alumno_id,
+            ciclo_id=ciclo_id,
+            limite=500,
+        )
+
     context = {
         'perfil': _perfil_administrativo(request),
-        'materias': Materia.objects.all().order_by('nombre'),
-        'reportes_admin': [],
+        'reportes': reportes,
+        'filtros_aplicados': consulta_solicitada and unidad is not None,
+        'reporte_tipo': reporte_tipo,
+        'filtro_asignacion_id': asignacion_id,
+        'filtro_grupo_id': grupo_id,
+        'filtro_alumno_id': alumno_id,
+        'filtro_ciclo_id': ciclo_id,
+        'filtro_unidad': request.GET.get('unidad', '').strip(),
+        'periodo_actual': _periodo_actual(),
+        'asignaciones_reportes': _asignaciones_admin_serializadas(),
+        'alumnos_reportes': _alumnos_admin_reportes_serializados(),
+        'query_reportes': _query_reportes_admin(request),
     }
     return render(request, 'administrativo/ConsultaReportes.html', context)
+
+
+def exportar_reportes_admin_excel(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, unidad, valido = (
+        _parse_filtros_reportes_admin(request)
+    )
+    if not valido or unidad is None:
+        messages.error(request, 'Selecciona una unidad válida para exportar el reporte.')
+        return redirect(reverse('admin_reportes') + _query_reportes_admin(request))
+
+    perfil = _perfil_administrativo(request)
+    ahora = datetime.now()
+    reportes = _obtener_reportes_admin(
+        reporte_tipo,
+        unidad,
+        asignacion_id=asignacion_id,
+        grupo_id=grupo_id,
+        alumno_id=alumno_id,
+        ciclo_id=ciclo_id,
+        limite=None,
+    )
+    output = generar_excel_reportes_maestro(
+        reportes,
+        reporte_tipo=reporte_tipo,
+        maestro_nombre=perfil.get('nombre_completo', ''),
+        filtros=_filtros_texto_reportes_admin(
+            reporte_tipo, unidad, asignacion_id, grupo_id, alumno_id, ciclo_id
+        ),
+        ahora=ahora,
+        responsable_etiqueta='Administrativo',
+    )
+    prefijo = 'asistencias' if reporte_tipo == 'asistencias' else 'calificaciones'
+    nombre_archivo = f'reporte_admin_{prefijo}_u{unidad}_{ahora.strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
+
+
+def exportar_reportes_admin_pdf(request):
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    reporte_tipo, asignacion_id, grupo_id, alumno_id, ciclo_id, unidad, valido = (
+        _parse_filtros_reportes_admin(request)
+    )
+    if not valido or unidad is None:
+        messages.error(request, 'Selecciona una unidad válida para exportar el reporte.')
+        return redirect(reverse('admin_reportes') + _query_reportes_admin(request))
+
+    perfil = _perfil_administrativo(request)
+    ahora = datetime.now()
+    reportes = _obtener_reportes_admin(
+        reporte_tipo,
+        unidad,
+        asignacion_id=asignacion_id,
+        grupo_id=grupo_id,
+        alumno_id=alumno_id,
+        ciclo_id=ciclo_id,
+        limite=None,
+    )
+    pdf_bytes = generar_pdf_reportes_maestro(
+        reportes,
+        reporte_tipo=reporte_tipo,
+        maestro_nombre=perfil.get('nombre_completo', ''),
+        filtros=_filtros_texto_reportes_admin(
+            reporte_tipo, unidad, asignacion_id, grupo_id, alumno_id, ciclo_id
+        ),
+        ahora=ahora,
+        responsable_etiqueta='Administrativo',
+    )
+    prefijo = 'asistencias' if reporte_tipo == 'asistencias' else 'calificaciones'
+    nombre_archivo = f'reporte_admin_{prefijo}_u{unidad}_{ahora.strftime("%Y%m%d_%H%M%S")}.pdf'
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
 
 
 def _materias_catalogo_admin():
@@ -1911,43 +3147,47 @@ def admin_materias(request):
 
 
 def exportar_materias_pdf(request):
+    """Genera el catálogo de materias en PDF desde el servidor."""
     if not sesion_roles_permitidas(request, ('administrativo',)):
         return redirect('selector_rol')
 
-    materias = Materia.objects.all().order_by('nombre')
-    
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font('Helvetica', 'B', 16)
-    pdf.cell(0, 10, 'SchoolTrack - Catalogo de Materias', ln=True, align='C')
-    pdf.ln(10)
-    
-    pdf.set_font('Helvetica', 'B', 10)
-    pdf.cell(30, 8, 'Codigo', 1, 0, 'C')
-    pdf.cell(80, 8, 'Nombre', 1, 0, 'C')
-    pdf.cell(25, 8, 'Semestre', 1, 0, 'C')
-    pdf.cell(25, 8, 'Creditos', 1, 0, 'C')
-    pdf.cell(30, 8, 'Estado', 1, 1, 'C')
-    
-    pdf.set_font('Helvetica', '', 9)
-    for materia in materias:
-        nombre = materia.nombre[:35] if materia.nombre else ''
-        estado = 'Activa' if materia.activo else 'Inactiva'
-        
-        pdf.cell(30, 7, str(materia.clave)[:10], 1, 0, 'L')
-        pdf.cell(80, 7, nombre, 1, 0, 'L')
-        pdf.cell(25, 7, str(materia.semestre), 1, 0, 'C')
-        pdf.cell(25, 7, str(materia.creditos), 1, 0, 'C')
-        pdf.cell(30, 7, estado, 1, 1, 'C')
-    
-    pdf_content = pdf.output(dest='S')
-    if isinstance(pdf_content, str):
-        pdf_content = pdf_content.encode('latin-1')
-    else:
-        pdf_content = bytes(pdf_content)
+    perfil = _perfil_administrativo(request)
+    materias = _materias_catalogo_admin()
+    ahora = datetime.now()
 
-    response = HttpResponse(pdf_content, content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="materias.pdf"'
+    pdf_bytes = generar_pdf_catalogo_materias(
+        materias,
+        ahora=ahora,
+        generado_por=perfil.get('nombre_completo', ''),
+    )
+
+    nombre_archivo = f'catalogo_materias_{ahora.strftime("%Y%m%d_%H%M%S")}.pdf'
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    return response
+
+
+def exportar_materias_excel(request):
+    """Genera el catálogo de materias en Excel desde el servidor."""
+    if not sesion_roles_permitidas(request, ('administrativo',)):
+        return redirect('selector_rol')
+
+    perfil = _perfil_administrativo(request)
+    materias = _materias_catalogo_admin()
+    ahora = datetime.now()
+
+    output = generar_excel_catalogo_materias(
+        materias,
+        ahora=ahora,
+        generado_por=perfil.get('nombre_completo', ''),
+    )
+
+    nombre_archivo = f'catalogo_materias_{ahora.strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return response
 
 
@@ -2101,7 +3341,9 @@ def agregar_horario(request):
         materia = Materia.objects.get(id_materia=int(materia_id))
         maestro_usuario = Usuarios.objects.get(matricula=docente_matricula)
         maestro = Maestros.objects.get(id_usuario=maestro_usuario)
-        grupo = Grupo.objects.get(clave=grupo_clave)
+        grupo = Grupo.objects.filter(clave__iexact=grupo_clave).first()
+        if not grupo:
+            return JsonResponse({'success': False, 'error': 'Grupo no encontrado'})
         ciclo_escolar = CicloEscolar.objects.get(nombre_ciclo=ciclo_escolar_nombre)
 
         # Validar que el ciclo escolar esté activo (dentro de fechas válidas)
@@ -2127,15 +3369,17 @@ def agregar_horario(request):
         # Validar cada entrada de horario individualmente antes de guardar nada
         for item in horarios_input:
             dia_txt = item.get('dia', '').lower()
-            h_ini = item.get('hora_inicio', '')
-            h_fin = item.get('hora_fin', '')
+            h_ini = _normalizar_hora_hm(item.get('hora_inicio', ''))
+            h_fin = _normalizar_hora_hm(item.get('hora_fin', ''))
 
             if not all([dia_txt, h_ini, h_fin]):
                 return JsonResponse({'success': False, 'error': 'Cada día seleccionado debe tener hora de inicio y fin'})
 
-            # Validar lógica de tiempo
-            if h_fin <= h_ini:
-                return JsonResponse({'success': False, 'error': f'En {dia_txt}, la hora de fin debe ser posterior al inicio'})
+            if not _hora_fin_posterior(h_ini, h_fin):
+                return JsonResponse({
+                    'success': False,
+                    'error': _mensaje_horario_invalido(h_ini, h_fin, dia_txt),
+                })
 
             # Validar duración
             inicio_dt = datetime.strptime(h_ini, '%H:%M')
@@ -2285,8 +3529,8 @@ def editar_horario(request):
 
     horario_id = payload.get('horario_id')
     aula = payload.get('aula', '')
-    hora_inicio = payload.get('hora_inicio', '')
-    hora_fin = payload.get('hora_fin', '')
+    hora_inicio = _normalizar_hora_hm(payload.get('hora_inicio', ''))
+    hora_fin = _normalizar_hora_hm(payload.get('hora_fin', ''))
 
     if not horario_id:
         return JsonResponse({'success': False, 'error': 'ID de horario requerido'})
@@ -2294,8 +3538,11 @@ def editar_horario(request):
     if not hora_inicio or not hora_fin:
         return JsonResponse({'success': False, 'error': 'Hora de inicio y término son requeridas'})
 
-    if hora_fin <= hora_inicio:
-        return JsonResponse({'success': False, 'error': 'La hora de término debe ser mayor a la hora de inicio'})
+    if not _hora_fin_posterior(hora_inicio, hora_fin):
+        return JsonResponse({
+            'success': False,
+            'error': _mensaje_horario_invalido(hora_inicio, hora_fin),
+        })
 
     try:
         horario = Horario.objects.select_related(

@@ -6,8 +6,8 @@
             <i class="fas fa-home text-xl {% if nav == 'dashboard_administrativo' %}text-blue-600{% endif %}"></i> Panel
         </a>
         <a href="{% url 'admin_reportes' %}"
-           class="nav-item {% if nav == 'admin_reportes' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
-            <i class="fas fa-chart-bar text-xl {% if nav == 'admin_reportes' %}text-blue-600{% endif %}"></i> Consultar Reportes
+           class="nav-item {% if nav == 'admin_reportes' or nav == 'exportar_reportes_admin_excel' or nav == 'exportar_reportes_admin_pdf' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-chart-bar text-xl {% if nav == 'admin_reportes' or nav == 'exportar_reportes_admin_excel' or nav == 'exportar_reportes_admin_pdf' %}text-blue-600{% endif %}"></i> Consultar Reportes
         </a>
         <a href="{% url 'admin_horarios' %}"
            class="nav-item {% if nav == 'admin_horarios' or nav == 'agregar_horario' or nav == 'editar_horario' or nav == 'eliminar_horario' or nav == 'get_horarios_semanales' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">

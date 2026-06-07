@@ -4,140 +4,713 @@
 
 {% block extra_css %}
 <style>
-.table-head th {
-            background: #f3f4f6;
-            color: #4b5563;
-            font-size: 11px;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            font-weight: 900;
+    .boleta-page {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 0 0 2rem;
+    }
+
+    .boleta-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .boleta-toolbar-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .boleta-toolbar-bar {
+        width: 4px;
+        height: 2rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-toolbar-title h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #1f2937;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+    }
+
+    .boleta-toolbar-title p {
+        margin: 0.15rem 0 0;
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    .btn-exportar-pdf {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: #fff;
+        border: none;
+        padding: 0.85rem 1.35rem;
+        border-radius: 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        box-shadow: 0 8px 18px rgba(22, 163, 74, 0.25);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .btn-exportar-pdf:hover {
+        background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(22, 163, 74, 0.3);
+    }
+
+    .boleta-info-card {
+        background: #fff;
+        border: 1px solid #d8d8d8;
+        border-radius: 0.35rem;
+        padding: 1rem 1.15rem 1.1rem;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .boleta-info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem 1.25rem;
+    }
+
+    .boleta-info-item {
+        min-width: 0;
+        border-bottom: 1px dashed #e5e7eb;
+        padding-bottom: 0.55rem;
+    }
+
+    .boleta-info-item.span-2 {
+        grid-column: span 2;
+    }
+
+    .boleta-info-label {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 0.2rem;
+    }
+
+    .boleta-info-value {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .asistencias-filtros {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem 1rem;
+        align-items: end;
+    }
+
+    .asistencias-filtro label {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 0.35rem;
+    }
+
+    .asistencias-filtro select,
+    .asistencias-filtro input {
+        width: 100%;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #1f2937;
+        background: #fff;
+    }
+
+    .asistencias-filtros-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+
+    .btn-filtrar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #fff;
+        border: none;
+        padding: 0.7rem 1.25rem;
+        border-radius: 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        cursor: pointer;
+        box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+    }
+
+    .btn-filtrar:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    }
+
+    .asistencias-resumen {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.65rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .asistencias-stat {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.45rem;
+        padding: 0.65rem 0.75rem;
+        text-align: center;
+    }
+
+    .asistencias-stat-label {
+        display: block;
+        font-size: 0.58rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: #9ca3af;
+    }
+
+    .asistencias-stat-value {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #374151;
+        line-height: 1.1;
+    }
+
+    .asistencias-stat-value.verde { color: #15803d; }
+    .asistencias-stat-value.rojo { color: #b91c1c; }
+    .asistencias-stat-value.amarillo { color: #a16207; }
+    .asistencias-stat-value.azul { color: #1d4ed8; }
+
+    .boleta-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin: 0 0 0.85rem;
+    }
+
+    .boleta-section-title span {
+        width: 4px;
+        height: 1.35rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-section-title h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #374151;
+    }
+
+    .boleta-table-wrap {
+        background: #fff;
+        border: 1px solid #d8d8d8;
+        border-radius: 0.35rem;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .boleta-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .boleta-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+    }
+
+    .boleta-table thead th {
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 0.7rem 0.55rem;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.18);
+        white-space: nowrap;
+    }
+
+    .boleta-table thead th:first-child,
+    .boleta-table thead th:nth-child(3) {
+        text-align: left;
+        padding-left: 0.85rem;
+    }
+
+    .boleta-table thead th:last-child {
+        border-right: none;
+    }
+
+    .boleta-table tbody td {
+        padding: 0.65rem 0.55rem;
+        text-align: center;
+        font-size: 0.82rem;
+        color: #1f2937;
+        border-right: 1px solid #ececec;
+        border-bottom: 1px solid #ececec;
+        vertical-align: middle;
+    }
+
+    .boleta-table tbody tr:nth-child(even) {
+        background: #fafafa;
+    }
+
+    .boleta-table tbody tr:hover {
+        background: #f3f4f6;
+    }
+
+    .boleta-table tbody td:first-child,
+    .boleta-table tbody td:nth-child(3),
+    .boleta-table tbody td:last-child {
+        text-align: left;
+        padding-left: 0.85rem;
+    }
+
+    .boleta-table tbody td:last-child {
+        border-right: none;
+    }
+
+    .boleta-materia {
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.25;
+    }
+
+    .boleta-materia-meta {
+        display: block;
+        margin-top: 0.15rem;
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: #9ca3af;
+    }
+
+    .asistencia-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.25rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .asistencia-badge.presente { background: #dcfce7; color: #15803d; }
+    .asistencia-badge.ausente { background: #fee2e2; color: #b91c1c; }
+    .asistencia-badge.tarde { background: #fef9c3; color: #a16207; }
+    .asistencia-badge.justificado { background: #e0e7ff; color: #3730a3; }
+    .asistencia-badge.otro { background: #f3f4f6; color: #4b5563; }
+
+    .boleta-text-empty {
+        color: #d1d5db;
+        font-weight: 400;
+        font-size: 0.74rem;
+        letter-spacing: 0.03em;
+    }
+
+    .boleta-aviso {
+        margin-bottom: 1rem;
+        padding: 0.75rem 0.9rem;
+        border-radius: 0.45rem;
+        border: 1px solid #fde68a;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .boleta-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.25rem;
+    }
+
+    .boleta-promedio-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.45rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .boleta-promedio-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .boleta-promedio-bar {
+        width: 2px;
+        height: 1rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-promedio-value {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #374151;
+        line-height: 1;
+    }
+
+    .boleta-resumen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
+    }
+
+    .boleta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #4b5563;
+    }
+
+    .boleta-empty {
+        padding: 3rem 1.5rem;
+        text-align: center;
+    }
+
+    .boleta-empty-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 1.4rem;
+    }
+
+    .boleta-empty h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1f2937;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .boleta-empty p {
+        margin: 0.65rem auto 0;
+        max-width: 28rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 1200px) {
+        .asistencias-resumen {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+    }
+
+    @media (max-width: 1024px) {
+        .boleta-info-grid,
+        .asistencias-filtros {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .boleta-info-item.span-2 {
+            grid-column: span 2;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .boleta-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-exportar-pdf,
+        .btn-filtrar {
+            width: 100%;
+        }
+
+        .boleta-info-grid,
+        .asistencias-filtros,
+        .asistencias-resumen {
+            grid-template-columns: 1fr;
+        }
+
+        .boleta-info-item.span-2 {
+            grid-column: span 1;
+        }
+
+        .boleta-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .boleta-promedio-box {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .boleta-resumen {
+            justify-content: center;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
-                <h2 class="text-3xl font-extrabold text-gray-700 text-center mb-10 tracking-tight uppercase">Reporte de Asistencias</h2>
+<div class="boleta-page">
+    <div class="boleta-toolbar">
+        <div class="boleta-toolbar-title">
+            <div class="boleta-toolbar-bar" aria-hidden="true"></div>
+            <div>
+                <h2>Consulta de Asistencias</h2>
+                <p>Periodo {{ perfil.periodo_actual|default:"---" }}</p>
+            </div>
+        </div>
+        <a href="{{ exportar_pdf_url }}" class="btn-exportar-pdf">
+            <i class="fas fa-file-pdf text-lg"></i>
+            Exportar PDF
+        </a>
+    </div>
 
-                <form method="get" class="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 shadow-sm">
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
-                        <div class="flex flex-col gap-2">
-                            <label class="font-bold text-gray-600 uppercase text-xs">Asignatura:</label>
-                            <select name="asignacion_id" class="p-3 border-2 border-gray-300 rounded-lg bg-white font-semibold">
-                                <option value="">Todas</option>
-                                {% for asignacion in asignaciones_disponibles %}
-                                    <option value="{{ asignacion.id_asignacion_materia }}" {% if filtro_asignacion_id == asignacion.id_asignacion_materia|stringformat:'s' %}selected{% endif %}>
-                                        {{ asignacion.id_materia.clave }} - {{ asignacion.id_materia.nombre }} | {{ asignacion.id_grupo.clave }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="font-bold text-gray-600 uppercase text-xs">Unidad:</label>
-                            <input type="number" name="unidad" min="1" step="1" value="{{ filtro_unidad }}" class="p-3 border-2 border-gray-300 rounded-lg bg-white font-semibold text-center">
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="font-bold text-gray-600 uppercase text-xs">Fecha inicial:</label>
-                            <input type="date" name="fecha_inicio" value="{{ filtro_fecha_inicio }}" class="p-3 border-2 border-gray-300 rounded-lg bg-white font-semibold">
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="font-bold text-gray-600 uppercase text-xs">Fecha final:</label>
-                            <input type="date" name="fecha_fin" value="{{ filtro_fecha_fin }}" class="p-3 border-2 border-gray-300 rounded-lg bg-white font-semibold">
-                        </div>
-                    </div>
-                    <div class="mt-4 flex justify-end">
-                        <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-black hover:bg-blue-700 transition shadow-lg uppercase text-sm">
-                            Generar Reporte
-                        </button>
-                    </div>
-                </form>
+    <section class="boleta-info-card" aria-label="Datos del alumno">
+        <div class="boleta-info-grid">
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">No. Control</span>
+                <span class="boleta-info-value">{{ perfil.matricula|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item span-2">
+                <span class="boleta-info-label">Nombre</span>
+                <span class="boleta-info-value">{{ perfil.nombre_completo|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Carrera</span>
+                <span class="boleta-info-value">{{ perfil.carrera|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Semestre</span>
+                <span class="boleta-info-value">{{ perfil.semestre|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Estatus</span>
+                <span class="boleta-info-value">{{ perfil.estatus|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Periodo</span>
+                <span class="boleta-info-value">{{ perfil.periodo_actual|default:"---" }}</span>
+            </div>
+        </div>
+    </section>
 
-                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                        <p class="text-xs uppercase font-black tracking-widest text-gray-500">Total</p>
-                        <p class="text-3xl font-black text-gray-700 mt-2">{{ resumen_asistencias.total }}</p>
-                    </div>
-                    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                        <p class="text-xs uppercase font-black tracking-widest text-gray-500">Presentes</p>
-                        <p class="text-3xl font-black text-green-600 mt-2">{{ resumen_asistencias.presentes }}</p>
-                    </div>
-                    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                        <p class="text-xs uppercase font-black tracking-widest text-gray-500">Ausentes</p>
-                        <p class="text-3xl font-black text-red-600 mt-2">{{ resumen_asistencias.ausentes }}</p>
-                    </div>
-                    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                        <p class="text-xs uppercase font-black tracking-widest text-gray-500">Tarde</p>
-                        <p class="text-3xl font-black text-yellow-600 mt-2">{{ resumen_asistencias.tarde }}</p>
-                    </div>
-                    <div class="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                        <p class="text-xs uppercase font-black tracking-widest text-gray-500">Asistencia</p>
-                        <p class="text-3xl font-black text-gray-700 mt-2">{{ resumen_asistencias.porcentaje }}%</p>
-                    </div>
+    <section class="boleta-info-card" aria-label="Filtros de búsqueda">
+        <form method="get">
+            <div class="asistencias-filtros">
+                <div class="asistencias-filtro">
+                    <label for="filtro-asignacion">Asignatura</label>
+                    <select id="filtro-asignacion" name="asignacion_id">
+                        <option value="">Todas</option>
+                        {% for asignacion in asignaciones_disponibles %}
+                            <option value="{{ asignacion.id_asignacion_materia }}" {% if filtro_asignacion_id == asignacion.id_asignacion_materia|stringformat:'s' %}selected{% endif %}>
+                                {{ asignacion.id_materia.clave }} - {{ asignacion.id_materia.nombre }} | {{ asignacion.id_grupo.clave }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-
-                {% if reporte_solicitado and not hay_asistencias %}
-                    <div class="mb-8 p-5 rounded-2xl border border-yellow-200 bg-yellow-50 text-yellow-800 font-semibold">
-                        No hay datos para mostrar con los filtros seleccionados.
-                    </div>
-                {% endif %}
-
-                <div class="table-container table-scroll bg-white">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="table-head border-b border-gray-200">
-                            <tr>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Fecha</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Unidad</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Materia</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Grupo</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Horario</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest text-center">Estado</th>
-                                <th class="p-4 font-black text-gray-600 uppercase text-xs tracking-widest">Observaciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if hay_asistencias %}
-                                {% for asistencia in asistencias_rows %}
-                                <tr class="border-t border-gray-100 hover:bg-gray-50 transition">
-                                    <td class="p-4 text-gray-700 font-semibold">{{ asistencia.fecha }}</td>
-                                    <td class="p-4 text-gray-700 font-black text-center">U{{ asistencia.unidad }}</td>
-                                    <td class="p-4">
-                                        <div class="font-bold text-gray-800">{{ asistencia.materia }}</div>
-                                        <div class="text-xs text-gray-500 uppercase tracking-wider">{{ asistencia.maestro }}</div>
-                                    </td>
-                                    <td class="p-4 text-gray-600">{{ asistencia.grupo }}</td>
-                                    <td class="p-4 text-gray-600">{{ asistencia.horario }}</td>
-                                    <td class="p-4 text-center">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest
-                                            {% if asistencia.estatus == 'Presente' %} bg-green-50 text-green-700
-                                            {% elif asistencia.estatus == 'Ausente' %} bg-red-50 text-red-700
-                                            {% elif asistencia.estatus == 'Tarde' %} bg-yellow-50 text-yellow-700
-                                            {% else %} bg-gray-100 text-gray-700 {% endif %}">
-                                            {{ asistencia.estatus }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 text-gray-600">{{ asistencia.observaciones|default:'—' }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="7" class="p-16 text-center text-gray-400 font-medium">
-                                        {% if reporte_solicitado %}
-                                            No hay asistencias registradas con los filtros seleccionados.
-                                        {% else %}
-                                            Aquí se muestran todas tus asistencias registradas.
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                <div class="asistencias-filtro">
+                    <label for="filtro-unidad">Unidad</label>
+                    <input id="filtro-unidad" type="number" name="unidad" min="1" step="1" value="{{ filtro_unidad }}" placeholder="Todas">
                 </div>
-
-                <div class="mt-8 flex justify-between items-center border-t pt-6">
-                    <p class="text-xl font-black text-gray-700 uppercase tracking-tighter">Porcentaje Total: <span class="text-green-600 ml-2">[ 0% ]</span></p>
-                    <button class="bg-green-600 text-white flex items-center gap-3 px-10 py-3 rounded-xl font-black hover:bg-green-700 transition shadow-lg uppercase text-xs tracking-widest">
-                        <i class="fas fa-file-pdf text-xl"></i> Exportar PDF
-                    </button>
+                <div class="asistencias-filtro">
+                    <label for="filtro-fecha-inicio">Fecha inicial</label>
+                    <input id="filtro-fecha-inicio" type="date" name="fecha_inicio" value="{{ filtro_fecha_inicio }}">
+                </div>
+                <div class="asistencias-filtro">
+                    <label for="filtro-fecha-fin">Fecha final</label>
+                    <input id="filtro-fecha-fin" type="date" name="fecha_fin" value="{{ filtro_fecha_fin }}">
                 </div>
             </div>
+            <div class="asistencias-filtros-actions">
+                <button type="submit" class="btn-filtrar">
+                    <i class="fas fa-search"></i>
+                    Generar reporte
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <div class="asistencias-resumen" aria-label="Resumen de asistencias">
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Total</span>
+            <span class="asistencias-stat-value">{{ resumen_asistencias.total }}</span>
+        </div>
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Presentes</span>
+            <span class="asistencias-stat-value verde">{{ resumen_asistencias.presentes }}</span>
+        </div>
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Ausentes</span>
+            <span class="asistencias-stat-value rojo">{{ resumen_asistencias.ausentes }}</span>
+        </div>
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Tarde</span>
+            <span class="asistencias-stat-value amarillo">{{ resumen_asistencias.tarde }}</span>
+        </div>
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Justificado</span>
+            <span class="asistencias-stat-value azul">{{ resumen_asistencias.justificado }}</span>
+        </div>
+        <div class="asistencias-stat">
+            <span class="asistencias-stat-label">Asistencia</span>
+            <span class="asistencias-stat-value">{{ resumen_asistencias.porcentaje }}%</span>
+        </div>
+    </div>
+
+    {% if reporte_solicitado and not hay_asistencias %}
+        <div class="boleta-aviso">
+            No hay datos para mostrar con los filtros seleccionados.
+        </div>
+    {% endif %}
+
+    <div class="boleta-section-title">
+        <span aria-hidden="true"></span>
+        <h3>Registros de asistencia</h3>
+    </div>
+
+    <div class="boleta-table-wrap">
+        <div class="boleta-table-scroll">
+            <table class="boleta-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Unidad</th>
+                        <th>Materia</th>
+                        <th>Grupo</th>
+                        <th>Horario</th>
+                        <th>Estado</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if hay_asistencias %}
+                        {% for asistencia in asistencias_rows %}
+                        <tr>
+                            <td>{{ asistencia.fecha }}</td>
+                            <td>U{{ asistencia.unidad }}</td>
+                            <td>
+                                <span class="boleta-materia">{{ asistencia.materia }}</span>
+                                <span class="boleta-materia-meta">{{ asistencia.materia_clave }} · {{ asistencia.maestro }}</span>
+                            </td>
+                            <td>{{ asistencia.grupo }}</td>
+                            <td>{{ asistencia.horario }}</td>
+                            <td>
+                                <span class="asistencia-badge {% if asistencia.estatus == 'Presente' %}presente{% elif asistencia.estatus == 'Ausente' %}ausente{% elif asistencia.estatus == 'Tarde' %}tarde{% elif asistencia.estatus == 'Justificado' %}justificado{% else %}otro{% endif %}">
+                                    {{ asistencia.estatus }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if asistencia.observaciones %}
+                                    {{ asistencia.observaciones }}
+                                {% else %}
+                                    <span class="boleta-text-empty">---</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="boleta-empty">
+                                    <div class="boleta-empty-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <h4>Sin asistencias registradas</h4>
+                                    <p>
+                                        {% if reporte_solicitado %}
+                                            No se encontraron registros con los filtros aplicados.
+                                        {% else %}
+                                            Aquí se muestran tus asistencias registradas. Usa los filtros para refinar la consulta.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="boleta-footer">
+        <div class="boleta-promedio-box">
+            <span class="boleta-promedio-label">Asistencia</span>
+            <span class="boleta-promedio-bar" aria-hidden="true"></span>
+            <span class="boleta-promedio-value">{{ resumen_asistencias.porcentaje }}%</span>
+        </div>
+        <div class="boleta-resumen">
+            <span class="boleta-chip">
+                <i class="fas fa-list text-blue-600"></i>
+                {{ resumen_asistencias.total }} registro{{ resumen_asistencias.total|pluralize:"s" }}
+            </span>
+            <span class="boleta-chip">
+                <i class="fas fa-calendar-alt text-blue-600"></i>
+                {{ perfil.periodo_actual|default:"---" }}
+            </span>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -282,8 +282,14 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Código Postal</label>
                             <input type="text" name="cp"
                                    value="{{ form_data.cp|default:'' }}"
-                                   class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]"
-                                   placeholder="">
+                                   maxlength="5"
+                                   inputmode="numeric"
+                                   pattern="[0-9]{5}"
+                                   class="w-full p-3 border-2 {% if errores_campos.cp %}border-red-500 focus:border-red-500 focus:ring-red-500{% else %}border-gray-200 focus:border-blue-500{% endif %} rounded-lg focus:outline-none font-bold text-gray-800 h-[52px]"
+                                   placeholder="00000">
+                            {% if errores_campos.cp %}
+                                <p class="mt-1 text-xs text-red-600">{{ errores_campos.cp }}</p>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -480,8 +486,11 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Semestre *</label>
-                            <input type="number" name="semestre" min="1" max="12" value="${formData.semestre || 1}" required class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none font-bold text-gray-800 h-[52px]">
+                            <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Semestre</label>
+                            <div class="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 font-bold text-gray-700 h-[52px] flex items-center">
+                                Se calcula automáticamente según el periodo de ingreso
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">Ejemplo: ingreso <span class="font-bold">{{ periodo_actual }}</span> → semestre 1.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Estatus</label>
@@ -688,6 +697,16 @@
             hasError = true;
             password.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
             password.classList.remove('border-gray-200', 'focus:border-blue-500');
+        }
+
+        const cp = document.querySelector('input[name="cp"]');
+        if (cp && cp.value.trim()) {
+            const cpLimpio = cp.value.trim();
+            if (!/^\d{5}$/.test(cpLimpio)) {
+                hasError = true;
+                cp.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+                cp.classList.remove('border-gray-200', 'focus:border-blue-500');
+            }
         }
 
         if (hasError) {

@@ -25,6 +25,8 @@ from fpdf import FPDF
 
 from .models import Usuarios, Alumnos, Maestros, Administrativos, Administrador, DatosPersonales, Carrera, CicloEscolar, Grupo, LogCalificacion
 from .password_utils import generar_contrasena_temporal
+from .periodo_utils import resolver_semestre_alumno
+from .datos_personales_utils import validar_cp
 
 
 logger = logging.getLogger(__name__)
@@ -458,6 +460,7 @@ _ORDEN_CAMPOS_AGREGAR_USUARIO = (
     'departamento', 'cubiculo', 'grado_academico',
     'puesto', 'nivel_prioridad', 'id_ciclo_escolar',
     'correo_inst', 'telefono', 'curp', 'fecha_nacimiento', 'genero',
+    'calle', 'numero_exterior', 'numero_interior', 'colonia', 'municipio', 'estado', 'cp',
 )
 
 _ORDEN_CAMPOS_EDITAR_USUARIO = (
@@ -466,6 +469,7 @@ _ORDEN_CAMPOS_EDITAR_USUARIO = (
     'departamento', 'cubiculo', 'grado_academico',
     'puesto', 'nivel_prioridad',
     'correo_inst', 'telefono', 'curp', 'fecha_nacimiento', 'genero',
+    'calle', 'numero_exterior', 'numero_interior', 'colonia', 'municipio', 'estado', 'cp',
 )
 
 
@@ -540,7 +544,7 @@ def _recolectar_usuarios_exportacion() -> list[dict]:
             'Apellido': alumno.id_usuario.apellido,
             'Rol': 'Alumno',
             'Carrera': str(alumno.id_carrera) if alumno.id_carrera else '',
-            'Semestre': alumno.semestre,
+            'Semestre': _semestre_alumno(alumno),
             'Estatus': alumno.estatus,
         })
 
@@ -638,7 +642,7 @@ def _excel_aplicar_margenes_hoja(worksheet) -> None:
         worksheet.row_dimensions[fila].height = 20
 
 
-def _excel_insertar_logo(worksheet, *, ancla: str) -> bool:
+def _excel_insertar_logo(worksheet, *, ancla: str, tamaño: int = 72) -> bool:
     logo_ruta = _pdf_ruta_logo()
     if not logo_ruta:
         return False
@@ -646,8 +650,8 @@ def _excel_insertar_logo(worksheet, *, ancla: str) -> bool:
         from openpyxl.drawing.image import Image as XLImage
 
         imagen = XLImage(logo_ruta)
-        imagen.width = 72
-        imagen.height = 72
+        imagen.width = tamaño
+        imagen.height = tamaño
         worksheet.add_image(imagen, ancla)
         return True
     except Exception:
@@ -885,6 +889,10 @@ def _periodo_actual() -> str:
     return f"{hoy.year}-{periodo}"
 
 
+def _semestre_alumno(alumno: Alumnos) -> int:
+    return resolver_semestre_alumno(alumno.periodo_ingreso, alumno.semestre, _periodo_actual())
+
+
 def desglosar_direccion(direccion: str | None) -> dict:
     """Convierte la dirección guardada en texto a campos separados para editarla."""
     if not direccion:
@@ -1067,7 +1075,7 @@ def gestion_usuarios(request):
             'rol': 'alumno',
             'foto_url': alumno.id_usuario.foto.url if alumno.id_usuario.foto else '',
             'carrera': str(alumno.id_carrera) if alumno.id_carrera else '',
-            'semestre': alumno.semestre,
+            'semestre': _semestre_alumno(alumno),
             'estatus': alumno.estatus,
             'ultimo_acceso': alumno.id_usuario.ultimo_acceso
         })
@@ -1544,7 +1552,6 @@ def agregar_usuario(request):
         fecha_nacimiento = request.POST.get('fecha_nacimiento', '').strip()
         genero = request.POST.get('genero', '').strip()
         carrera_id = request.POST.get('carrera_id', '').strip()
-        semestre = request.POST.get('semestre', '').strip()
         departamento = request.POST.get('departamento', '').strip()
         cubiculo = request.POST.get('cubiculo', '').strip()
         grado_academico = request.POST.get('grado_academico', '').strip()
@@ -1552,6 +1559,7 @@ def agregar_usuario(request):
         nivel_prioridad = request.POST.get('nivel_prioridad', '').strip()
         id_ciclo_escolar = request.POST.get('id_ciclo_escolar', '').strip()
         estatus = request.POST.get('estatus', 'Activo').strip()
+        cp = request.POST.get('cp', '').strip()
         # Une calle, colonia, cp, etc. en un solo texto para DatosPersonales.direccion
         direccion = construir_direccion(request.POST)
         
@@ -1582,17 +1590,6 @@ def agregar_usuario(request):
                 Carrera.objects.get(pk=carrera_id)
             except Carrera.DoesNotExist:
                 errores_campos['carrera_id'] = 'La carrera seleccionada no es válida. Por favor selecciona otra'
-        
-        if rol == 'alumno' and not semestre:
-            errores_campos['semestre'] = 'Por favor ingresa el semestre actual del alumno (1-12)'
-        
-        if rol == 'alumno' and semestre:
-            try:
-                semestre_int = int(semestre)
-                if semestre_int < 1 or semestre_int > 12:
-                    errores_campos['semestre'] = 'El semestre debe ser un número entre 1 y 12'
-            except ValueError:
-                errores_campos['semestre'] = 'El semestre debe ser un número válido (ejemplo: 3)'
         
         if rol == 'alumno' and estatus:
             estatus_validos = ['Activo', 'Baja', 'Egresado']
@@ -1640,6 +1637,10 @@ def agregar_usuario(request):
                 errores_campos['telefono'] = 'El teléfono debe contener solo números (sin guiones ni espacios)'
             elif len(telefono_limpio) != 10:
                 errores_campos['telefono'] = 'El teléfono debe tener exactamente 10 dígitos'
+
+        error_cp = validar_cp(cp)
+        if error_cp:
+            errores_campos['cp'] = error_cp
         
         # Validar correo duplicado y formato
         if correo:
@@ -1734,10 +1735,11 @@ def agregar_usuario(request):
                 # TABLA 2: una sola según rol — alumnos | maestros | administrativos | administrador
                 if rol == 'alumno':
                     periodo_ingreso = request.POST.get('periodo_ingreso', '').strip().upper() or _periodo_actual()
+                    semestre = resolver_semestre_alumno(periodo_ingreso, None, _periodo_actual())
                     Alumnos.objects.create(
                         id_usuario=usuario,
                         id_carrera=Carrera.objects.get(pk=carrera_id),
-                        semestre=int(semestre) if semestre else 1,
+                        semestre=semestre,
                         periodo_ingreso=periodo_ingreso,
                         estatus=estatus if estatus else 'Activo'
                     )
@@ -1877,13 +1879,13 @@ def editar_usuario(request, usuario_id):
         fecha_nacimiento = request.POST.get('fecha_nacimiento', '').strip()
         genero = request.POST.get('genero', '').strip()
         carrera_id = request.POST.get('carrera_id', '').strip()
-        semestre = request.POST.get('semestre', '').strip()
         departamento = request.POST.get('departamento', '').strip()
         cubiculo = request.POST.get('cubiculo', '').strip()
         grado_academico = request.POST.get('grado_academico', '').strip()
         puesto = request.POST.get('puesto', '').strip()
         nivel_prioridad = request.POST.get('nivel_prioridad', '').strip()
         estatus = request.POST.get('estatus', '').strip()
+        cp = request.POST.get('cp', '').strip()
         direccion = construir_direccion(request.POST)
         
         # --- PASO 4b: VALIDACIONES (igual concepto que agregar_usuario) ---
@@ -1906,14 +1908,6 @@ def editar_usuario(request, usuario_id):
                 Carrera.objects.get(pk=carrera_id)
             except Carrera.DoesNotExist:
                 errores_campos['carrera_id'] = 'La carrera seleccionada no es válida. Por favor selecciona otra'
-        
-        if usuario.rol == 'alumno' and semestre:
-            try:
-                semestre_int = int(semestre)
-                if semestre_int < 1 or semestre_int > 12:
-                    errores_campos['semestre'] = 'El semestre debe ser un número entre 1 y 12'
-            except ValueError:
-                errores_campos['semestre'] = 'El semestre debe ser un número válido (ejemplo: 3)'
         
         if usuario.rol == 'alumno' and estatus:
             estatus_validos = ['Activo', 'Baja', 'Egresado']
@@ -1955,6 +1949,10 @@ def editar_usuario(request, usuario_id):
                 errores_campos['telefono'] = 'El teléfono debe contener solo números (sin guiones ni espacios)'
             elif len(telefono_limpio) != 10:
                 errores_campos['telefono'] = 'El teléfono debe tener exactamente 10 dígitos'
+
+        error_cp = validar_cp(cp)
+        if error_cp:
+            errores_campos['cp'] = error_cp
         
         # Validar correo duplicado y formato
         if correo:
@@ -2014,7 +2012,7 @@ def editar_usuario(request, usuario_id):
                 'direccion_data': desglosar_direccion(datos_personales.direccion if datos_personales else None),
                 'alumno_data': {
                     'id_carrera_id': datos_especificos.id_carrera_id if usuario.rol == 'alumno' and datos_especificos else '',
-                    'semestre': datos_especificos.semestre if usuario.rol == 'alumno' and datos_especificos else '',
+                    'semestre': _semestre_alumno(datos_especificos) if usuario.rol == 'alumno' and datos_especificos else '',
                     'periodo_ingreso': datos_especificos.periodo_ingreso if usuario.rol == 'alumno' and datos_especificos else '',
                     'estatus': datos_especificos.estatus if usuario.rol == 'alumno' and datos_especificos else 'Activo',
                 },
@@ -2071,7 +2069,7 @@ def editar_usuario(request, usuario_id):
                             'direccion_data': desglosar_direccion(datos_personales.direccion if datos_personales else None),
                             'alumno_data': {
                                 'id_carrera_id': datos_especificos.id_carrera_id if usuario.rol == 'alumno' and datos_especificos else '',
-                                'semestre': datos_especificos.semestre if usuario.rol == 'alumno' and datos_especificos else '',
+                                'semestre': _semestre_alumno(datos_especificos) if usuario.rol == 'alumno' and datos_especificos else '',
                                 'periodo_ingreso': datos_especificos.periodo_ingreso if usuario.rol == 'alumno' and datos_especificos else '',
                                 'estatus': datos_especificos.estatus if usuario.rol == 'alumno' and datos_especificos else 'Activo',
                             },
@@ -2128,9 +2126,7 @@ def editar_usuario(request, usuario_id):
                     carrera_id = request.POST.get('carrera_id', '').strip()
                     if carrera_id:
                         datos_especificos.id_carrera = Carrera.objects.get(pk=carrera_id)
-                    semestre = request.POST.get('semestre', '').strip()
-                    if semestre:
-                        datos_especificos.semestre = int(semestre)
+                    datos_especificos.semestre = _semestre_alumno(datos_especificos)
                     datos_especificos.estatus = request.POST.get('estatus', '').strip()
                     datos_especificos.save()
                 
@@ -2209,7 +2205,7 @@ def editar_usuario(request, usuario_id):
         'direccion_data': desglosar_direccion(datos_personales.direccion if datos_personales else None),
         'alumno_data': {
             'id_carrera_id': datos_especificos.id_carrera_id if usuario.rol == 'alumno' and datos_especificos else '',
-            'semestre': datos_especificos.semestre if usuario.rol == 'alumno' and datos_especificos else '',
+            'semestre': _semestre_alumno(datos_especificos) if usuario.rol == 'alumno' and datos_especificos else '',
             'periodo_ingreso': datos_especificos.periodo_ingreso if usuario.rol == 'alumno' and datos_especificos else '',
             'estatus': datos_especificos.estatus if usuario.rol == 'alumno' and datos_especificos else 'Activo',
         },

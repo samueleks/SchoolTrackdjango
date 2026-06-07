@@ -4,33 +4,175 @@
 
 {% block extra_css %}
 <style>
-.section-crema, .bg-white.p-6.rounded-2xl {
-            background-color: rgba(255, 255, 255, 0.95) !important;
-            border-radius: 1rem !important;
-            border: none !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+        .card-soft {
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .04);
         }
-        .card-soft { border: 1px solid #e5e7eb; border-radius: 1rem; box-shadow: 0 8px 30px rgba(0,0,0,.04); }
-        .horario-option { border: 1px solid #e5e7eb; transition: all .15s ease; }
+        .card-filtros {
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 55%, #eef2ff 100%);
+            border: 2px solid #bfdbfe;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, .08);
+        }
+        .filtro-label {
+            display: flex;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .filtro-select {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 0.75rem 1rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background: #fff;
+            font-weight: 600;
+            color: #1f2937;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .filtro-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+        .filtro-select:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .filtros-asistencia { min-width: 0; }
+        .filtros-asistencia .filtro-campo { min-width: 0; }
+        .type-chip {
+            border: 1px solid #93c5fd;
+            background: #eff6ff;
+            border-radius: 9999px;
+            padding: 0.45rem 0.9rem;
+            font-weight: 800;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #1d4ed8;
+        }
+        .badge-conteo {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #1e40af;
+            background: #dbeafe;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+        }
+        .horario-option {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            transition: all .15s ease;
+        }
         .horario-option:hover { border-color: #93c5fd; background: #eff6ff; }
         .horario-option.active { border-color: #2563eb; background: #dbeafe; }
+        .tabla-asistencia thead th {
+            font-size: 0.65rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .tabla-asistencia .col-alumno { min-width: 11rem; }
+        .campo-asistencia {
+            width: 100%;
+            padding: 0.65rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            font-weight: 700;
+            font-size: 0.875rem;
+            transition: border-color .15s ease, background-color .15s ease;
+        }
+        .campo-asistencia:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .campo-asistencia:disabled {
+            background: #f8fafc;
+            color: #334155;
+        }
+        .campo-asistencia-guardado:disabled {
+            border-color: #86efac;
+            background: #f0fdf4;
+            color: #166534;
+        }
+        .fila-asistencia-guardada {
+            background-color: #f0fdf4;
+        }
+        .aviso-lista-guardada {
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+            border: 2px solid #86efac;
+            border-radius: 0.85rem;
+        }
+        .badge-lista-guardada {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #166534;
+            background: #bbf7d0;
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+        }
+        .aviso-fecha-bloqueada {
+            background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+            border: 2px solid #fdba74;
+            border-radius: 0.85rem;
+        }
+        .panel-acciones {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.85rem;
+            padding: 1rem 1.25rem;
+        }
+        .btn-accion {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 800;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+        }
+        .btn-accion:hover:not(:disabled) { transform: translateY(-1px); }
+        .btn-accion:disabled { opacity: 0.55; cursor: not-allowed; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-black text-gray-700 uppercase tracking-tighter">Pase de Lista</h2>
-                    <p class="text-blue-600 font-bold text-sm tracking-widest uppercase">Selecciona tu asignación, fecha y horario</p>
+<div class="max-w-7xl mx-auto px-1 sm:px-0">
+                <div class="text-center mb-8 sm:mb-10">
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-800 uppercase tracking-tighter">Pase de Lista</h2>
+                    <p class="mt-2 text-sm sm:text-base text-gray-600 font-semibold max-w-2xl mx-auto">
+                        Registra la asistencia del grupo según la fecha y el horario de clase
+                    </p>
                 </div>
 
-                <div id="alerta" class="hidden mb-6 p-4 rounded-xl font-bold text-sm"></div>
+                <div id="alerta" class="hidden mb-6 p-4 rounded-xl font-bold text-sm border"></div>
 
-                <div class="card-soft bg-white p-6 mb-8">
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
-                        <div>
-                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Mi asignación</label>
-                            <select id="asignacionSelect" class="w-full p-3 border-2 border-gray-200 rounded-xl bg-white focus:border-blue-500 outline-none font-semibold">
+                <div class="card-filtros p-4 sm:p-6 mb-6 sm:mb-8 overflow-hidden">
+                    <div class="mb-5">
+                        <h3 class="font-black text-gray-800 uppercase text-sm tracking-wide">Configurar pase de lista</h3>
+                        <p class="text-xs text-gray-500 font-medium">Asignación · Fecha · Unidad</p>
+                    </div>
+
+                    <div class="filtros-asistencia grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                        <div class="filtro-campo sm:col-span-2">
+                            <label class="filtro-label">Mi asignación</label>
+                            <select id="asignacionSelect" class="filtro-select text-sm sm:text-base">
                                 <option value="">Selecciona una materia/grupo...</option>
                                 {% for asignacion in asignaciones_docente %}
                                     <option value="{{ asignacion.id_asignacion_materia }}">
@@ -39,87 +181,111 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Fecha</label>
-                            <input type="date" id="fechaSelect" value="{{ fecha_hoy }}" class="w-full p-3 border-2 border-gray-200 rounded-xl bg-white focus:border-blue-500 outline-none font-semibold">
+                        <div class="filtro-campo">
+                            <label class="filtro-label">Fecha</label>
+                            <input type="date" id="fechaSelect" value="{{ fecha_hoy }}" class="filtro-select text-sm sm:text-base">
                         </div>
-                        <div>
-                            <label class="block text-xs font-black text-gray-500 uppercase mb-2">Unidad</label>
-                            <input type="number" id="unidadSelect" min="1" step="1" value="1" class="w-full p-3 border-2 border-gray-200 rounded-xl bg-white focus:border-blue-500 outline-none font-semibold text-center">
+                        <div class="filtro-campo sm:max-w-[10rem]">
+                            <label class="filtro-label">Unidad</label>
+                            <input type="number" id="unidadSelect" min="1" step="1" value="1" class="filtro-select text-center text-sm sm:text-base">
                         </div>
-                        <div class="flex gap-3">
-                            <button id="btnTodosPresente" type="button" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-xl transition">
-                                Todos Presente
-                            </button>
-                            <button id="btnRecargar" type="button" class="flex-1 bg-gray-700 hover:bg-black text-white font-black py-3 rounded-xl transition">
-                                Recargar
+                        <div class="filtro-campo sm:col-span-2">
+                            <button id="btnTodosPresente" type="button" class="btn-accion w-full bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-200">
+                                <i class="fas fa-user-check"></i> Todos presente
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div id="estadoInicial" class="card-soft bg-white p-8 text-center text-gray-500">
-                    <i class="fas fa-clipboard-check text-5xl mb-4 text-blue-400"></i>
-                    <h3 class="text-xl font-black text-gray-700 uppercase tracking-wider mb-2">Selecciona una asignación</h3>
-                    <p>El sistema cargará tus horarios y la lista de alumnos inscritos.</p>
+                <div id="estadoInicial" class="card-soft bg-white p-6 sm:p-10 text-center text-gray-500">
+                    <div class="max-w-3xl mx-auto">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-500 mb-5">
+                            <i class="fas fa-clipboard-check text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-black text-gray-800 uppercase tracking-wide mb-2">Listo para pasar lista</h3>
+                        <p class="text-sm text-gray-500 font-medium">Selecciona tu asignación y el sistema cargará los horarios y alumnos inscritos.</p>
+                    </div>
                 </div>
 
                 <div id="contenidoAsistencia" class="hidden grid grid-cols-1 xl:grid-cols-3 gap-6">
-                    <div class="xl:col-span-1 card-soft bg-white p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="text-xl font-black text-gray-700 uppercase tracking-tighter">Horarios</h3>
-                                <p id="textoDia" class="text-sm text-gray-500 font-semibold">---</p>
+                    <div class="xl:col-span-1 card-soft bg-white p-4 sm:p-6">
+                        <div class="flex flex-wrap items-start justify-between gap-3 mb-5 pb-4 border-b border-gray-100">
+                            <div class="min-w-0">
+                                <h3 class="text-lg font-black text-gray-800 uppercase tracking-tight">Horarios</h3>
+                                <p id="textoDia" class="mt-1 text-sm text-blue-700 font-semibold">---</p>
                             </div>
-                            <span id="conteoHorarios" class="text-xs font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">0</span>
+                            <span id="conteoHorarios" class="badge-conteo shrink-0">0</span>
                         </div>
                         <div id="listaHorarios" class="space-y-3"></div>
                     </div>
 
-                    <div class="xl:col-span-2 card-soft bg-white p-6">
-                        <div class="flex items-center justify-between gap-4 mb-4">
-                            <div>
-                                <h3 class="text-xl font-black text-gray-700 uppercase tracking-tighter">Lista de alumnos</h3>
-                                <p id="textoAsignacion" class="text-sm text-gray-500 font-semibold">---</p>
+                    <div class="xl:col-span-2 card-soft bg-white p-4 sm:p-6">
+                        <div class="flex flex-wrap items-start justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="text-lg sm:text-xl font-black text-gray-800 uppercase tracking-tight">Lista de alumnos</h3>
+                                <p id="textoAsignacion" class="mt-1 text-sm text-blue-700 font-semibold truncate">---</p>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span id="chipUnidad" class="text-xs font-black uppercase tracking-widest text-gray-600 bg-gray-100 px-3 py-1 rounded-full">U1</span>
-                                <span id="conteoAlumnos" class="text-xs font-black uppercase tracking-widest text-gray-600 bg-gray-100 px-3 py-1 rounded-full">0</span>
+                            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                                <span id="chipListaGuardada" class="hidden badge-lista-guardada">
+                                    <i class="fas fa-check-circle mr-1"></i> Lista guardada
+                                </span>
+                                <span id="chipUnidad" class="type-chip">U1</span>
+                                <span id="conteoAlumnos" class="badge-conteo">0</span>
                             </div>
                         </div>
 
-                        <div class="overflow-x-auto border border-gray-200 rounded-xl">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-gray-50">
-                                    <tr class="text-[11px] font-black uppercase tracking-[0.15em] text-gray-500">
-                                        <th class="p-4 border-b border-gray-200">Matrícula</th>
-                                        <th class="p-4 border-b border-gray-200">Alumno</th>
-                                        <th class="p-4 border-b border-gray-200">Estatus</th>
-                                        <th class="p-4 border-b border-gray-200">Observaciones</th>
+                        <div id="avisoFechaBloqueada" class="hidden aviso-fecha-bloqueada mb-4 p-3 sm:p-4">
+                            <p id="textoFechaBloqueada" class="text-sm font-bold text-amber-900 leading-relaxed">
+                                <i class="fas fa-calendar-times mr-2 text-amber-600"></i>
+                                No puedes pasar lista en esta fecha.
+                            </p>
+                        </div>
+
+                        <div id="avisoListaGuardada" class="hidden aviso-lista-guardada mb-4 p-3 sm:p-4">
+                            <p id="textoListaGuardada" class="text-sm font-bold text-green-800 leading-relaxed">
+                                <i class="fas fa-clipboard-check mr-2 text-green-600"></i>
+                                Lista ya guardada para esta fecha y horario. Los registros en verde ya están en la BD.
+                            </p>
+                            <p class="text-xs text-green-700 font-semibold mt-1 ml-6">
+                                Presiona <strong>Editar</strong> si necesitas corregir algún estatus.
+                            </p>
+                        </div>
+
+                        <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                            <table class="tabla-asistencia w-full text-left border-collapse">
+                                <thead class="bg-gradient-to-r from-slate-50 to-blue-50">
+                                    <tr class="text-gray-600">
+                                        <th class="p-3 sm:p-4 border-b border-gray-200">Matrícula</th>
+                                        <th class="p-3 sm:p-4 border-b border-gray-200 col-alumno">Alumno</th>
+                                        <th class="p-3 sm:p-4 border-b border-gray-200">Estatus</th>
+                                        <th class="p-3 sm:p-4 border-b border-gray-200">Observaciones</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaAlumnos" class="divide-y divide-gray-200">
+                                <tbody id="tablaAlumnos" class="divide-y divide-gray-100">
                                     <tr>
-                                        <td colspan="4" class="p-10 text-center text-gray-400">Selecciona una asignación para cargar la lista.</td>
+                                        <td colspan="4" class="p-10 text-center text-gray-400 font-medium">Selecciona una asignación para cargar la lista.</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div class="flex flex-col items-end gap-2 mt-6">
-                            <p class="text-xs text-gray-500 font-semibold text-right">
-                                Si ya existe la asistencia de ese alumno, fecha y horario, se actualiza al volver a guardar.
-                            </p>
-                            <div class="flex gap-3">
-                                <button id="btnEditar" type="button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-black py-3 px-6 rounded-xl transition shadow-lg">
-                                    Editar
-                                </button>
-                                <button id="btnCancelar" type="button" class="hidden bg-gray-500 hover:bg-gray-600 text-white font-black py-3 px-6 rounded-xl transition shadow-lg">
-                                    Cancelar
-                                </button>
-                                <button id="btnGuardar" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-xl transition shadow-lg" disabled>
-                                    Guardar Asistencias
-                                </button>
+                        <div class="panel-acciones mt-5 sm:mt-6">
+                            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <p class="text-xs text-gray-500 font-medium leading-relaxed lg:max-w-md">
+                                    <i class="fas fa-sync-alt text-blue-500 mr-1"></i>
+                                    Si ya existe la asistencia de ese alumno, fecha y horario, se actualiza al volver a guardar.
+                                </p>
+                                <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto">
+                                    <button id="btnEditar" type="button" class="btn-accion bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 w-full sm:w-auto">
+                                        <i class="fas fa-pen"></i> Editar
+                                    </button>
+                                    <button id="btnCancelar" type="button" class="hidden btn-accion bg-gray-500 hover:bg-gray-600 text-white shadow-md w-full sm:w-auto">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                    <button id="btnGuardar" type="button" class="btn-accion bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-200 w-full sm:w-auto" disabled>
+                                        <i class="fas fa-save"></i> Guardar asistencias
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -139,6 +305,11 @@
         const textoAsignacion = document.getElementById('textoAsignacion');
         const textoDia = document.getElementById('textoDia');
         const chipUnidad = document.getElementById('chipUnidad');
+        const chipListaGuardada = document.getElementById('chipListaGuardada');
+        const avisoListaGuardada = document.getElementById('avisoListaGuardada');
+        const avisoFechaBloqueada = document.getElementById('avisoFechaBloqueada');
+        const textoFechaBloqueada = document.getElementById('textoFechaBloqueada');
+        const textoListaGuardada = document.getElementById('textoListaGuardada');
         const conteoHorarios = document.getElementById('conteoHorarios');
         const conteoAlumnos = document.getElementById('conteoAlumnos');
         const alerta = document.getElementById('alerta');
@@ -146,7 +317,6 @@
         const btnCancelar = document.getElementById('btnCancelar');
         const btnGuardar = document.getElementById('btnGuardar');
         const btnTodosPresente = document.getElementById('btnTodosPresente');
-        const btnRecargar = document.getElementById('btnRecargar');
 
         let estadoActual = {
             asignacion: null,
@@ -154,7 +324,99 @@
             alumnos: [],
             horarioSeleccionadoId: null,
             diaSemana: '',
+            lista_guardada: false,
+            total_registrados: 0,
+            total_alumnos: 0,
+            captura_permitida: false,
         };
+
+        function obtenerContextoFecha(fechaString = fechaSelect.value) {
+            const hoy = obtenerFechaHoyString();
+            return {
+                esHoy: fechaString === hoy,
+                esPasada: fechaString < hoy,
+                esFutura: fechaString > hoy,
+            };
+        }
+
+        function puedeCapturarAsistencia() {
+            return !obtenerContextoFecha().esFutura;
+        }
+
+        function salirModoEdicion({ restaurar = false } = {}) {
+            if (restaurar && estadoAntesDeEditar) {
+                estadoActual = estadoAntesDeEditar;
+                estadoAntesDeEditar = null;
+                renderAlumnos();
+            } else {
+                estadoAntesDeEditar = null;
+            }
+
+            tablaAlumnos.querySelectorAll('.attendance-select, .attendance-obs').forEach(campo => {
+                campo.disabled = true;
+            });
+            btnGuardar.disabled = true;
+            btnEditar.classList.remove('hidden');
+            btnCancelar.classList.add('hidden');
+            btnTodosPresente.disabled = true;
+            asignacionSelect.disabled = false;
+            fechaSelect.disabled = false;
+            unidadSelect.disabled = false;
+            actualizarControlesCaptura();
+        }
+
+        function actualizarControlesCaptura() {
+            const { esFutura } = obtenerContextoFecha();
+            const capturaPermitida = puedeCapturarAsistencia();
+            const tieneAlumnos = estadoActual.alumnos.length > 0;
+            const horarioSeleccionado = Boolean(obtenerHorarioSeleccionado());
+
+            btnEditar.disabled = !capturaPermitida || !tieneAlumnos || !horarioSeleccionado;
+
+            if (esFutura && tieneAlumnos) {
+                avisoFechaBloqueada.classList.remove('hidden');
+                textoFechaBloqueada.innerHTML = `
+                    <i class="fas fa-calendar-times mr-2 text-amber-600"></i>
+                    No puedes pasar lista en <strong>fechas futuras</strong>. Elige hoy o una fecha pasada si se te olvidó capturarla.
+                `;
+            } else {
+                avisoFechaBloqueada.classList.add('hidden');
+            }
+
+            if (!capturaPermitida && !btnCancelar.classList.contains('hidden')) {
+                salirModoEdicion();
+            }
+        }
+
+        function alumnoTieneAsistenciaGuardada(alumno) {
+            return Boolean(alumno?.asistencia?.guardada);
+        }
+
+        function contarAsistenciasGuardadas(alumnos = estadoActual.alumnos) {
+            return alumnos.filter(alumnoTieneAsistenciaGuardada).length;
+        }
+
+        function actualizarIndicadorListaGuardada() {
+            const totalRegistrados = estadoActual.total_registrados ?? contarAsistenciasGuardadas();
+            const totalAlumnos = estadoActual.total_alumnos || estadoActual.alumnos.length;
+            const listaGuardada = Boolean(estadoActual.lista_guardada && totalRegistrados > 0);
+
+            if (listaGuardada) {
+                chipListaGuardada.classList.remove('hidden');
+                avisoListaGuardada.classList.remove('hidden');
+                textoListaGuardada.innerHTML = `
+                    <i class="fas fa-clipboard-check mr-2 text-green-600"></i>
+                    Lista ya guardada: <span class="text-green-900">${totalRegistrados}</span> de
+                    <span class="text-green-900">${totalAlumnos}</span> alumno(s) con registro en esta sesión.
+                `;
+                btnEditar.innerHTML = '<i class="fas fa-pen"></i> Editar lista';
+            } else {
+                chipListaGuardada.classList.add('hidden');
+                avisoListaGuardada.classList.add('hidden');
+                btnEditar.innerHTML = '<i class="fas fa-pen"></i> Editar';
+            }
+            actualizarControlesCaptura();
+        }
 
         function mostrarAlerta(mensaje, tipo) {
             alerta.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'border-green-200', 'bg-red-50', 'text-red-700', 'border-red-200');
@@ -291,15 +553,8 @@
         }
 
         function renderVistaSemanaSoloClases() {
-            const fechaHoyString = obtenerFechaHoyString();
             const fechaSeleccionada = fechaSelect.value;
-            const esHoy = fechaHoyString === fechaSeleccionada;
-            
-            // Determinar si es pasada o futura
-            const hoyDate = new Date(fechaHoyString);
-            const selectedDate = new Date(fechaSeleccionada);
-            const esPasada = selectedDate < hoyDate;
-            const esFutura = selectedDate > hoyDate;
+            const { esHoy, esPasada, esFutura } = obtenerContextoFecha(fechaSeleccionada);
 
             // Obtener el día de la semana de la fecha seleccionada
             const diaSeleccionado = obtenerDiaSemana(fechaSeleccionada);
@@ -316,9 +571,7 @@
             );
 
             // Determinar si hay asistencias registradas en esta fecha
-            const hayAsistencias = Array.isArray(estadoActual.alumnos) && estadoActual.alumnos.some(a => 
-                a.asistencia && Object.keys(a.asistencia).length > 0
-            );
+            const hayAsistencias = contarAsistenciasGuardadas() > 0;
 
             let html = '';
 
@@ -338,17 +591,16 @@
                 horariosDelDia.forEach(horario => {
                     const activo = Number(horario.id_horario) === Number(estadoActual.horarioSeleccionadoId);
                     
-                    // Determinar si habilitar:
-                    // - HOY con clase → HABILITADO
-                    // - PASADO con asistencias → HABILITADO (edición)
-                    // - FUTURO o PASADO sin asistencias → DESHABILITADO
-                    const debeHabilitarse = (esHoy) || (esPasada && hayAsistencias);
+                    // HOY o PASADO → habilitado; FUTURO → bloqueado
+                    const debeHabilitarse = esHoy || esPasada;
                     
                     let badgeTexto = '';
                     if (esHoy) {
                         badgeTexto = '<span class="text-[10px] font-black uppercase tracking-widest text-green-700 bg-green-100 px-2 py-1 rounded-full">Hoy</span>';
                     } else if (esPasada && hayAsistencias) {
                         badgeTexto = '<span class="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-100 px-2 py-1 rounded-full">Editar</span>';
+                    } else if (esPasada) {
+                        badgeTexto = '<span class="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-2 py-1 rounded-full">Pendiente</span>';
                     } else if (esFutura) {
                         badgeTexto = '<span class="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Futuro</span>';
                     }
@@ -374,6 +626,13 @@
 
             listaHorarios.innerHTML = html;
 
+            const horarioHabilitadoSeleccionado = document.querySelector('input[name="horario"]:checked:not(:disabled)');
+            if (!horarioHabilitadoSeleccionado) {
+                estadoActual.horarioSeleccionadoId = null;
+            } else {
+                estadoActual.horarioSeleccionadoId = horarioHabilitadoSeleccionado.value;
+            }
+
             // Agregar event listeners solo a los radios habilitados
             listaHorarios.querySelectorAll('input[type="radio"]:not(:disabled)').forEach(input => {
                 input.addEventListener('change', () => {
@@ -382,6 +641,8 @@
                     cargarDatos(true);
                 });
             });
+
+            actualizarControlesCaptura();
         }
 
         function renderAlumnos() {
@@ -400,27 +661,35 @@
                 const asistencia = alumno.asistencia || {};
                 const estatus = asistencia.estatus || 'Presente';
                 const observaciones = asistencia.observaciones || '';
+                const guardada = alumnoTieneAsistenciaGuardada(alumno);
+                const claseGuardada = guardada ? ' fila-asistencia-guardada' : '';
+                const claseCampo = guardada ? ' campo-asistencia-guardado' : '';
+                const etiquetaGuardada = guardada
+                    ? '<span class="inline-flex items-center mt-1 text-[10px] font-black uppercase tracking-wider text-green-700"><i class="fas fa-check mr-1"></i> Guardado</span>'
+                    : '';
                 return `
-                    <tr class="align-top hover:bg-gray-50 transition">
-                        <td class="p-4 font-mono font-black text-gray-700">${escapeHtml(alumno.matricula)}</td>
-                        <td class="p-4">
-                            <div class="font-bold text-gray-800">${escapeHtml(alumno.nombre_completo)}</div>
-                            <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider">${escapeHtml(alumno.estatus_alumno)}</div>
+                    <tr class="align-top hover:bg-blue-50/40 transition-colors${claseGuardada}">
+                        <td class="p-3 sm:p-4 font-mono text-sm font-black text-gray-700 whitespace-nowrap">${escapeHtml(alumno.matricula)}</td>
+                        <td class="p-3 sm:p-4 col-alumno">
+                            <div class="font-bold text-gray-800 leading-snug">${escapeHtml(alumno.nombre_completo)}</div>
+                            <div class="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider mt-0.5">${escapeHtml(alumno.estatus_alumno)}</div>
+                            ${etiquetaGuardada}
                         </td>
-                        <td class="p-4 w-48">
-                            <select class="w-full p-3 rounded-xl border border-gray-200 bg-white font-bold text-sm attendance-select" data-index="${index}" disabled>
+                        <td class="p-3 sm:p-4 w-40 sm:w-48">
+                            <select class="campo-asistencia attendance-select${claseCampo}" data-index="${index}" data-guardada="${guardada ? '1' : '0'}" disabled>
                                 <option value="Presente" ${estatus === 'Presente' ? 'selected' : ''}>Presente</option>
                                 <option value="Ausente" ${estatus === 'Ausente' ? 'selected' : ''}>Ausente</option>
                                 <option value="Tarde" ${estatus === 'Tarde' ? 'selected' : ''}>Tarde</option>
                                 <option value="Justificado" ${estatus === 'Justificado' ? 'selected' : ''}>Justificado</option>
                             </select>
                         </td>
-                        <td class="p-4">
-                            <input type="text" value="${escapeHtml(observaciones)}" placeholder="Opcional" class="w-full p-3 rounded-xl border border-gray-200 outline-none focus:border-blue-500 attendance-obs" data-obs-index="${index}" disabled>
+                        <td class="p-3 sm:p-4">
+                            <input type="text" value="${escapeHtml(observaciones)}" placeholder="Opcional" class="campo-asistencia attendance-obs${claseCampo}" data-obs-index="${index}" disabled>
                         </td>
                     </tr>
                 `;
             }).join('');
+            actualizarIndicadorListaGuardada();
         }
 
         function actualizarCabecera() {
@@ -444,7 +713,17 @@
             const unidad = unidadSelect.value || '1';
             
             if (!asignacionId || !fecha) {
-                estadoActual = { asignacion: null, horarios: [], alumnos: [], horarioSeleccionadoId: null, diaSemana: '' };
+                estadoActual = {
+                    asignacion: null,
+                    horarios: [],
+                    alumnos: [],
+                    horarioSeleccionadoId: null,
+                    diaSemana: '',
+                    lista_guardada: false,
+                    total_registrados: 0,
+                    total_alumnos: 0,
+                    captura_permitida: false,
+                };
                 actualizarCabecera();
                 renderVistaSemanaSoloClases();
                 renderAlumnos();
@@ -472,18 +751,27 @@
                 estadoActual.horarios = data.data.horarios || [];
                 estadoActual.alumnos = data.data.alumnos || [];
                 estadoActual.diaSemana = data.data.dia_semana || '';
+                estadoActual.lista_guardada = Boolean(data.data.lista_guardada);
+                estadoActual.total_registrados = Number(data.data.total_registrados || 0);
+                estadoActual.total_alumnos = Number(data.data.total_alumnos || estadoActual.alumnos.length);
+                estadoActual.captura_permitida = Boolean(data.data.captura_permitida);
                 estadoActual.horarioSeleccionadoId = retenerHorario ? obtenerHorarioSeleccionado() : null;
                 chipUnidad.textContent = `U${data.data.unidad || unidad}`;
 
-                // Preseleccionar primer horario del día seleccionado si aplica
-                if (!estadoActual.horarioSeleccionadoId && estadoActual.horarios.length > 0) {
+                const capturaPermitida = puedeCapturarAsistencia();
+
+                // Preseleccionar horario solo si la captura está permitida
+                if (capturaPermitida && !estadoActual.horarioSeleccionadoId && estadoActual.horarios.length > 0) {
                     const diaSeleccionado = obtenerDiaSemana(fecha);
-                    const primerHorarioDelDia = estadoActual.horarios.find(h => 
+                    const primerHorarioDelDia = estadoActual.horarios.find(h =>
                         normalizarDia(h.dia_semana) === normalizarDia(diaSeleccionado)
                     );
                     if (primerHorarioDelDia) {
                         estadoActual.horarioSeleccionadoId = primerHorarioDelDia.id_horario;
                     }
+                } else if (!capturaPermitida) {
+                    estadoActual.horarioSeleccionadoId = null;
+                    salirModoEdicion();
                 }
 
                 actualizarCabecera();
@@ -499,6 +787,15 @@
         let estadoAntesDeEditar = null;
 
         btnEditar.addEventListener('click', () => {
+            if (!puedeCapturarAsistencia()) {
+                mostrarAlerta('No puedes capturar asistencia en esta fecha', 'error');
+                return;
+            }
+            if (!obtenerHorarioSeleccionado()) {
+                mostrarAlerta('Selecciona un horario habilitado', 'error');
+                return;
+            }
+
             // Guardar el estado actual antes de permitir ediciones
             estadoAntesDeEditar = JSON.parse(JSON.stringify(estadoActual));
             
@@ -511,7 +808,6 @@
             btnEditar.classList.add('hidden');
             btnCancelar.classList.remove('hidden');
             btnTodosPresente.disabled = false;
-            btnRecargar.disabled = true;
             asignacionSelect.disabled = true;
             unidadSelect.disabled = true;
             
@@ -519,26 +815,7 @@
         });
 
         btnCancelar.addEventListener('click', () => {
-            if (estadoAntesDeEditar) {
-                estadoActual = estadoAntesDeEditar;
-                estadoAntesDeEditar = null;
-                renderAlumnos();
-            }
-            
-            const selects = tablaAlumnos.querySelectorAll('select.attendance-select');
-            const inputs = tablaAlumnos.querySelectorAll('input.attendance-obs');
-            selects.forEach(select => select.disabled = true);
-            inputs.forEach(input => input.disabled = true);
-            
-            btnGuardar.disabled = true;
-            btnEditar.classList.remove('hidden');
-            btnCancelar.classList.add('hidden');
-            btnTodosPresente.disabled = true;
-            btnRecargar.disabled = false;
-            asignacionSelect.disabled = false;
-            fechaSelect.disabled = false;
-            unidadSelect.disabled = false;
-            
+            salirModoEdicion({ restaurar: true });
             mostrarAlerta('✓ Edición cancelada', 'success');
         });
 
@@ -548,7 +825,6 @@
             });
         });
 
-        btnRecargar.addEventListener('click', () => cargarDatos(false));
         asignacionSelect.addEventListener('change', () => cargarDatos(false));
         unidadSelect.addEventListener('change', () => cargarDatos(false));
         fechaSelect.addEventListener('change', () => cargarDatos(false));
@@ -558,10 +834,14 @@
                 mostrarAlerta('Selecciona una asignación y una fecha', 'error');
                 return;
             }
+            if (!puedeCapturarAsistencia()) {
+                mostrarAlerta('No puedes guardar asistencia en esta fecha', 'error');
+                return;
+            }
 
             const horarioId = obtenerHorarioSeleccionado();
             if (!horarioId) {
-                mostrarAlerta('Selecciona un horario', 'error');
+                mostrarAlerta('Selecciona un horario habilitado', 'error');
                 return;
             }
 
@@ -597,7 +877,7 @@
                 if (!data.success) {
                     throw new Error(data.error || 'No se pudieron guardar las asistencias');
                 }
-                mostrarAlerta(`✓ Se guardaron ${data.guardadas} asistencia(s) correctamente`, 'success');
+                mostrarAlerta('✓ Asistencias guardadas correctamente', 'success');
                 
                 setTimeout(() => {
                     cargarDatos(true);
@@ -609,11 +889,10 @@
                         inputs.forEach(input => input.disabled = true);
                         
                         btnGuardar.disabled = true;
-                        btnGuardar.textContent = 'Guardar Asistencias';
+                        btnGuardar.textContent = 'Guardar asistencias';
                         btnEditar.classList.remove('hidden');
                         btnCancelar.classList.add('hidden');
                         btnTodosPresente.disabled = true;
-                        btnRecargar.disabled = false;
                         asignacionSelect.disabled = false;
                         fechaSelect.disabled = false;
                         unidadSelect.disabled = false;
@@ -629,7 +908,7 @@
             })
             .finally(() => {
                 if (btnGuardar.textContent === 'Guardando...') {
-                    btnGuardar.textContent = 'Guardar Asistencias';
+                    btnGuardar.textContent = 'Guardar asistencias';
                 }
             });
         });

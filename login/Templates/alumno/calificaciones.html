@@ -5,348 +5,542 @@
 
 {% block extra_css %}
 <style>
-/* Tabla de calificaciones - Diseño limpio tipo imagen */
-        
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
+    .boleta-page {
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 0 0 2rem;
+    }
+
+    .boleta-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .boleta-toolbar-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .boleta-toolbar-bar {
+        width: 4px;
+        height: 2rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-toolbar-title h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #1f2937;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+    }
+
+    .boleta-toolbar-title p {
+        margin: 0.15rem 0 0;
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    .btn-exportar-pdf {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        color: #fff;
+        border: none;
+        padding: 0.85rem 1.35rem;
+        border-radius: 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        box-shadow: 0 8px 18px rgba(22, 163, 74, 0.25);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+
+    .btn-exportar-pdf:hover {
+        background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(22, 163, 74, 0.3);
+    }
+
+    .boleta-info-card {
+        background: #fff;
+        border: 1px solid #d8d8d8;
+        border-radius: 0.35rem;
+        padding: 1rem 1.15rem 1.1rem;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .boleta-info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem 1.25rem;
+    }
+
+    .boleta-info-item {
+        min-width: 0;
+        border-bottom: 1px dashed #e5e7eb;
+        padding-bottom: 0.55rem;
+    }
+
+    .boleta-info-item.span-2 {
+        grid-column: span 2;
+    }
+
+    .boleta-info-label {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 0.2rem;
+    }
+
+    .boleta-info-value {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .boleta-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin: 0 0 0.85rem;
+    }
+
+    .boleta-section-title span {
+        width: 4px;
+        height: 1.35rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-section-title h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #374151;
+    }
+
+    .boleta-table-wrap {
+        background: #fff;
+        border: 1px solid #d8d8d8;
+        border-radius: 0.35rem;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .boleta-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .boleta-table {
+        width: 100%;
+        min-width: 640px;
+        border-collapse: collapse;
+    }
+
+    .boleta-table thead th {
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 0.7rem 0.55rem;
+        text-align: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.18);
+        white-space: nowrap;
+    }
+
+    .boleta-table thead th:first-child,
+    .boleta-table thead th:nth-child(2) {
+        text-align: left;
+        padding-left: 0.85rem;
+    }
+
+    .boleta-table thead th:last-child {
+        border-right: none;
+    }
+
+    .boleta-table tbody td {
+        padding: 0.65rem 0.55rem;
+        text-align: center;
+        font-size: 0.82rem;
+        color: #1f2937;
+        border-right: 1px solid #ececec;
+        border-bottom: 1px solid #ececec;
+        vertical-align: middle;
+    }
+
+    .boleta-table tbody tr:nth-child(even) {
+        background: #fafafa;
+    }
+
+    .boleta-table tbody tr:hover {
+        background: #f3f4f6;
+    }
+
+    .boleta-table tbody td:first-child,
+    .boleta-table tbody td:nth-child(2) {
+        text-align: left;
+        padding-left: 0.85rem;
+    }
+
+    .boleta-table tbody td:last-child {
+        border-right: none;
+    }
+
+    .boleta-clave {
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #374151;
+        letter-spacing: 0.02em;
+    }
+
+    .boleta-materia {
+        font-weight: 700;
+        color: #111827;
+        line-height: 1.25;
+    }
+
+    .boleta-materia-meta {
+        display: block;
+        margin-top: 0.15rem;
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: #9ca3af;
+    }
+
+    .boleta-grade {
+        font-weight: 700;
+    }
+
+    .boleta-grade-empty {
+        color: #d1d5db;
+        font-weight: 400;
+        font-size: 0.74rem;
+        letter-spacing: 0.03em;
+    }
+
+    .boleta-grade-na {
+        color: #b91c1c;
+        font-weight: 800;
+    }
+
+    .boleta-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.25rem;
+    }
+
+    .boleta-promedio-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.45rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .boleta-promedio-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .boleta-promedio-bar {
+        width: 2px;
+        height: 1rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #2b63d9 0%, #1e40af 100%);
+        flex-shrink: 0;
+    }
+
+    .boleta-promedio-value {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #374151;
+        line-height: 1;
+    }
+
+    .boleta-resumen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        align-items: center;
+    }
+
+    .boleta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #4b5563;
+    }
+
+    .boleta-empty {
+        padding: 3rem 1.5rem;
+        text-align: center;
+    }
+
+    .boleta-empty-icon {
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1rem;
+        border-radius: 999px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 1.4rem;
+    }
+
+    .boleta-empty h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1f2937;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .boleta-empty p {
+        margin: 0.65rem auto 0;
+        max-width: 28rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 1024px) {
+        .boleta-info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        
-        .table-head th {
-            background-color: #4a4a4a;
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 700;
-            padding: 0.85rem 1rem;
-            text-align: center;
-            border-right: 1px solid #5a5a5a;
+
+        .boleta-info-item.span-2 {
+            grid-column: span 2;
         }
-        
-        .table-head th:first-child {
-            text-align: left;
-            padding-left: 1.25rem;
-        }
-        
-        .table-head th:last-child {
-            border-right: none;
-        }
-        
-        tbody tr {
-            border-bottom: 1px solid #e8e8e8;
-        }
-        
-        tbody tr:last-child {
-            border-bottom: none;
-        }
-        
-        tbody tr:hover {
-            background-color: #fafafa;
-        }
-        
-        tbody td {
-            padding: 0.8rem 1rem;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 0.875rem;
-            color: #333;
-            border-right: 1px solid #f0f0f0;
-        }
-        
-        tbody td:first-child {
-            text-align: left;
-            padding-left: 1.25rem;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-        
-        tbody td:last-child {
-            border-right: none;
-        }
-        
-        .materia-meta {
-            font-size: 0.7rem;
-            color: #999;
-            font-weight: 400;
-            margin-top: 0.15rem;
-        }
-        
-        .grade-badge {
-            font-weight: 400;
-            font-size: 0.875rem;
-            color: #000;
-        }
-        
-        .grade-empty {
-            color: #ccc;
-        }
-        
-        .promedio-badge {
-            font-weight: 400;
-            font-size: 0.875rem;
-            color: #000;
-        }
-        
-        .promedio-na {
-            color: #000;
-        }
-        
-        .promedio-ok {
-            color: #000;
-        }
-        
-        .empty-state {
-            display: flex;
+    }
+
+    @media (max-width: 640px) {
+        .boleta-toolbar {
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem 2rem;
-            text-align: center;
+            align-items: stretch;
         }
-        
-        .empty-icon {
-            width: 4rem;
-            height: 4rem;
-            background-color: #f5f5f5;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
-            color: #999;
+
+        .boleta-toolbar-title h2 {
+            font-size: 1.1rem;
         }
+
+        .btn-exportar-pdf {
+            width: 100%;
+            padding: 0.95rem 1rem;
+        }
+
+        .boleta-info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .boleta-info-item.span-2 {
+            grid-column: span 1;
+        }
+
+        .boleta-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .boleta-promedio-box {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .boleta-resumen {
+            justify-content: center;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-                <h2 class="text-2xl font-black text-gray-700 mb-8 tracking-tighter uppercase">Consultas de Calificaciones</h2>
-
-                <div class="table-container table-scroll bg-white">
-                    <table>
-                        <thead class="table-head">
-                            <tr>
-                                <th>Materia</th>
-                                <th>U1</th>
-                                <th>U2</th>
-                                <th>U3</th>
-                                <th>U4</th>
-                                <th>U5</th>
-                                <th>U6</th>
-                                <th>Promedio</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if hay_calificaciones %}
-                                {% for row in calificaciones_rows %}
-                                <tr>
-                                    <td>
-                                        <div>{{ row.materia }}</div>
-                                        <div class="materia-meta">{{ row.codigo }} · {{ row.grupo }}</div>
-                                    </td>
-                                    {% for unidad in row.unidades %}
-                                        <td>
-                                            {% if unidad != '—' %}
-                                                <span class="grade-badge">{{ unidad }}</span>
-                                            {% else %}
-                                                <span class="grade-badge grade-empty">—</span>
-                                            {% endif %}
-                                        </td>
-                                    {% endfor %}
-                                    <td>
-                                        {% if row.unidades|has_unit_below_70 %}
-                                            <span class="promedio-badge promedio-na">NA</span>
-                                        {% else %}
-                                            <span class="promedio-badge promedio-ok">{{ row.promedio }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="8">
-                                        <div class="empty-state">
-                                            <div class="empty-icon">
-                                                <i class="fas fa-info-circle"></i>
-                                            </div>
-                                            <h3 class="text-lg font-black text-gray-800 uppercase tracking-tight">Sin calificaciones registradas</h3>
-                                            <p class="text-gray-500 font-medium mt-2 max-w-md mx-auto">
-                                                No se encontraron calificaciones en el sistema. Los datos se mostrarán automáticamente cuando estén disponibles en la base de datos.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-6 flex justify-between items-center pt-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold text-gray-600">Promedio General:</span>
-                        <span class="text-xl font-bold text-gray-800">{% calculate_general_average calificaciones_rows %}</span>
-                    </div>
-                    <button onclick="exportarPDF()" class="bg-green-600 hover:bg-green-700 text-white flex items-center gap-3 px-10 py-4 rounded-2xl font-black shadow-lg uppercase tracking-tighter transition-colors cursor-pointer">
-                        <i class="fas fa-file-pdf text-2xl"></i> Exportar PDF
-                    </button>
-                </div>
+<div class="boleta-page">
+    <div class="boleta-toolbar">
+        <div class="boleta-toolbar-title">
+            <div class="boleta-toolbar-bar" aria-hidden="true"></div>
+            <div>
+                <h2>Consulta de Calificaciones</h2>
+                <p>Periodo {{ perfil.periodo_actual|default:"---" }}</p>
             </div>
-{% endblock %}
+        </div>
+        <a href="{% url 'exportar_boleta_calificaciones_alumno' %}" class="btn-exportar-pdf">
+            <i class="fas fa-file-pdf text-lg"></i>
+            Exportar PDF
+        </a>
+    </div>
 
-{% block page_modals %}
-<!-- Preload foto para PDF -->
-    {% if perfil.foto_url %}
-    <img src="{{ perfil.foto_url }}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;" aria-hidden="true">
-    {% endif %}
-    <!-- Boleta oculta para exportar PDF -->
-    <div id="boleta-pdf" style="display:none;">
-        <div style="width:100%; font-family: Arial, sans-serif; padding: 30px; box-sizing: border-box;">
-            <!-- Header -->
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #333; padding-bottom: 15px; margin-bottom: 20px;">
-                <div style="flex: 1;">
-                    <h1 style="margin:0; font-size: 20px; font-weight: 900; color: #1a1a1a; letter-spacing: 1px;">SCHOOLTRACK</h1>
-                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #555;">Sistema de Control Escolar</p>
-                </div>
-                <div style="text-align: center; flex: 2;">
-                    <h2 style="margin:0; font-size: 16px; font-weight: 700; color: #000;">BOLETA DE CALIFICACIONES</h2>
-                    <p style="margin: 6px 0 0 0; font-size: 11px; color: #333;">PERIODO: <strong>{{ perfil.periodo_actual|default:"---" }}</strong></p>
-                </div>
-                <div style="flex: 1; text-align: right;">
-                    <p style="margin:0; font-size: 11px; color: #555;">FECHA: <strong id="pdf-fecha"></strong></p>
-                </div>
+    <section class="boleta-info-card" aria-label="Datos del alumno">
+        <div class="boleta-info-grid">
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">No. Control</span>
+                <span class="boleta-info-value">{{ perfil.matricula|default:"---" }}</span>
             </div>
-
-            <!-- Datos del alumno -->
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <div style="flex: 1;">
-                    <table style="border-collapse: collapse; font-size: 12px; width: 100%;">
-                        <tr>
-                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">MATRICULA:</td>
-                            <td style="padding: 4px 0; border-bottom: 1px solid #999; width: 100%;">{{ perfil.matricula|default:"---" }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">NOMBRE:</td>
-                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.nombre_completo|default:"---" }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">CARRERA:</td>
-                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.carrera|default:"---" }}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 4px 10px 4px 0; font-weight: 700; color: #333; white-space: nowrap;">SEMESTRE:</td>
-                            <td style="padding: 4px 0; border-bottom: 1px solid #999;">{{ perfil.semestre|default:"---" }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div style="width: 100px; height: 120px; border: 2px solid #333; margin-left: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f9f9f9;">
-                    {% if perfil.foto_url %}
-                        <img id="foto-alumno-pdf" src="{{ perfil.foto_url }}" style="width: 100%; height: 100%; object-fit: cover;">
-                    {% else %}
-                        <span style="font-size: 10px; color: #aaa; text-align: center;">SIN FOTO</span>
-                    {% endif %}
-                </div>
+            <div class="boleta-info-item span-2">
+                <span class="boleta-info-label">Nombre</span>
+                <span class="boleta-info-value">{{ perfil.nombre_completo|default:"---" }}</span>
             </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">CURP</span>
+                <span class="boleta-info-value">{{ perfil.curp|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Carrera</span>
+                <span class="boleta-info-value">{{ perfil.carrera|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Semestre</span>
+                <span class="boleta-info-value">{{ perfil.semestre|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Estatus</span>
+                <span class="boleta-info-value">{{ perfil.estatus|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Periodo</span>
+                <span class="boleta-info-value">{{ perfil.periodo_actual|default:"---" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Materias</span>
+                <span class="boleta-info-value">{{ calificaciones_rows|length|stringformat:"02d" }}</span>
+            </div>
+            <div class="boleta-info-item">
+                <span class="boleta-info-label">Periodo de ingreso</span>
+                <span class="boleta-info-value">{{ perfil.periodo_ingreso|default:"---" }}</span>
+            </div>
+        </div>
+    </section>
 
-            <!-- Tabla de calificaciones -->
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 2px solid #333;">
+    <div class="boleta-section-title">
+        <span aria-hidden="true"></span>
+        <h3>Calificaciones del Periodo</h3>
+    </div>
+
+    <div class="boleta-table-wrap">
+        <div class="boleta-table-scroll">
+            <table class="boleta-table">
                 <thead>
-                    <tr style="background-color: #4a4a4a;">
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: left; font-size: 10px;">CLAVE</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: left; font-size: 10px;">MATERIA</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U1</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U2</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U3</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U4</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U5</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">U6</th>
-                        <th style="border: 1px solid #333; padding: 8px 6px; color: white; text-align: center; font-size: 10px;">PROMEDIO</th>
+                    <tr>
+                        <th>Clave</th>
+                        <th>Materia</th>
+                        <th>Cal</th>
+                        <th>U1</th>
+                        <th>U2</th>
+                        <th>U3</th>
+                        <th>U4</th>
+                        <th>U5</th>
+                        <th>U6</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in calificaciones_rows %}
-                    <tr>
-                        <td style="border: 1px solid #ccc; padding: 7px 6px; font-weight: 400;">{{ row.codigo }}</td>
-                        <td style="border: 1px solid #ccc; padding: 7px 6px; font-weight: 400;">{{ row.materia }}</td>
-                        {% for unidad in row.unidades %}
-                            <td style="border: 1px solid #ccc; padding: 7px 6px; text-align: center;">{{ unidad }}</td>
+                    {% if hay_calificaciones %}
+                        {% for row in calificaciones_rows %}
+                        <tr>
+                            <td><span class="boleta-clave">{{ row.codigo|default:"---" }}</span></td>
+                            <td>
+                                <span class="boleta-materia">{{ row.materia }}</span>
+                                <span class="boleta-materia-meta">Grupo {{ row.grupo }}</span>
+                            </td>
+                            <td>
+                                {% if row.unidades|has_unit_below_70 %}
+                                    <span class="boleta-grade boleta-grade-na">NA</span>
+                                {% elif row.promedio == '---' %}
+                                    <span class="boleta-grade boleta-grade-empty">---</span>
+                                {% else %}
+                                    <span class="boleta-grade">{{ row.promedio }}</span>
+                                {% endif %}
+                            </td>
+                            {% for unidad in row.unidades %}
+                                <td>
+                                    {% if unidad == '---' or unidad == '—' %}
+                                        <span class="boleta-grade boleta-grade-empty">---</span>
+                                    {% else %}
+                                        <span class="boleta-grade">{{ unidad }}</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
                         {% endfor %}
-                        <td style="border: 1px solid #ccc; padding: 7px 6px; text-align: center; font-weight: 700;">{{ row.promedio }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" style="border: 1px solid #ccc; padding: 20px; text-align: center; color: #999;">Sin calificaciones registradas</td>
-                    </tr>
-                    {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9">
+                                <div class="boleta-empty">
+                                    <div class="boleta-empty-icon">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </div>
+                                    <h4>Sin calificaciones registradas</h4>
+                                    <p>No se encontraron calificaciones en el sistema. Los datos se mostrarán automáticamente cuando estén disponibles en la base de datos.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
-
-            <!-- Promedio general -->
-            <div style="margin-top: 20px; text-align: right; border-top: 2px solid #333; padding-top: 12px;">
-                <span style="font-size: 13px; font-weight: 700; color: #000;">PROMEDIO GENERAL: &nbsp;</span>
-                <span style="font-size: 16px; font-weight: 900; color: #000; border: 2px solid #333; padding: 4px 14px; border-radius: 4px;">{% calculate_general_average calificaciones_rows %}</span>
-            </div>
-
-            <!-- Footer -->
-            <div style="margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 9px; color: #888;">
-                <span>Documento generado por SchoolTrack</span>
-                <span>Este documento es informativo y no tiene validez oficial</span>
-            </div>
         </div>
     </div>
+
+    <div class="boleta-footer">
+        <div class="boleta-promedio-box">
+            <span class="boleta-promedio-label">Promedio</span>
+            <span class="boleta-promedio-bar" aria-hidden="true"></span>
+            <span class="boleta-promedio-value">{% calculate_general_average calificaciones_rows %}</span>
+        </div>
+        <div class="boleta-resumen">
+            <span class="boleta-chip">
+                <i class="fas fa-book text-blue-600"></i>
+                {{ calificaciones_rows|length }} materia{{ calificaciones_rows|length|pluralize:"s" }}
+            </span>
+            <span class="boleta-chip">
+                <i class="fas fa-calendar-alt text-blue-600"></i>
+                {{ perfil.periodo_actual|default:"---" }}
+            </span>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script>
-function exportarPDF() {
-            const boleta = document.getElementById('boleta-pdf');
-            // Poner fecha actual
-            const hoy = new Date();
-            const fechaStr = hoy.getFullYear() + '-' + String(hoy.getMonth()+1).padStart(2,'0') + '-' + String(hoy.getDate()).padStart(2,'0');
-            document.getElementById('pdf-fecha').textContent = fechaStr;
-
-            // Convertir foto a base64 antes de generar PDF
-            const fotoImg = boleta.querySelector('img');
-            const generarPDF = () => {
-                boleta.style.display = 'block';
-                const opt = {
-                    margin: [0.3, 0.3, 0.3, 0.3],
-                    filename: 'boleta_calificaciones_{{ perfil.matricula|default:"alumno" }}.pdf',
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(boleta).save().then(() => {
-                    boleta.style.display = 'none';
-                });
-            };
-
-            if (fotoImg && fotoImg.src) {
-                // Precargar y convertir a base64 para que html2pdf la renderice
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    try {
-                        fotoImg.src = canvas.toDataURL('image/jpeg', 0.9);
-                    } catch(e) {
-                        // Si falla CORS, dejar la URL original
-                    }
-                    generarPDF();
-                };
-                img.onerror = function() {
-                    generarPDF();
-                };
-                img.src = fotoImg.src;
-            } else {
-                generarPDF();
-            }
-        }
-    </script>
-{% endblock %}
