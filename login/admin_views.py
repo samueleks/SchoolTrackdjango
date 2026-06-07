@@ -35,6 +35,9 @@ from .models import (
     Grupo,
     Inscripcion,
     AsignacionMateria,
+    Horario,
+    Asistencia,
+    Calificacion,
     LogCalificacion,
 )
 from .password_utils import generar_contrasena_temporal
@@ -2254,6 +2257,94 @@ def editar_usuario(request, usuario_id):
     return render(request, 'administrador/EditarUsuario.html', _anexar_retorno_lista_usuarios(request, context))
 
 
+def _mensaje_bloqueo_eliminar_usuario(usuario: Usuarios) -> str | None:
+    nombre_usuario = f'{usuario.nombre} {usuario.apellido}'
+
+    total_logs_modifico = LogCalificacion.objects.filter(id_usuario_modifico=usuario).count()
+    if total_logs_modifico:
+        etiqueta = (
+            'registro en historial de calificaciones'
+            if total_logs_modifico == 1
+            else 'registros en historial de calificaciones'
+        )
+        return (
+            f'No puedes eliminar a {nombre_usuario} porque tiene '
+            f'{total_logs_modifico} {etiqueta}'
+        )
+
+    alumno = Alumnos.objects.filter(pk=usuario.pk).first()
+    if alumno:
+        total_inscripciones = Inscripcion.objects.filter(id_alumno=alumno).count()
+        if total_inscripciones:
+            etiqueta = 'inscripción' if total_inscripciones == 1 else 'inscripciones'
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_inscripciones} {etiqueta}'
+            )
+
+        total_asistencias = Asistencia.objects.filter(id_inscripcion__id_alumno=alumno).count()
+        if total_asistencias:
+            etiqueta = 'asistencia registrada' if total_asistencias == 1 else 'asistencias registradas'
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_asistencias} {etiqueta}'
+            )
+
+        total_calificaciones = Calificacion.objects.filter(id_inscripcion__id_alumno=alumno).count()
+        if total_calificaciones:
+            etiqueta = 'calificación registrada' if total_calificaciones == 1 else 'calificaciones registradas'
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_calificaciones} {etiqueta}'
+            )
+
+        total_logs_alumno = LogCalificacion.objects.filter(id_alumno=alumno).count()
+        if total_logs_alumno:
+            etiqueta = (
+                'registro en historial de calificaciones'
+                if total_logs_alumno == 1
+                else 'registros en historial de calificaciones'
+            )
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_logs_alumno} {etiqueta} como alumno'
+            )
+
+    maestro = Maestros.objects.filter(pk=usuario.pk).first()
+    if maestro:
+        total_asignaciones = AsignacionMateria.objects.filter(id_maestro=maestro).count()
+        if total_asignaciones:
+            etiqueta = 'asignación de materia' if total_asignaciones == 1 else 'asignaciones de materias'
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_asignaciones} {etiqueta}'
+            )
+
+        total_horarios = Horario.objects.filter(id_asignacion_materia__id_maestro=maestro).count()
+        if total_horarios:
+            etiqueta = 'horario registrado' if total_horarios == 1 else 'horarios registrados'
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_horarios} {etiqueta}'
+            )
+
+        total_calificaciones_maestro = Calificacion.objects.filter(
+            id_asignacion_materia__id_maestro=maestro,
+        ).count()
+        if total_calificaciones_maestro:
+            etiqueta = (
+                'calificación registrada'
+                if total_calificaciones_maestro == 1
+                else 'calificaciones registradas'
+            )
+            return (
+                f'No puedes eliminar a {nombre_usuario} porque tiene '
+                f'{total_calificaciones_maestro} {etiqueta} como maestro'
+            )
+
+    return None
+
+
 def eliminar_usuario(request, usuario_id):
     """
     DELETE (D del CRUD): borrar un usuario.
@@ -2263,7 +2354,7 @@ def eliminar_usuario(request, usuario_id):
       GET  → confirmar_eliminar.html (poco usado; la lista usa AJAX)
       POST → usuario.delete() en cascada → redirect o JsonResponse
 
-    Regla: no se puede eliminar al último admin del sistema.
+    Reglas: no eliminar si tiene datos académicos ligados; no eliminar al último admin.
     """
     # --- PASO 1: SEGURIDAD — respuesta JSON si es petición AJAX sin permiso ---
     if not sesion_roles_permitidas(request, ('admin',)):
@@ -2276,6 +2367,14 @@ def eliminar_usuario(request, usuario_id):
     
     # --- PASO 3: POST = ejecutar borrado ---
     if request.method == 'POST':
+        es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        bloqueo = _mensaje_bloqueo_eliminar_usuario(usuario)
+        if bloqueo:
+            if es_ajax:
+                return JsonResponse({'success': False, 'error': bloqueo}, status=400)
+            messages.error(request, bloqueo)
+            return redirect('gestion_usuarios')
+
         try:
             with transaction.atomic():
                 # Regla de negocio: debe quedar al menos 1 administrador
