@@ -577,7 +577,7 @@
                 nombre: '{{ materia.nombre|escapejs }}',
                 creditos: {{ materia.creditos }},
                 semestre: {{ materia.semestre }},
-                activa: {{ materia.activo|yesno:"true,false" }}
+                activa: {{ materia.activa|yesno:"true,false" }}
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         };
