@@ -38,7 +38,6 @@ urlpatterns = [
     path('maestro/reportes/', views.consultar_reportes, name='consultar_reportes'),
     path('maestro/reportes/exportar/', views.exportar_reportes_maestro_excel, name='exportar_reportes_maestro_excel'),
     path('maestro/reportes/exportar-pdf/', views.exportar_reportes_maestro_pdf, name='exportar_reportes_maestro_pdf'),
-    path('maestro/materias-por-semestre/', views.get_materias_por_semestre, name='get_materias_por_semestre'),
     
     # Vistas de administrador
     path('administrativo/reportes/', views.admin_reportes, name='admin_reportes'),

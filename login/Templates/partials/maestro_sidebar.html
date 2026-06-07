@@ -14,8 +14,8 @@
             <i class="fas fa-file-signature text-xl {% if nav == 'registrar_calificaciones' or nav == 'get_datos_calificaciones_maestro' or nav == 'guardar_calificaciones_maestro' %}text-blue-600{% endif %}"></i> Registrar Calificaciones
         </a>
         <a href="{% url 'consultar_reportes' %}"
-           class="nav-item {% if nav == 'consultar_reportes' or nav == 'get_materias_por_semestre' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
-            <i class="fas fa-file-alt text-xl {% if nav == 'consultar_reportes' or nav == 'get_materias_por_semestre' %}text-blue-600{% endif %}"></i> Consultar Reportes
+           class="nav-item {% if nav == 'consultar_reportes' %}nav-item-active text-gray-800 shadow-sm{% else %}text-gray-700{% endif %}">
+            <i class="fas fa-file-alt text-xl {% if nav == 'consultar_reportes' %}text-blue-600{% endif %}"></i> Consultar Reportes
         </a>
         <a href="{% url 'logout' %}" class="nav-item text-red-600 hover:bg-red-100 uppercase nav-logout">
             <i class="fas fa-sign-out-alt text-xl"></i> Cerrar Sesión

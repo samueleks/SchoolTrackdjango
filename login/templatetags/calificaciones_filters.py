@@ -22,22 +22,6 @@ def has_unit_below_70(unidades):
     return False
 
 
-@register.filter
-def get_promedio_display(promedio, unidades):
-    """
-    Retorna 'NA' si alguna unidad es menor a 70, en caso contrario retorna el promedio.
-    """
-    for unidad in unidades:
-        if unidad not in _VALOR_VACIO:
-            try:
-                valor = float(unidad)
-                if valor < 70:
-                    return 'NA'
-            except (ValueError, TypeError):
-                pass
-    return promedio
-
-
 @register.simple_tag
 def calculate_general_average(calificaciones_rows):
     """

@@ -1,6 +1,5 @@
 django>=6.0,<7
 pillow
-pytesseract
 python-dotenv>=1.0.0
 psycopg2-binary
 fpdf2

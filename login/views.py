@@ -7,19 +7,13 @@ import unicodedata
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 
-import pytesseract
-from PIL import Image
-
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login as auth_login
-from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse, HttpResponseNotAllowed, HttpResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.db import transaction, models
 from django.utils import timezone
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from urllib.parse import urlencode
 
@@ -59,16 +53,9 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-OCR_UPLOAD_MAX_BYTES = int(getattr(settings, 'OCR_UPLOAD_MAX_BYTES', 5 * 1024 * 1024))
 ESCALA_MAXIMA_CALIFICACION = Decimal('100')
 MINIMO_APROBATORIO_CALIFICACION = Decimal(str(getattr(settings, 'MINIMO_APROBATORIO_CALIFICACION', 70)))
 _VALOR_CALIFICACION_VACIA = '---'
-
-pytesseract.pytesseract.tesseract_cmd = getattr(
-    settings,
-    'TESSERACT_CMD',
-    r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-)
 
 
 def _safe_server_error(exc: BaseException) -> str:
@@ -2318,15 +2305,6 @@ def exportar_reportes_maestro_pdf(request):
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return response
-
-
-def get_materias_por_semestre(request):
-    if not sesion_roles_permitidas(request, ('maestro',)):
-        return JsonResponse({'materias': []})
-
-    materias = Materia.objects.filter(activo=True).order_by('nombre')
-    data = [{'id': materia.id_materia, 'nombre': materia.nombre} for materia in materias]
-    return JsonResponse({'materias': data})
 
 
 def _obtener_datos_asistencia_maestro(maestro: Maestros, asignacion_id: str, fecha_obj: date, unidad: int, horario_id: str | None = None) -> dict:
