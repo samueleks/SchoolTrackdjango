@@ -504,28 +504,36 @@ def _primer_campo_error_editar_usuario(errores_campos: dict) -> str | None:
     return _primer_campo_error_por_orden(errores_campos, _ORDEN_CAMPOS_EDITAR_USUARIO)
 
 
+def _sincronizar_secuencia_postgresql(model) -> None:
+    """
+    Alinea la secuencia de PostgreSQL con el MAX(pk) real de la tabla.
+    Evita errores duplicate key cuando hubo restauraciones o inserts manuales.
+    """
+    if connection.vendor != 'postgresql':
+        return
+
+    table = model._meta.db_table
+    column = model._meta.pk.column
+    with connection.cursor() as cursor:
+        cursor.execute(
+            'SELECT pg_get_serial_sequence(%s, %s)',
+            [table, column],
+        )
+        row = cursor.fetchone()
+        if not row or not row[0]:
+            return
+        sequence_name = row[0]
+        cursor.execute(
+            f'SELECT setval(%s, COALESCE((SELECT MAX("{column}") FROM "{table}"), 1), true)',
+            [sequence_name],
+        )
+
+
 def _proximo_id_usuario_preview() -> int:
-    """
-    ID que la BD asignará al próximo INSERT en usuarios.
-    En PostgreSQL el contador real es la secuencia, no MAX(id)+1 (los huecos por
-    usuarios eliminados no se reutilizan).
-    """
+    """ID que la BD asignará al próximo INSERT en usuarios."""
     from django.db.models import Max
 
-    if connection.vendor == 'postgresql':
-        table = Usuarios._meta.db_table
-        column = Usuarios._meta.pk.column
-        with connection.cursor() as cursor:
-            cursor.execute(
-                'SELECT pg_get_serial_sequence(%s, %s)',
-                [table, column],
-            )
-            sequence_name = cursor.fetchone()[0]
-            if sequence_name:
-                cursor.execute(f'SELECT last_value, is_called FROM {sequence_name}')
-                last_value, is_called = cursor.fetchone()
-                return int(last_value + (1 if is_called else 0))
-
+    _sincronizar_secuencia_postgresql(Usuarios)
     max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
     return max_id + 1
 _ALINEACION_EXCEL_USUARIOS = {
@@ -1735,6 +1743,7 @@ def agregar_usuario(request):
             with transaction.atomic():
                 # TABLA 1: usuarios — registro principal (matrícula y hash se aplican en .save())
                 try:
+                    _sincronizar_secuencia_postgresql(Usuarios)
                     usuario = Usuarios(
                         nombre=nombre,
                         apellido=apellido,
