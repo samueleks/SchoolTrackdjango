@@ -66,13 +66,16 @@ def _clave_limite_correo(correo: str) -> str:
 
 def _incrementar_limite(clave: str, maximo: int, segundos: int = 3600) -> bool:
     """Retorna True si aún puede continuar; False si excedió el límite."""
-    actual = cache.get(clave, 0)
+    actual = cache.get(clave, 0) or 0
     if actual >= maximo:
         return False
-    if actual == 0:
+    try:
+        if actual == 0:
+            cache.set(clave, 1, segundos)
+        else:
+            cache.incr(clave)
+    except ValueError:
         cache.set(clave, 1, segundos)
-    else:
-        cache.incr(clave)
     return True
 
 
@@ -160,7 +163,39 @@ Si no solicitaste este cambio, ignora este correo. Tu contraseña actual seguir�
     mensaje.send(fail_silently=False)
 
 
-@transaction.atomic
+def _preparar_token_recuperacion(
+    *,
+    request,
+    usuario: Usuarios,
+    ip: str,
+) -> tuple[str, DatosPersonales, str, str, int]:
+    """Crea el token en BD (transacción corta, sin SMTP)."""
+    horas = getattr(settings, 'RECUPERACION_CONTRASENA_HORAS_VALIDEZ', 1)
+    token_plano = secrets.token_urlsafe(48)
+    token_hash = _hash_token(token_plano)
+    ahora = timezone.now()
+
+    with transaction.atomic():
+        TokenRecuperacionContrasena.objects.filter(
+            id_usuario=usuario,
+            usado_en__isnull=True,
+            expira_en__gt=ahora,
+        ).update(usado_en=ahora)
+
+        datos = DatosPersonales.objects.get(id_usuario=usuario)
+        TokenRecuperacionContrasena.objects.create(
+            id_usuario=usuario,
+            token_hash=token_hash,
+            correo_destino=datos.correo_inst,
+            expira_en=ahora + timedelta(hours=horas),
+            ip_solicitud=ip or None,
+        )
+
+    enlace = _construir_url_recuperacion(request, token_plano)
+    nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+    return token_plano, datos, enlace, nombre, horas
+
+
 def solicitar_recuperacion_contrasena(
     *,
     request,
@@ -210,28 +245,18 @@ def solicitar_recuperacion_contrasena(
             'Contacta al administrador del sistema.'
         )
 
-    horas = getattr(settings, 'RECUPERACION_CONTRASENA_HORAS_VALIDEZ', 1)
-    token_plano = secrets.token_urlsafe(48)
-    token_hash = _hash_token(token_plano)
-    ahora = timezone.now()
-
-    TokenRecuperacionContrasena.objects.filter(
-        id_usuario=usuario,
-        usado_en__isnull=True,
-        expira_en__gt=ahora,
-    ).update(usado_en=ahora)
-
-    datos = DatosPersonales.objects.get(id_usuario=usuario)
-    TokenRecuperacionContrasena.objects.create(
-        id_usuario=usuario,
-        token_hash=token_hash,
-        correo_destino=datos.correo_inst,
-        expira_en=ahora + timedelta(hours=horas),
-        ip_solicitud=ip or None,
-    )
-
-    enlace = _construir_url_recuperacion(request, token_plano)
-    nombre = f'{usuario.nombre} {usuario.apellido}'.strip()
+    try:
+        _, datos, enlace, nombre, horas = _preparar_token_recuperacion(
+            request=request,
+            usuario=usuario,
+            ip=ip,
+        )
+    except Exception:
+        logger.exception('Error al crear token de recuperación para %s', usuario.matricula)
+        return False, (
+            'No pudimos procesar la solicitud en este momento. '
+            'Contacta al administrador del sistema.'
+        )
 
     try:
         _enviar_correo_recuperacion(
@@ -244,7 +269,8 @@ def solicitar_recuperacion_contrasena(
     except Exception as exc:
         logger.exception('Error al enviar correo de recuperación para %s: %s', usuario.matricula, exc)
         return False, (
-            'No pudimos enviar el correo en este momento. Intenta más tarde o contacta al administrador.'
+            'No pudimos enviar el correo en este momento. '
+            'Verifica la configuración de correo en el servidor o intenta más tarde.'
         )
 
     logger.info('Correo de recuperación enviado a %s (%s)', usuario.matricula, datos.correo_inst)

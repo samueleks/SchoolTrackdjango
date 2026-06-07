@@ -1,9 +1,13 @@
+import logging
+
 from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from .password_utils import validar_contrasena_usuario
+
+logger = logging.getLogger(__name__)
 from .recuperacion_contrasena import (
     ETIQUETA_ROL,
     LOGIN_POR_ROL,
@@ -46,16 +50,27 @@ def recuperar_contrasena_solicitud(request):
         if not matricula_valor or not correo_valor:
             error_msg = 'Ingresa tu matrícula y tu correo institucional registrado.'
         else:
-            _, mensaje = solicitar_recuperacion_contrasena(
-                request=request,
-                matricula=matricula_valor,
-                correo=correo_valor,
-            )
-            messages.success(request, mensaje)
-            destino = reverse('recuperar_contrasena_enviado')
-            if rol:
-                destino = f'{destino}?rol={rol}'
-            return redirect(destino)
+            try:
+                enviado, mensaje = solicitar_recuperacion_contrasena(
+                    request=request,
+                    matricula=matricula_valor,
+                    correo=correo_valor,
+                )
+            except Exception:
+                logger.exception('Error inesperado en recuperación de contraseña')
+                error_msg = (
+                    'Ocurrió un error al procesar tu solicitud. '
+                    'Intenta más tarde o contacta al administrador.'
+                )
+            else:
+                if enviado:
+                    messages.success(request, mensaje)
+                else:
+                    messages.warning(request, mensaje)
+                destino = reverse('recuperar_contrasena_enviado')
+                if rol:
+                    destino = f'{destino}?rol={rol}'
+                return redirect(destino)
 
     context = {
         **_contexto_rol(rol),

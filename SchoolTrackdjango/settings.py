@@ -212,6 +212,8 @@ if _email_host:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     EMAIL_USE_TLS = _env_bool('EMAIL_USE_TLS', default=True)
     EMAIL_USE_SSL = _env_bool('EMAIL_USE_SSL', default=False)
+    # Evita que SMTP cuelgue minutos y provoque 500 por timeout del worker.
+    EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15'))
     DEFAULT_FROM_EMAIL = os.environ.get(
         'DEFAULT_FROM_EMAIL',
         'SchoolTrack <noreply@schooltrack.mx>',
