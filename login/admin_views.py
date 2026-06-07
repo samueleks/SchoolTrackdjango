@@ -23,6 +23,11 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from fpdf import FPDF
 
+from .db_sequence_utils import (
+    asegurar_secuencia_postgresql as _asegurar_secuencia_postgresql,
+    avanzar_secuencia_tras_eliminar as _avanzar_secuencia_tras_eliminar,
+    info_secuencia_postgresql as _info_secuencia_postgresql,
+)
 from .models import (
     Usuarios,
     Alumnos,
@@ -504,63 +509,12 @@ def _primer_campo_error_editar_usuario(errores_campos: dict) -> str | None:
     return _primer_campo_error_por_orden(errores_campos, _ORDEN_CAMPOS_EDITAR_USUARIO)
 
 
-def _info_secuencia_postgresql(model) -> tuple[str | None, int]:
-    """Nombre de secuencia y valor que tomaría el próximo INSERT en PostgreSQL."""
-    if connection.vendor != 'postgresql':
-        return None, 0
-
-    table = model._meta.db_table
-    column = model._meta.pk.column
-    with connection.cursor() as cursor:
-        cursor.execute(
-            'SELECT pg_get_serial_sequence(%s, %s)',
-            [table, column],
-        )
-        row = cursor.fetchone()
-        if not row or not row[0]:
-            return None, 0
-        sequence_name = row[0]
-        cursor.execute(f'SELECT last_value, is_called FROM {sequence_name}')
-        last_value, is_called = cursor.fetchone()
-        return sequence_name, int(last_value + (1 if is_called else 0))
-
-
 def _asegurar_secuencia_usuarios_postgresql() -> None:
-    """
-    Solo adelanta la secuencia si va rezagada (restauraciones/imports).
-    Nunca la retrocede: los IDs eliminados no se reutilizan.
-    """
-    from django.db.models import Max
-
-    if connection.vendor != 'postgresql':
-        return
-
-    max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
-    sequence_name, proximo_secuencia = _info_secuencia_postgresql(Usuarios)
-    if not sequence_name or proximo_secuencia > max_id:
-        return
-
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT setval(%s, %s, true)', [sequence_name, max_id])
+    _asegurar_secuencia_postgresql(Usuarios)
 
 
 def _avanzar_secuencia_usuarios_tras_eliminar(id_eliminado: int) -> None:
-    """Evita reasignar el ID del usuario que acaba de borrarse."""
-    from django.db.models import Max
-
-    if connection.vendor != 'postgresql':
-        return
-
-    max_id = Usuarios.objects.aggregate(Max('id_usuario'))['id_usuario__max'] or 0
-    if id_eliminado <= max_id:
-        return
-
-    sequence_name, proximo_secuencia = _info_secuencia_postgresql(Usuarios)
-    if not sequence_name or proximo_secuencia > id_eliminado:
-        return
-
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT setval(%s, %s, true)', [sequence_name, id_eliminado])
+    _avanzar_secuencia_tras_eliminar(Usuarios, id_eliminado)
 
 
 def _proximo_id_usuario_preview() -> int:

@@ -34,6 +34,7 @@ from .maestro_reportes_export import (
     generar_pdf_reportes_maestro,
     generar_pdf_sesion_asistencia_maestro,
 )
+from .db_sequence_utils import asegurar_secuencia_postgresql, avanzar_secuencia_tras_eliminar
 from .datos_personales_utils import validar_datos_perfil_usuario
 from .periodo_utils import calcular_semestre_desde_ingreso, resolver_semestre_alumno
 from .models import (
@@ -3514,6 +3515,8 @@ def agregar_horario(request):
             horarios_a_crear.append({'dia': dia_modelo, 'inicio': h_ini, 'fin': h_fin})
 
         # Buscar o crear AsignacionMateria (DESPUÉS de todas las validaciones)
+        asegurar_secuencia_postgresql(AsignacionMateria)
+        asegurar_secuencia_postgresql(Horario)
         asignacion, created = AsignacionMateria.objects.get_or_create(
             id_materia=materia,
             id_maestro=maestro,
@@ -3591,7 +3594,9 @@ def eliminar_horario(request):
 
     try:
         horario = Horario.objects.get(id_horario=int(horario_id))
+        id_eliminado = horario.id_horario
         horario.delete()
+        avanzar_secuencia_tras_eliminar(Horario, id_eliminado)
         return JsonResponse({'success': True, 'message': 'Horario eliminado correctamente'})
     except Horario.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Horario no encontrado'})
@@ -4184,6 +4189,7 @@ def crear_inscripcion(request):
         ).exists():
             raise ValueError('El alumno ya está inscrito en ese grupo para ese ciclo')
 
+        asegurar_secuencia_postgresql(Inscripcion)
         Inscripcion.objects.create(
             id_alumno=alumno,
             id_grupo=grupo,
@@ -4239,6 +4245,7 @@ def crear_inscripcion_generacion(request):
         if grupo.id_ciclo_escolar_id != ciclo.id_ciclo_escolar:
             raise ValueError('El grupo seleccionado no pertenece al ciclo escolar indicado')
 
+        asegurar_secuencia_postgresql(Inscripcion)
         creadas = 0
         omitidas = 0
         for alumno_id in alumno_ids:
@@ -4492,6 +4499,7 @@ def crear_asignacion(request):
         ).exists():
             raise ValueError('Ya existe esa asignación de materia')
 
+        asegurar_secuencia_postgresql(AsignacionMateria)
         AsignacionMateria.objects.create(
             id_materia=materia,
             id_maestro=maestro,
@@ -4595,7 +4603,9 @@ def eliminar_asignacion(request, asignacion_id):
         messages.error(request, bloqueo)
         return redirect('gestion_asignaciones')
 
+    id_eliminado = asignacion.id_asignacion_materia
     asignacion.delete()
+    avanzar_secuencia_tras_eliminar(AsignacionMateria, id_eliminado)
     success_msg = 'Asignación eliminada correctamente'
     if es_ajax:
         return JsonResponse({'success': True, 'message': success_msg})
