@@ -269,7 +269,7 @@ class Alumnos(models.Model):
         primary_key=True, 
         db_column='id_usuario'
     )
-    id_carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, db_column='id_carrera')
+    id_carrera = models.ForeignKey(Carrera, on_delete=models.PROTECT, db_column='id_carrera')
     semestre = models.IntegerField()
     periodo_ingreso = models.CharField(max_length=10)  # ej: 2026-1
     estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='Activo')
@@ -373,8 +373,8 @@ class Grupo(models.Model):
     nombre = models.CharField(max_length=100)
     semestre = models.IntegerField()
     turno = models.CharField(max_length=20, choices=TURNO_CHOICES)
-    id_carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, db_column='id_carrera')
-    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.CASCADE, db_column='id_ciclo_escolar')
+    id_carrera = models.ForeignKey(Carrera, on_delete=models.PROTECT, db_column='id_carrera')
+    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.PROTECT, db_column='id_ciclo_escolar')
     cupo_maximo = models.IntegerField(default=0)
     activo = models.BooleanField(default=True)
 
@@ -401,9 +401,9 @@ class Inscripcion(models.Model):
     ]
 
     id_inscripcion = models.AutoField(primary_key=True)
-    id_alumno = models.ForeignKey(Alumnos, on_delete=models.CASCADE, db_column='id_alumno')
-    id_grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, db_column='id_grupo')
-    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.CASCADE, db_column='id_ciclo_escolar')
+    id_alumno = models.ForeignKey(Alumnos, on_delete=models.PROTECT, db_column='id_alumno')
+    id_grupo = models.ForeignKey(Grupo, on_delete=models.PROTECT, db_column='id_grupo')
+    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.PROTECT, db_column='id_ciclo_escolar')
     fecha_inscripcion = models.DateField(auto_now_add=True)
     estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='Activa')
 
@@ -431,10 +431,10 @@ class AsignacionMateria(models.Model):
     ]
 
     id_asignacion_materia = models.AutoField(primary_key=True)
-    id_materia = models.ForeignKey(Materia, on_delete=models.CASCADE, db_column='id_materia')
-    id_maestro = models.ForeignKey(Maestros, on_delete=models.CASCADE, db_column='id_maestro')
-    id_grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, db_column='id_grupo')
-    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.CASCADE, db_column='id_ciclo_escolar')
+    id_materia = models.ForeignKey(Materia, on_delete=models.PROTECT, db_column='id_materia')
+    id_maestro = models.ForeignKey(Maestros, on_delete=models.PROTECT, db_column='id_maestro')
+    id_grupo = models.ForeignKey(Grupo, on_delete=models.PROTECT, db_column='id_grupo')
+    id_ciclo_escolar = models.ForeignKey(CicloEscolar, on_delete=models.PROTECT, db_column='id_ciclo_escolar')
     fecha_asignacion = models.DateField(auto_now_add=True)
     estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='Activa')
 
@@ -473,7 +473,7 @@ class Horario(models.Model):
     id_horario = models.AutoField(primary_key=True)
     id_asignacion_materia = models.ForeignKey(
         AsignacionMateria,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         db_column='id_asignacion_materia'
     )
     dia_semana = models.CharField(max_length=20, choices=DIA_CHOICES)
@@ -507,7 +507,7 @@ class Asistencia(models.Model):
     ]
 
     id_asistencia = models.AutoField(primary_key=True)
-    id_inscripcion = models.ForeignKey(Inscripcion, on_delete=models.CASCADE, db_column='id_inscripcion')
+    id_inscripcion = models.ForeignKey(Inscripcion, on_delete=models.PROTECT, db_column='id_inscripcion')
     id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE, db_column='id_horario')
     fecha_asistencia = models.DateField()
     unidad = models.PositiveIntegerField(default=1)
@@ -531,10 +531,10 @@ class Asistencia(models.Model):
 
 class Calificacion(models.Model):
     id_calificacion = models.AutoField(primary_key=True)
-    id_inscripcion = models.ForeignKey(Inscripcion, on_delete=models.CASCADE, db_column='id_inscripcion')
+    id_inscripcion = models.ForeignKey(Inscripcion, on_delete=models.PROTECT, db_column='id_inscripcion')
     id_asignacion_materia = models.ForeignKey(
         AsignacionMateria,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         db_column='id_asignacion_materia'
     )
     unidad = models.PositiveIntegerField(default=1)
