@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from django.db.models import Max, Q, F
-from django.db.models.functions import Lower
+from django.db.models import Max, Q, F, Value
+from django.db.models.functions import Lower, Concat, Cast, ExtractYear
 from django.core.exceptions import ValidationError
 from datetime import date
 import re
@@ -349,6 +349,18 @@ class CicloEscolar(models.Model):
                 condition=Q(periodo__in=['A', 'B']),
                 name='ciclo_periodo_valido',
                 violation_error_message='Selecciona un periodo válido (A o B)',
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    nombre_ciclo=Concat(
+                        Cast(ExtractYear('fecha_inicio'), models.CharField(max_length=4)),
+                        Value('-'),
+                        F('periodo'),
+                        output_field=models.CharField(max_length=50),
+                    )
+                ),
+                name='ciclo_nombre_coherente',
+                violation_error_message='El nombre del ciclo debe coincidir con el año de inicio y el periodo',
             ),
             models.CheckConstraint(
                 condition=Q(fecha_fin__gt=F('fecha_inicio')),
