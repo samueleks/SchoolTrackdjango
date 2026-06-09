@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from django.db.models import Max
+from django.db.models import Max, Q, F
+from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from datetime import date
 import re
@@ -134,6 +135,20 @@ class DatosPersonales(models.Model):
         db_table = 'datos_personales'
         verbose_name = 'Dato Personal'
         verbose_name_plural = 'Datos Personales'
+        constraints = [
+            models.UniqueConstraint(
+                Lower('correo_inst'),
+                name='uniq_datos_personales_correo_lower',
+                condition=Q(correo_inst__isnull=False) & ~Q(correo_inst=''),
+                violation_error_message='Este correo electrónico ya está registrado en el sistema.',
+            ),
+            models.UniqueConstraint(
+                Lower('curp'),
+                name='uniq_datos_personales_curp_lower',
+                condition=Q(curp__isnull=False) & ~Q(curp=''),
+                violation_error_message='Esta CURP ya está registrada en el sistema.',
+            ),
+        ]
     
     def clean(self):
         """Valida el formato de los campos de datos personales"""
@@ -191,6 +206,19 @@ class Carrera(models.Model):
         db_table = 'carrera'
         verbose_name = 'Carrera'
         verbose_name_plural = 'Carreras'
+        constraints = [
+            models.UniqueConstraint(
+                Lower('nombre'),
+                name='uniq_carrera_nombre_lower',
+                violation_error_message='Ya existe una carrera con ese nombre.',
+            ),
+            models.UniqueConstraint(
+                Lower('clave'),
+                name='uniq_carrera_clave_lower',
+                condition=~Q(clave=''),
+                violation_error_message='Ya existe una carrera con esa clave',
+            ),
+        ]
     
     def __str__(self):
         return f"{self.clave} - {self.nombre}"
@@ -198,7 +226,7 @@ class Carrera(models.Model):
 
 class Materia(models.Model):
     id_materia = models.AutoField(primary_key=True)
-    clave = models.CharField(max_length=20, unique=True)
+    clave = models.CharField(max_length=20)
     nombre = models.CharField(max_length=100)
     id_carrera = models.ForeignKey(
         Carrera,
@@ -216,6 +244,13 @@ class Materia(models.Model):
         db_table = 'materia'
         verbose_name = 'Materia'
         verbose_name_plural = 'Materias'
+        constraints = [
+            models.UniqueConstraint(
+                Lower('clave'),
+                name='uniq_materia_clave_lower',
+                violation_error_message='Ya existe una materia con ese código',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.clave} - {self.nombre}"
@@ -234,7 +269,7 @@ class Alumnos(models.Model):
         primary_key=True, 
         db_column='id_usuario'
     )
-    id_carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, db_column='id_carrera', null=True, blank=True)
+    id_carrera = models.ForeignKey(Carrera, on_delete=models.CASCADE, db_column='id_carrera')
     semestre = models.IntegerField()
     periodo_ingreso = models.CharField(max_length=10)  # ej: 2026-1
     estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='Activo')
@@ -300,7 +335,7 @@ class CicloEscolar(models.Model):
     ]
 
     id_ciclo_escolar = models.AutoField(primary_key=True)
-    nombre_ciclo = models.CharField(max_length=50, editable=False)
+    nombre_ciclo = models.CharField(max_length=50, editable=False, unique=True)
     periodo = models.CharField(max_length=1, choices=PERIODO_CHOICES, default='A')
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
@@ -309,6 +344,13 @@ class CicloEscolar(models.Model):
         db_table = 'ciclo_escolar'
         verbose_name = 'Ciclo Escolar'
         verbose_name_plural = 'Ciclos Escolares'
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(fecha_fin__gt=F('fecha_inicio')),
+                name='ciclo_fecha_fin_posterior',
+                violation_error_message='La fecha de fin debe ser posterior a la de inicio',
+            ),
+        ]
     
     def __str__(self):
         return f"Ciclo: {self.nombre_ciclo} ({self.fecha_inicio} - {self.fecha_fin})"
@@ -369,6 +411,13 @@ class Inscripcion(models.Model):
         db_table = 'inscripcion'
         verbose_name = 'Inscripcion'
         verbose_name_plural = 'Inscripciones'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['id_alumno', 'id_grupo', 'id_ciclo_escolar'],
+                name='uniq_inscripcion_alumno_grupo_ciclo',
+                violation_error_message='El alumno ya está inscrito en ese grupo para ese ciclo',
+            ),
+        ]
 
     def __str__(self):
         return f"Inscripcion {self.id_inscripcion} - {self.id_alumno} - {self.id_grupo}"
