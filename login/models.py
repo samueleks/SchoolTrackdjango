@@ -346,6 +346,11 @@ class CicloEscolar(models.Model):
         verbose_name_plural = 'Ciclos Escolares'
         constraints = [
             models.CheckConstraint(
+                condition=Q(periodo__in=['A', 'B']),
+                name='ciclo_periodo_valido',
+                violation_error_message='Selecciona un periodo válido (A o B)',
+            ),
+            models.CheckConstraint(
                 condition=Q(fecha_fin__gt=F('fecha_inicio')),
                 name='ciclo_fecha_fin_posterior',
                 violation_error_message='La fecha de fin debe ser posterior a la de inicio',
