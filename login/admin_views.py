@@ -47,7 +47,11 @@ from .models import (
     LogCalificacion,
 )
 from .password_utils import generar_contrasena_temporal
-from .periodo_utils import resolver_semestre_alumno
+from .periodo_utils import (
+    periodo_desde_mes,
+    resolver_semestre_alumno,
+    validar_periodo_coherente_con_fecha,
+)
 from .datos_personales_utils import validar_cp
 
 
@@ -895,15 +899,7 @@ def _parse_fecha_nacimiento(valor: str):
 
 def _periodo_actual() -> str:
     hoy = timezone.now()
-    if hoy.month <= 6:
-        periodo = 'A'
-    elif hoy.month >= 8:
-        periodo = 'B'
-    else:
-        # Julio queda como A para no romper el flujo de captura.
-        periodo = 'A'
-
-    return f"{hoy.year}-{periodo}"
+    return f"{hoy.year}-{periodo_desde_mes(hoy.month)}"
 
 
 def _semestre_alumno(alumno: Alumnos) -> int:
@@ -2879,6 +2875,7 @@ def agregar_ciclo(request):
         fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
         if fin <= inicio:
             raise ValueError('La fecha de fin debe ser posterior a la de inicio')
+        validar_periodo_coherente_con_fecha(periodo, inicio)
 
         nombre_preview = f'{inicio.year}-{periodo}'
         if CicloEscolar.objects.filter(nombre_ciclo=nombre_preview).exists():
@@ -2931,6 +2928,8 @@ def editar_ciclo(request, ciclo_id):
         fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
         if fin <= inicio:
             raise ValueError('La fecha de fin debe ser posterior a la de inicio')
+        if periodo != ciclo.periodo or inicio != ciclo.fecha_inicio:
+            validar_periodo_coherente_con_fecha(periodo, inicio)
 
         nombre_preview = f'{inicio.year}-{periodo}'
         if CicloEscolar.objects.exclude(pk=ciclo.pk).filter(nombre_ciclo=nombre_preview).exists():

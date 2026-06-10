@@ -377,6 +377,15 @@ class CicloEscolar(models.Model):
                 name='ciclo_fecha_fin_posterior',
                 violation_error_message='La fecha de fin debe ser posterior a la de inicio',
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(periodo='A', fecha_inicio__month__lte=6)
+                    | Q(periodo='A', fecha_inicio__month=7)
+                    | Q(periodo='B', fecha_inicio__month__gte=8)
+                ),
+                name='ciclo_periodo_coherente_mes',
+                violation_error_message='El periodo no coincide con el mes de la fecha de inicio',
+            ),
         ]
     
     def __str__(self):

@@ -30,7 +30,11 @@ from .maestro_reportes_export import (
 )
 from .db_sequence_utils import asegurar_secuencia_postgresql, avanzar_secuencia_tras_eliminar
 from .datos_personales_utils import validar_datos_perfil_usuario
-from .periodo_utils import calcular_semestre_desde_ingreso, resolver_semestre_alumno
+from .periodo_utils import (
+    calcular_semestre_desde_ingreso,
+    periodo_desde_mes,
+    resolver_semestre_alumno,
+)
 from .models import (
     Usuarios,
     Alumnos,
@@ -312,13 +316,7 @@ def _ordenar_lista_alumnos_dict(alumnos: list[dict]) -> list[dict]:
 
 def _periodo_actual() -> str:
     hoy = timezone.now()
-    if hoy.month <= 6:
-        periodo = 'A'
-    elif hoy.month >= 8:
-        periodo = 'B'
-    else:
-        periodo = 'A'
-    return f"{hoy.year}-{periodo}"
+    return f"{hoy.year}-{periodo_desde_mes(hoy.month)}"
 
 
 def _contexto_dashboard_ciclo() -> dict:
