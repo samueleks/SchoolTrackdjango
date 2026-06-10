@@ -3155,6 +3155,7 @@ def admin_materias(request):
         'filtros_aplicados': bool(carrera_filtro),
         'materias': materias,
         'total_materias': len(materias),
+        'semestres_opciones': range(1, 13),
     }
     return render(request, 'administrativo/AdministrarMaterias.html', context)
 

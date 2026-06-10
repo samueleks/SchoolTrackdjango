@@ -228,7 +228,7 @@
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase mb-1">Semestre</label>
                             <select name="semestre" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
-                                {% for i in "123456789" %}
+                                {% for i in semestres_opciones %}
                                 <option value="{{ i }}">Semestre {{ i }}</option>
                                 {% endfor %}
                             </select>
@@ -324,7 +324,7 @@
                         <div>
                             <label class="block text-xs font-black text-gray-500 uppercase mb-1">Semestre</label>
                             <select name="semestre" id="editarSemestre" class="w-full p-2 border-2 border-gray-300 rounded-lg font-bold text-sm bg-white focus:border-blue-500 outline-none">
-                                {% for i in "123456789" %}
+                                {% for i in semestres_opciones %}
                                 <option value="{{ i }}">Semestre {{ i }}</option>
                                 {% endfor %}
                             </select>

@@ -234,7 +234,7 @@ class Materia(models.Model):
         db_column='id_carrera',
         related_name='materias',
     )
-    creditos = models.IntegerField(default=0)
+    creditos = models.IntegerField(default=3)
     semestre = models.IntegerField(default=1)
     activo = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -249,6 +249,16 @@ class Materia(models.Model):
                 Lower('clave'),
                 name='uniq_materia_clave_lower',
                 violation_error_message='Ya existe una materia con ese código',
+            ),
+            models.CheckConstraint(
+                condition=Q(creditos__gte=1) & Q(creditos__lte=10),
+                name='materia_creditos_rango',
+                violation_error_message='Los créditos deben estar entre 1 y 10',
+            ),
+            models.CheckConstraint(
+                condition=Q(semestre__gte=1) & Q(semestre__lte=12),
+                name='materia_semestre_rango',
+                violation_error_message='El semestre debe estar entre 1 y 12',
             ),
         ]
 
