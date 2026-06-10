@@ -10,3 +10,6 @@ backups/*.sql
 conexionpostgress.py
 media/
 staticfiles/
+node_modules/
+package-lock.json
+tailwindcss.exe

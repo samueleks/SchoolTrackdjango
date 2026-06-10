@@ -1,0 +1,10 @@
+{
+  "name": "schooltrack",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/tailwind-input.css -o ./login/static/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
