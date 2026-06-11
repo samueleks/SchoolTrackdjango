@@ -2,6 +2,13 @@ import psycopg2
 import sys
 import io
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent / '.env')
+except ImportError:
+    pass
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
