@@ -63,7 +63,7 @@ class GenerarContrasenaTemporalTests(SimpleTestCase):
 
 class ValidarContrasenaUsuarioTests(SimpleTestCase):
     def test_contrasena_vacia_falla(self):
-        ok, errores = validar_contrasena_usuario('4')
+        ok, errores = validar_contrasena_usuario('')
         self.assertFalse(ok)
         self.assertEqual(errores, ['La contraseña no puede estar vacía.'])
 
